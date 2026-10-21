@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Player control behavior checks</title>
+<body><pre id="results">Running…</pre><script type="module">
+import { createPlayer } from "../dist/browser.js";
+import { createDiagram } from "../dist/index.js";
+const documentModel = {
+  version: 1, viewport: { width: 600, height: 300 },
+  nodes: [
+    { id: "client", kind: "rect", x: 20, y: 100, width: 100, height: 60, label: "Client" },
+    { id: "service", kind: "rect", x: 300, y: 100, width: 100, height: 60, label: "Service", visible: false }
+  ], edges: [{ id: "request", from: "client", to: "service", label: "Request" }],
+  scenes: [
+    { id: "request", label: "Request", beats: [
+      { durationMs: 1000, transitionMs: 400, caption: "Service appears", actions: [{ type: "show", target: "service" }] },
+      { durationMs: 500, caption: "Client sends", actions: [{ type: "highlight", target: "client" }] }
+    ] },
+    { id: "response", label: "Response", beats: [
+      { durationMs: 1000, transitionMs: 400, caption: "Service responds", actions: [{ type: "highlight", target: "service" }] }
+    ] }
+  ]
+};
+const results = [];
+function assert(condition, message) { if (!condition) throw new Error(message); }
+function test(name, run) {
+  const host = document.createElement("div"); document.body.append(host);
+  const player = createPlayer(host, documentModel);
+  try { run(player, host); results.push({ name, passed: true }); }
+  catch (error) { results.push({ name, passed: false, error: error.message }); }
+  finally { player.destroy(); host.remove(); }
+}
+test("steps pause and visit adjacent beat starts across scenes", (player) => {
+  player.seek(200); player.play(); player.step(1);
+  assert(player.getState().timeMs === 1000, "next step must use the next beat start");
+  assert(!player.getState().playing, "stepping must pause");
+  player.step(1); assert(player.getState().frame.sceneId === "response", "step must cross scenes");
+  player.seek(1700); player.step(-1);
+  assert(player.getState().timeMs === 1500, "previous step from within a beat returns to its start");
+  player.step(-1); assert(player.getState().timeMs === 1000, "previous step at a boundary selects the prior beat");
+  player.seek(2500); player.step(-1);
+  assert(player.getState().timeMs === 1500, "previous step at final frame returns to final beat start");
+});
+test("controls synchronize progress, scenes, speed, captions and typed events", (player, host) => {
+  const events = [];
+  for (const type of ["stepchange", "timeupdate", "playstatechange", "error"]) {
+    host.addEventListener(type, (event) => {
+      events.push({ type, detail: event.detail, state: player.getState(), caption: host.querySelector(".flowsvg-caption").textContent });
+    });
+  }
+  const progress = host.querySelector('[aria-label="Progress"]');
+  assert(progress?.type === "range", "progress control must be available");
+  progress.value = "1200"; progress.dispatchEvent(new Event("input", { bubbles: true }));
+  assert(player.getState().timeMs === 1200, "progress control seeks");
+  assert(host.querySelector(".flowsvg-caption").textContent === "Client sends", "caption follows seek");
+  assert(events.some((event) => event.type === "stepchange" && event.detail.frame.beatId === "request:1"), "seek emits stepchange");
+  const scenes = host.querySelector('[aria-label="Scene"]');
+  scenes.click(); host.querySelector('[role="option"][data-value="response"]').click();
+  assert(player.getState().timeMs === 1500 && progress.value === "1500", "scene control seeks its first beat");
+  const speed = host.querySelector('[aria-label="Speed"]');
+  speed.click(); host.querySelector('[role="option"][data-value="2"]').click();
+  assert(player.getState().speed === 2, "speed control updates public state");
+  player.setSpeed(1.25); assert(speed.value === "1.25", "programmatic speed updates control");
+  player.play(); host.querySelector('[aria-label="Previous step"]').click();
+  assert(!player.getState().playing && player.getState().timeMs === 1000, "previous control steps and pauses");
+  host.querySelector('[aria-label="Next step"]').click();
+  assert(player.getState().timeMs === 1500, "next control steps");
+  player.load({ ...documentModel, version: 99 });
+  assert(events.some((event) => event.type === "error" && event.detail.error.name === "DiagramValidationError"), "load emits typed error with state");
+  assert(events.every((event) => event.detail.timeMs === event.state.timeMs && event.detail.frame.beatId === event.state.frame.beatId && (event.detail.frame.caption ?? "") === event.caption), "events must observe matching picture, caption and current state");
+});
+test("custom choices support keyboard commit, cancellation, dismissal and reload", (player, host) => {
+  const speed = host.querySelector('[role="combobox"][aria-label="Speed"]');
+  assert(speed?.tagName === "BUTTON", "choices must use a styled custom trigger");
+  const key = (name) => speed.dispatchEvent(new KeyboardEvent("keydown", { key: name, bubbles: true, cancelable: true }));
+  speed.focus(); key("ArrowDown"); key("End");
+  assert(speed.getAttribute("aria-expanded") === "true", "arrow opens options");
+  assert(document.getElementById(speed.getAttribute("aria-activedescendant")).textContent === "2×", "End highlights last option");
+  assert(player.getState().speed === 1, "navigation does not commit");
+  key("Escape");
+  assert(speed.getAttribute("aria-expanded") === "false" && player.getState().speed === 1, "Escape cancels");
+  key(" "); key("Home"); key("Enter");
+  assert(player.getState().speed === 0.5 && document.activeElement === speed, "Enter commits and keeps focus");
+  speed.click(); document.body.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+  assert(speed.getAttribute("aria-expanded") === "false", "outside press dismisses");
+  speed.click(); key("Tab");
+  assert(speed.getAttribute("aria-expanded") === "false", "Tab dismisses without trapping focus");
+  speed.click(); player.load({ ...documentModel, scenes: [] });
+  assert(speed.disabled && speed.getAttribute("aria-expanded") === "false", "static reload closes and disables choices");
+  player.load(documentModel); speed.click(); player.destroy();
+  assert(!document.querySelector('[role="listbox"]:not([hidden])'), "destroy removes open menu");
+});
+test("rendered object interactions survive time updates", (player, host) => {
+  let clicks = 0;
+  host.querySelector('[data-id="client"]').addEventListener("click", () => { clicks += 1; });
+  player.seek(200); player.seek(1200);
+  host.querySelector('[data-id="client"]').dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  assert(clicks === 1, "existing object listeners must survive frame updates");
+});
+test("direct seeks, sequential playback and static exports agree at timeline boundaries", (player, host) => {
+  const diagram = createDiagram(documentModel);
+  const originalRequest = window.requestAnimationFrame;
+  const originalCancel = window.cancelAnimationFrame;
+  let handle = 0;
+  const callbacks = new Map();
+  window.requestAnimationFrame = (callback) => { callbacks.set(++handle, callback); return handle; };
+  window.cancelAnimationFrame = (id) => callbacks.delete(id);
+  const advance = (time) => {
+    const pending = [...callbacks.values()]; callbacks.clear();
+    for (const callback of pending) callback(time);
+  };
+  const times = [0, 200, 400, 999, 1000, 1200, 1500, 1700, 1900, 2500];
+  try {
+    player.play(); advance(0);
+    const sequential = times.map((time) => { advance(time); return player.getState().frame; });
+    assert(!player.getState().playing, "playback pauses at final frame");
+    times.forEach((time, index) => {
+      player.seek(time);
+      assert(JSON.stringify(player.getState().frame) === JSON.stringify(sequential[index]), `direct seek at ${time} matches playback`);
+      assert(JSON.stringify(player.getState().frame) === JSON.stringify(diagram.evaluateAt(time)), `seek at ${time} matches core`);
+      const expected = document.createElement("div"); expected.innerHTML = diagram.renderSvg(time);
+      assert(host.querySelector("svg").isEqualNode(expected.firstElementChild), `SVG at ${time} matches static export`);
+    });
+    player.seek(-100); assert(player.getState().timeMs === 0, "negative seek clamps to zero");
+    player.seek(9000); assert(player.getState().timeMs === 2500, "seek after end clamps to final frame");
+    player.seek(0); player.setSpeed(2); player.play(); advance(0); advance(200);
+    assert(player.getState().timeMs === 400, "speed applies to elapsed playback time");
+    player.seek(1000); advance(800);
+    assert(player.getState().timeMs === 1000, "seek resets elapsed time origin");
+  } finally { player.pause(); window.requestAnimationFrame = originalRequest; window.cancelAnimationFrame = originalCancel; }
+});
+test("static documents disable every timeline control and preserve their picture", (player, host) => {
+  player.load({ ...documentModel, scenes: [] });
+  const before = host.querySelector("svg").outerHTML;
+  assert([...host.querySelectorAll("button,input,select")].every((control) => control.disabled), "static timeline controls are disabled");
+  player.play(); player.step(1); player.seek(1000);
+  assert(player.getState().timeMs === 0 && !player.getState().playing, "static picture never plays");
+  assert(host.querySelector("svg").outerHTML === before, "static picture stays unchanged");
+});
+window.browserTestResults = results;
+document.querySelector("#results").textContent = JSON.stringify(results, null, 2);
+</script></body></html>

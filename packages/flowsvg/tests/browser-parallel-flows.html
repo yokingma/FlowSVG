@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Parallel transfer behavior checks</title>
+<link rel="stylesheet" href="../dist/styles.css">
+<body>
+<pre id="results">Running…</pre>
+<div id="demo" class="flowsvg" style="max-width: 900px"></div>
+<script type="module">
+import { createPlayer } from "../dist/browser.js";
+import { createDiagram } from "../dist/index.js";
+const model = {
+  version: 1, viewport: { width: 600, height: 400 },
+  nodes: [
+    { id: "source", kind: "rect", x: 30, y: 150, width: 100, height: 60, label: "Source" },
+    { id: "top", kind: "rect", x: 430, y: 30, width: 100, height: 60, label: "Worker A" },
+    { id: "middle", kind: "rect", x: 330, y: 150, width: 100, height: 60, label: "Worker B" },
+    { id: "bottom", kind: "rect", x: 430, y: 270, width: 100, height: 60, label: "Worker C" }
+  ],
+  edges: [
+    { id: "first", from: "source", to: "top" },
+    { id: "second", from: "source", to: "middle" },
+    { id: "third", from: "source", to: "bottom" },
+    { id: "fourth", from: "top", to: "middle" },
+    { id: "fifth", from: "bottom", to: "middle" }
+  ],
+  scenes: [
+    { id: "broadcast", label: "Broadcast", beats: [{ durationMs: 2000, caption: "Three simultaneous transfers", actions: [
+      { type: "flow", target: "first", direction: "forward" },
+      { type: "flow", target: "second", direction: "reverse" },
+      { type: "flow", target: "third", direction: "forward" }
+    ] }] },
+    { id: "continue", label: "Continue", beats: [{ durationMs: 2000, caption: "Two transfers with shared participants", actions: [
+      { type: "flow", target: "fourth", direction: "forward" },
+      { type: "flow", target: "fifth", direction: "reverse" }
+    ] }] }
+  ]
+};
+const results = [];
+function assert(condition, message) { if (!condition) throw new Error(message); }
+for (const theme of ["light", "dark"]) {
+  for (const reducedMotion of [false, true]) {
+    const host = document.createElement("div"); document.body.append(host);
+    const options = { theme, reducedMotion, controls: false };
+    const player = createPlayer(host, model, options);
+    const diagram = createDiagram(model);
+    try {
+      for (const timeMs of [0, 500, 1999, 2000, 2500, 3999, 4000, 2000, 500]) {
+        player.seek(timeMs);
+        const expected = document.createElement("div"); expected.innerHTML = diagram.renderSvg(timeMs, options);
+        assert(host.querySelector("svg").outerHTML === expected.firstElementChild.outerHTML, `SVG mismatch at ${timeMs}`);
+        assert(JSON.stringify(player.getState().frame) === JSON.stringify(diagram.evaluateAt(timeMs, options)), `frame mismatch at ${timeMs}`);
+        const count = reducedMotion || timeMs === 4000 ? 0 : timeMs < 2000 ? 3 : 2;
+        assert(host.querySelectorAll("[data-flow-id]").length === count, `marker count at ${timeMs}`);
+      }
+      results.push({ theme, reducedMotion, passed: true });
+    } catch (error) {
+      results.push({ theme, reducedMotion, passed: false, error: error.message });
+    } finally {
+      player.destroy(); host.remove();
+    }
+  }
+}
+window.browserTestResults = results;
+document.querySelector("#results").textContent = JSON.stringify(results, null, 2);
+const demo = createPlayer(document.querySelector("#demo"), model, { reducedMotion: false });
+demo.seek(500);
+</script>
+</body>
+</html>

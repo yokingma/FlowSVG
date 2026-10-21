@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Node content interaction acceptance</title>
+<link rel="stylesheet" href="../dist/styles.css">
+<style>
+  body { margin: 24px; font: 16px sans-serif; color: #172033; background: #f8fafc; }
+  #host { width: 848px; height: 488px; border: 1px solid #cbd5e1; }
+  button { margin: 12px 8px 0 0; }
+  output { display: block; margin-top: 12px; }
+</style>
+<h1>Node content interaction acceptance</h1>
+<div id="host"></div>
+<p>Hover/click titles, tags, body text or shape margins. Clipped content cannot extend the node hit region.</p>
+<button id="idle">Idle</button><button id="explicit">Explicit highlight</button><button id="flow">Flow</button>
+<button id="replace">Replace content</button><button id="label">Simple label</button><button id="clear">Clear text</button>
+<button id="shrink">Shrink node</button><button id="reload">Reload other theme</button><button id="destroy">Destroy</button>
+<output id="hover">Hover: none</output><output id="click">Click: none</output>
+<script type="module">
+import { createPlayer } from "../dist/browser.js";
+import { createDiagram } from "../dist/index.js";
+// The real-browser acceptance input belongs to the SDK and runs without any app assets.
+const listContentDocument = {
+  version: 1, viewport: { width: 848, height: 488 },
+  nodes: [
+    { id: "facts", kind: "cylinder", x: 24, y: 24, width: 240, height: 440,
+      content: { blocks: [{ type: "title", text: "Records" }, { type: "list", marker: "none", items: [
+        { tags: [{ text: "initial" }], status: "new", body: "Initial record", auxiliary: "2030-01-01" }
+      ] }] } },
+    { id: "service", kind: "roundedRect", x: 304, y: 24, width: 240, height: 440,
+      content: { blocks: [{ type: "title", text: "Bullets" }, { type: "list", marker: "bullet", items: [{ body: "First" }, { body: "Second" }] }] } },
+    { id: "steps", kind: "rect", x: 584, y: 24, width: 240, height: 440,
+      content: { blocks: [{ type: "title", text: "Numbers" }, { type: "list", marker: "number", items: [{ body: "One" }, { body: "Two" }, { body: "Three" }] }] } }
+  ], edges: [], scenes: []
+};
+
+const theme = new URLSearchParams(location.search).get("theme") === "dark" ? "dark" : "light";
+let model = {
+  ...listContentDocument, theme,
+  edges: [{ id: "request", from: "facts", to: "service" }],
+  scenes: [{ id: "interaction", label: "Interaction", beats: [
+    { durationMs: 1000, transitionMs: 0, actions: [] },
+    { durationMs: 1000, transitionMs: 0, actions: ["facts", "service", "steps"].map((target) => ({ type: "highlight", target })) },
+    { durationMs: 1000, transitionMs: 0, actions: [...["facts", "service", "steps"].map((target) => ({ type: "unhighlight", target })), { type: "flow", target: "request", direction: "forward" }] },
+    { durationMs: 1000, transitionMs: 0, actions: [{ type: "updateNode", target: "facts", value: { content: { blocks: [
+      { type: "title", text: "Current content" }, { type: "paragraph", text: "Authored color", style: { color: "#765432" } },
+      { type: "paragraph", role: "auxiliary", text: "Current auxiliary" },
+      { type: "paragraph", text: "This long paragraph intentionally overflows.\n".repeat(30) }
+    ] } } }] },
+    { durationMs: 1000, transitionMs: 0, actions: [{ type: "updateNode", target: "facts", value: { label: "Simple label" } }] },
+    { durationMs: 1000, transitionMs: 0, actions: [{ type: "updateNode", target: "facts", value: { content: null } }] },
+    { durationMs: 1000, transitionMs: 0, actions: [{ type: "updateNode", target: "facts", value: { width: 40, height: 40 } }] }
+  ] }]
+};
+const host = document.querySelector("#host");
+const player = createPlayer(host, model, { controls: false, reducedMotion: false, hoverFill: true });
+const interactions = { hover: null, click: null };
+for (const type of ["hover", "click"]) host.addEventListener(type, (event) => {
+  interactions[type] = event.detail;
+  document.querySelector(`#${type}`).textContent = `${type}: ${event.detail?.id ?? "none"}`;
+});
+for (const [id, time] of [["idle", 0], ["explicit", 1500], ["flow", 2500], ["replace", 3500], ["label", 4500], ["clear", 5500], ["shrink", 6500]]) {
+  document.querySelector(`#${id}`).onclick = () => player.seek(time);
+}
+function reload() {
+  model = { ...model, theme: model.theme === "light" ? "dark" : "light" };
+  player.load(model);
+}
+document.querySelector("#reload").onclick = reload;
+document.querySelector("#destroy").onclick = () => player.destroy();
+window.contentFixture = { player, host, interactions, reload, get model() { return model; },
+  matchesCore() {
+    const expected = document.createElement("div");
+    expected.innerHTML = createDiagram(model).renderSvg(player.getState().timeMs);
+    return host.querySelector("svg")?.outerHTML === expected.querySelector("svg")?.outerHTML;
+  }
+};
+</script>
+</html>

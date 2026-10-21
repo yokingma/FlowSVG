@@ -1,0 +1,668 @@
+# FlowSVG
+
+[English](https://cdn.jsdelivr.net/npm/flowsvg/README.md) | 简体中文
+
+FlowSVG（流形）将 JSON 或 TypeScript 文档转换为 SVG 动画图解。定义节点、连线、场景与节拍，即可在浏览器播放、导出 SVG 或 GIF，或分享一个离线 HTML 文件。
+
+SDK 使用 ESM，提供无 DOM 核心及原生浏览器、Vue、React、Web Component 接入。各接入方式共用同一文档和时间线。
+
+[安装](#安装) · [快速开始](#快速开始) · [Vue](#vue-集成) · [React](#react-集成) · [原生浏览器](#原生浏览器) · [Web Component](#web-component) · [文档](#文档与时间线) · [节点内容](#节点内容) · [API](#api) · [播放器控件](#播放器控件) · [GIF](#浏览器-gif-导出) · [Node / CLI](#node-gif-导出node-20) · [离线 HTML](#离线-htmlnode-20)
+
+## 安装
+
+从 npm 安装：
+
+```sh
+npm install flowsvg
+```
+
+按所选入口安装框架依赖：
+
+```sh
+# Vue 应用
+npm install vue
+# React 应用
+npm install react react-dom
+# React TypeScript 应用
+npm install -D @types/react @types/react-dom
+```
+
+仅提供 ESM，类型声明随包提供。核心与原生浏览器入口无需框架。核心要求 Node.js 18+ 或兼容 ES2022 的浏览器；播放要求 DOM、SVG 和 `requestAnimationFrame`；框架最低版本为 Vue 3.5、React 18。
+
+浏览器 GIF 接口还要求 Canvas 2D、图像解码和宿主内容安全策略允许的 Blob worker。Node 入口及 CLI 要求 Node 20+；生成 HTML 无需浏览器，Node GIF 导出须预装 Chromium 和系统字体。
+
+| 导入路径 | 用途 |
+| --- | --- |
+| `flowsvg` | 无 DOM 的文档校验、编译、求值、命中与 SVG 导出 |
+| `flowsvg/browser` | 原生浏览器播放器 |
+| `flowsvg/export` | 浏览器 GIF 导出、进度、取消与错误 |
+| `flowsvg/node` | Node 20+ 离线 HTML 生成与 Chromium GIF 导出 |
+| `flowsvg/vue` | Vue 组件与实例类型 |
+| `flowsvg/react` | React 组件与 ref 类型 |
+| `flowsvg/web-component` | 显式注册自定义元素；也可使用 `flowsvg/element` |
+| `flowsvg/styles.css` | 控件布局与可见焦点样式 |
+
+## 快速开始
+
+### 1. 创建图解文档
+
+将这个 5.2 秒的订单流程保存为 `diagram.ts`。后续集成与导出示例均复用此文件。运行 Node 示例前先编译 TypeScript；`.js` 导入路径指向编译后的文件。
+
+```ts
+import type { DiagramDocument } from "flowsvg";
+
+export const diagramDocument: DiagramDocument = {
+  version: 1,
+  title: "订单请求生命周期",
+  viewport: { width: 960, height: 440 },
+  nodes: [
+    { id: "client", kind: "roundedRect", x: 40, y: 205, width: 120, height: 70, label: "Client" },
+    { id: "gateway", kind: "roundedRect", x: 260, y: 205, width: 130, height: 70, label: "API gateway" },
+    { id: "auth", kind: "ellipse", x: 260, y: 40, width: 130, height: 72, label: "Auth" },
+    { id: "orders", kind: "roundedRect", x: 500, y: 205, width: 150, height: 70, label: "Order service" },
+    { id: "database", kind: "cylinder", x: 780, y: 65, width: 140, height: 90, label: "Orders" },
+    { id: "events", kind: "rect", x: 780, y: 330, width: 140, height: 70, label: "Event queue" }
+  ],
+  edges: [
+    { id: "request", from: "client", to: "gateway", route: "straight" },
+    { id: "authorize", from: "gateway", to: "auth", route: "straight", fromPort: "top", toPort: "bottom" },
+    { id: "create", from: "gateway", to: "orders", route: "straight" },
+    { id: "persist", from: "orders", to: "database", route: "orthogonal", fromPort: "right", toPort: "left" },
+    { id: "publish", from: "orders", to: "events", route: "curved", fromPort: "bottom", toPort: "left" },
+    { id: "result", from: "orders", to: "gateway", route: "curved", fromPort: "bottom", toPort: "bottom" }
+  ],
+  scenes: [
+    { id: "request", label: "接收与认证", beats: [
+      { durationMs: 800, caption: "接收订单请求", actions: [
+        { type: "flow", target: "request", direction: "forward", text: "POST" }
+      ] },
+      { durationMs: 800, caption: "校验访问令牌", actions: [
+        { type: "flow", target: "authorize", direction: "forward", text: "Token" }
+      ] }
+    ] },
+    { id: "create-order", label: "创建订单", beats: [
+      { durationMs: 1000, caption: "将已认证请求交给订单服务", actions: [
+        { type: "flow", target: "create", direction: "forward", text: "Create" }
+      ] },
+      { durationMs: 1000, caption: "将新订单写入数据库", actions: [
+        { type: "flow", target: "persist", direction: "forward", text: "INSERT" }
+      ] }
+    ] },
+    { id: "response", label: "发布事件与响应", beats: [
+      { durationMs: 1600, caption: "发布 OrderCreated 事件，同时返回订单号", actions: [
+        { type: "flow", target: "publish", direction: "forward", text: "OrderCreated" },
+        { type: "flow", target: "result", direction: "forward", text: "201 Created" },
+        { type: "flow", target: "request", direction: "reverse", text: "Order ID" }
+      ] }
+    ] }
+  ]
+};
+```
+
+浅色主题下的 4400 ms 画面：事件与响应消息同时传递，仅高亮当前参与的节点。
+
+![订单流程包含 Client、API gateway、Auth、Order service、Orders 数据库和 Event queue，正在传递 OrderCreated 事件与响应消息](./docs/images/quick-start.png)
+
+### 2. 求值并导出 SVG
+
+```ts
+import { createDiagram, renderSvg } from "flowsvg";
+import { diagramDocument } from "./diagram.js";
+
+const diagram = createDiagram(diagramDocument);
+const frame = diagram.evaluateAt(125);
+console.log(diagram.totalDuration, frame.sceneId, frame.warnings);
+
+const svg = diagram.renderSvg(125, { theme: "dark" });
+const finalSvg = renderSvg(diagramDocument, 5200);
+```
+
+两种调用均返回静态 SVG 字符串。重复查询时复用 `createDiagram`；单次导出用 `renderSvg`。
+
+## Vue 集成
+
+在 Vue 应用中创建组件，`diagram.ts` 与组件放在同一目录：
+
+```vue
+<script setup lang="ts">
+import { ref } from "vue";
+import { FlowPlayer, type FlowPlayerHandle } from "flowsvg/vue";
+import type { PlayerErrorDetail } from "flowsvg/browser";
+import "flowsvg/styles.css";
+import { diagramDocument } from "./diagram.js";
+
+const player = ref<FlowPlayerHandle | null>(null);
+const timeMs = ref(0);
+
+function handleError({ error }: PlayerErrorDetail): void {
+  console.error(error);
+}
+</script>
+
+<template>
+  <FlowPlayer
+    ref="player"
+    :document="diagramDocument"
+    :speed="1.25"
+    :gif-export="true"
+    theme="dark"
+    @timeupdate="timeMs = $event.timeMs"
+    @error="handleError"
+  />
+  <button type="button" @click="player?.play()">播放</button>
+  <button type="button" @click="player?.seek(0)">回到开头</button>
+  <output>{{ timeMs }} ms</output>
+</template>
+```
+
+卸载时自动销毁。脚本中通过 `player.value` 调用方法，模板自动解包 ref。事件直接传入 detail：`stepchange`、`timeupdate`、`playstatechange`、`error`，也支持对应回调 props。
+
+## React 集成
+
+```tsx
+import { useRef } from "react";
+import { FlowPlayer, type FlowPlayerHandle } from "flowsvg/react";
+import "flowsvg/styles.css";
+import { diagramDocument } from "./diagram.js";
+
+export default function DiagramExample() {
+  const player = useRef<FlowPlayerHandle | null>(null);
+
+  return (
+    <section>
+      <FlowPlayer
+        ref={player}
+        document={diagramDocument}
+        speed={1.25}
+        gifExport
+        theme="dark"
+        onError={({ error }) => console.error(error)}
+      />
+      <button type="button" onClick={() => player.current?.play()}>播放</button>
+      <button type="button" onClick={() => player.current?.seek(0)}>回到开头</button>
+    </section>
+  );
+}
+```
+
+组件卸载时自动清理资源。回调为 `onStepChange`、`onTimeUpdate`、`onPlayStateChange`、`onError`。
+
+### Vue / React 的参数与更新行为
+
+| Prop | 默认或含义 |
+| --- | --- |
+| `document` | 必填图解文档；对象引用变化时重新加载，成功后暂停在零时刻 |
+| `speed` | 正数倍率，默认 `1`；变化时更新速度 |
+| `theme` | `light` / `dark`；未指定时使用文档主题，最终默认为浅色 |
+| `controls` | 默认 `true`，设为 `false` 隐藏内置控件 |
+| `gifExport` | 默认 `false`；开启 GIF 进度、取消与下载控件；要求显示播放控件 |
+| `reducedMotion` | 未指定时跟随浏览器减少动画偏好 |
+| `hoverFill` | 默认 `false`：悬停只高亮边框；设为 `true` 时同时高亮背景和内容 |
+| `initialTimeMs` | 仅初次挂载时应用；后续跳转用 `seek` |
+| `className` / `style` | 宿主容器样式 |
+
+修改 `theme`、`controls`、`gifExport`、`reducedMotion` 或 `hoverFill` 会重建播放器，暂停在零时刻，不再应用 `initialTimeMs`。更新文档需提供新对象引用。实例暴露[播放器 API](#播放器-api)中的七个方法；挂载前或卸载后调用会抛出错误。
+
+两种入口均支持服务端导入。SSR 输出容器，客户端挂载后创建播放器。服务端图解预览使用 `renderSvg`。
+
+## 原生浏览器
+
+在页面中放置容器：
+
+```html
+<div id="diagram" style="width: 100%; height: 360px;"></div>
+```
+
+在应用的客户端模块中创建播放器：
+
+```ts
+import { createPlayer } from "flowsvg/browser";
+import "flowsvg/styles.css";
+import { diagramDocument } from "./diagram.js";
+
+const host = document.querySelector<HTMLElement>("#diagram");
+if (!host) throw new Error("Diagram host is missing");
+
+const player = createPlayer(host, diagramDocument, { theme: "light", gifExport: true });
+player.play();
+```
+
+`createPlayer` 替换容器子元素。卸载或复用容器前调用 `destroy()`。原生 HTML 使用包导入路径时，需配置 import map 或构建工具。
+
+## Web Component
+
+先在 HTML 中放置元素，再从客户端模块显式注册：
+
+```html
+<flowsvg-player gif-export></flowsvg-player>
+```
+
+```ts
+import { defineFlowPlayer, type FlowPlayerElement } from "flowsvg/web-component";
+import "flowsvg/styles.css";
+import { diagramDocument } from "./diagram.js";
+
+defineFlowPlayer();
+const element = document.querySelector<FlowPlayerElement>("flowsvg-player");
+if (element) element.document = diagramDocument;
+```
+
+默认注册 `<flowsvg-player>`，重复注册安全。对象赋给 `element.document`；JSON 字符串赋给 HTML `document` 属性；JSON URL 赋给 `src`。URL 相对页面解析，遵循浏览器 CORS 规则。
+
+支持 `autoplay`、`controls`、`speed`、`theme`、`reduced-motion`、`hover-fill`、`gif-export`。默认显示控件，关闭自动播放、悬停背景与 GIF 导出；`controls="false"` 隐藏控件。主题、控件、GIF 及动画/悬停选项变化时保留时间和播放状态；`autoplay` 则直接控制播放或暂停。移除元素会取消请求并销毁播放器，重新连接时使用保留的文档。
+
+方法：`play`、`pause`、`seek`、`step`、`setSpeed`、`getState`、`destroy`。更换文档使用 `element.document`。挂载前或销毁后，`getState()` 返回 `undefined`。播放与错误事件可冒泡并穿越 Shadow DOM 边界。
+
+请在 DOM 环境注册。无 DOM 导入安全，但该模块实例不能在稍后补上 DOM 后用于注册。
+
+## 文档与时间线
+
+| 文档字段 | 约定 |
+| --- | --- |
+| `version` | 当前为 `1` |
+| `viewport` | 有限且为正的 `width`、`height`，定义初始视口 |
+| `nodes` | 节点列表，`id`、`kind`、`x`、`y`、`width`、`height` 必填 |
+| `edges` | 连线列表，`id`、`from`、`to` 必填；端点引用节点或分组边界 |
+| `scenes` | `[]` 表示静态图；场景具有唯一 `id`、`label` 和非空 `beats` |
+| `title` / `theme` | 可选标题与 `light` / `dark` 文档主题 |
+
+节点与连线 ID 全局唯一。形状：`rect`、`roundedRect`、`ellipse`、`cylinder`、`group`。`parentId` 指向父分组，子节点坐标相对分组原点。标签为纯文本，`visible` 默认 `true`。节点样式：`fill`、`stroke`、`strokeWidth`、`textColor`、`dashed`（分组边框）；连线样式：`stroke`、`strokeWidth`、`dashed`。颜色使用十六进制 RGB/RGBA，如 `#2563eb`、`#2563eb80`。
+
+路由：`straight`（默认）、`orthogonal`、`curved`。曲线跟随端口切线，不避让其他节点；正交路径避开可见普通节点，受阻时固定回退，不保证最短路径或零交叉。`fromPort` / `toPort` 可设为 `top`、`right`、`bottom`、`left`。箭头空间允许时，正交路径优先将跨接线段放在节点间隔中点；相同朝向的端口优先使用单一外侧通道，并为双方各自的祖先分组边框预留空间，共同祖先分组不推动通道外移。正交路径保留向外的端点线段，并按求值后的线宽为箭头预留直线末段；相邻节点空间不足时缩短预留距离。同一目标侧的曲线和正交入线按来源位置分配独立连接位置，来源位置相同时按文档顺序排列；隐藏连线仍保留位置。连接位置限制在该侧的中央区域，节点过小或入线过多时仍需增加空间。曲线端口决定切线。省略时按中心连线主方向选择，椭圆端点位于轮廓。普通标签按估算宽度换行；高度溢出时仍显示全文，并报告 `text-overflow`。
+
+连线可连接节点或分组边界。分组端点跟随当前几何和显式端口；祖先隐藏时遮蔽连线。传递仅高亮端点分组，不联动子节点。分组边框不作为布线障碍。
+
+### 节拍与动作
+
+每个节拍包含正数 `durationMs` 和 `actions`，可选 `transitionMs` 与 `caption`。过渡时长默认 `min(250, durationMs)`，取值范围为 `[0, durationMs]`；`caption` 省略时继承前文，空字符串可清空。
+
+| 动作 | 示例或可更新字段 |
+| --- | --- |
+| `show` / `hide` | `{ type: "show", target: "service" }`，作用于节点、分组或连线 |
+| `highlight` / `unhighlight` | 改变高亮层，取消高亮后显示最新普通样式 |
+| `flow` | `{ type: "flow", target: "request", direction: "forward" }`；在一个节拍内让标记沿连线移动。`direction` 为 `forward` 或 `reverse`，不会改变静态箭头方向；添加 `text: "请求"` 显示水平文字胶囊，省略 `text` 显示实心圆点。 |
+| `updateNode` | `value` 支持 `x`、`y`、`width`、`height`、`label`、`content`、`fill`、`stroke`、`opacity` |
+| `updateEdge` | `value` 支持 `label`、`stroke`、`strokeWidth`、`opacity` |
+| `focus` | `target` 为节点/分组 ID；`null` 恢复完整视口 |
+
+`updateNode.value.content` 在节拍起点整体替换内容，不受过渡时长影响，结果继承到后续节拍与场景。`label` 切换到普通标签，`content` 切换到节点内容；`content: null` 清空任一模式，不恢复旧标签或改变尺寸。同一节拍同时赋值两种模式或重复赋值会报告字段路径错误。
+
+场景共用毫秒时间线，继承前一场景的最终状态。文字在节拍起点切换，插值属性在过渡期变化。节拍左闭右开，最终时间返回完成画面。隐藏节点/分组会遮蔽关联连线，重新显示时恢复各连线保存的显隐状态。
+
+每拍可在多条不同连线上各传递一次。标记共用 `durationMs` 内的线性进度，因此路径越长，移动越快。标记和端点临时高亮在拍末消失，下一拍提供新的一组传递；显式高亮和普通样式继续继承。
+
+传递 `text` 按纯文本转义，始终水平，胶囊宽度按固定规则估算。文字不替换连线标签，也不产生独立交互目标；空字符串仍显示胶囊。
+
+## API
+
+### 核心 API
+
+从 `flowsvg` 导入：
+
+| API | 返回与行为 |
+| --- | --- |
+| `validateDocument(input: unknown)` | 返回 `{ path, message }[]`；空数组表示通过 |
+| `createDiagram(document)` | 校验、复制并编译，返回 `Diagram`；非法文档抛出 `DiagramValidationError` |
+| `renderSvg(document, timeMs = 0, options?)` | 一次性编译并导出静态 SVG 字符串 |
+| `diagram.totalDuration` | 全局总时长，静态文档为 `0` |
+| `diagram.evaluateAt(timeMs, options?)` | 返回 `DiagramFrameState` |
+| `diagram.renderSvg(timeMs = 0, options?)` | 导出相同求值结果的 SVG |
+| `diagram.hitTest(timeMs, point, options?)` | 在文档坐标中返回 `{ id, type: "node" \| "edge" }` 或 `null` |
+| `wrapText(label, maxWidth, typography?)` | 按固定字宽估算换行，返回文本行数组 |
+
+`EvaluateOptions`：`{ theme?: "light" | "dark"; reducedMotion?: boolean }`。时间限制在 `[0, totalDuration]`，非有限值按零处理。命中跳过隐藏/零透明度对象，依次检查普通节点、连线、分组背景。
+
+`DiagramFrameState` 包含时间、场景/节拍 ID、进度、求值后的节点/连线、镜头、说明文字及警告。坐标为绝对坐标。静态图的场景/节拍 ID 为 `null`；节拍 ID 为 `${scene.id}:${beatIndex}`，索引从零开始。活动连线的 `flow` 提供方向、进度、位置及可选文字；拍末、隐藏或减少动画时不显示标记。
+
+类型及成员 JSDoc 随包提供：`DiagramDocument`、`DiagramNode`、`DiagramEdge`、`Scene`、`Beat`、`Action`、`Diagram`、`DiagramFrameState`、`EvaluateOptions`、`ValidationIssue`、`LayoutWarning`。
+
+### 播放器 API
+
+从 `flowsvg/browser` 导入 `createPlayer(host, document, options?)`。`PlayerOptions` 包含核心视觉选项以及 `controls?: boolean`、`gifExport?: boolean` 和 `hoverFill?: boolean`。
+
+| 方法或属性 | 行为 |
+| --- | --- |
+| `element` | 创建时传入的宿主元素，也是事件目标 |
+| `play()` / `pause()` | 播放或保留当前画面并暂停；静态图或终点不会开始播放 |
+| `seek(timeMs)` | 限制到时间线范围；保留播放状态，抵达终点时暂停 |
+| `step(1)` / `step(-1)` | 暂停并跳到相邻节拍起点；节拍中途后退到本拍起点，在起点后退到上一拍 |
+| `setSpeed(speed)` | 设置有限正数倍率，忽略非法值 |
+| `load(document)` | 成功后暂停并回到零；校验失败时发出 error，保留原文档、时间和播放状态 |
+| `getState()` | 返回 `PlayerState`：`timeMs`、`totalDuration`、`playing`、`speed`、`frame` |
+| `destroy()` | 幂等清理 DOM、监听器与调度；之后停止事件，状态仍可读取 |
+
+创建时暂停在零时刻，默认显示控件。页面隐藏时暂停，恢复后保持暂停；播放在终点停止，静态图禁用时间控件。框架实例提供表中方法，但不暴露 `element` 和 `destroy`。
+
+悬停高亮节点边框，也适用于分组。`hoverFill: true` 同时高亮背景与内容。移出时清除悬停，保留传递与显式高亮。指针取消、文档替换和销毁也会清除悬停。`PlayerState.frame` 和静态 SVG 不含悬停。
+
+### 事件
+
+原生播放器在宿主元素上派发 `CustomEvent`：
+
+| 事件 | `detail` |
+| --- | --- |
+| `timeupdate` | 当前 `PlayerState`，画面更新后发送 |
+| `stepchange` | 当前 `PlayerState`，场景或节拍改变时发送，早于该次 timeupdate |
+| `playstatechange` | 当前 `PlayerState`，播放/暂停状态变化时发送 |
+| `error` | `PlayerErrorDetail`：保留的播放器状态与 `error` |
+| `hover` / `click` | `PlayerInteractionDetail` 或 `null`；也提供 `objecthover` / `objectclick` 同义事件 |
+
+交互 detail 包含 `id`、`type`、`point`（文档坐标）、`timeMs`、`sceneId`、`beatId`，未命中为 `null`。包装层转发四类播放/错误事件；Web Component 挂载前的错误可能没有播放器状态。
+
+指针移动会发送 `hover`；画面更新导致未移动的指针命中其他对象时也发送。移出或取消时发送 `null`。
+
+```ts
+import type { PlayerEventMap } from "flowsvg/browser";
+
+function handleTimeUpdate(event: Event): void {
+  const { detail } = event as PlayerEventMap["timeupdate"];
+  console.log(detail.timeMs, detail.frame.caption);
+}
+
+player.element.addEventListener("timeupdate", handleTimeUpdate);
+```
+
+上例沿用原生集成创建的 `player`。宿主自行添加的监听器由宿主移除。
+
+## 播放器控件
+
+### 默认接入
+
+播放器默认提供播放/暂停、前后节拍、进度、场景和速度控件，无需自行创建按钮或菜单。在应用入口引入一次默认 CSS，即可获得完整的控件布局、颜色和交互反馈：
+
+```ts
+import { createPlayer } from "flowsvg/browser";
+import "flowsvg/styles.css";
+import { diagramDocument } from "./diagram.js";
+
+const host = document.querySelector<HTMLElement>("#diagram");
+if (!host) throw new Error("Diagram host is missing");
+
+const player = createPlayer(host, diagramDocument);
+```
+
+上例沿用[原生浏览器](#原生浏览器)的容器，初始暂停在零时刻；页面卸载前调用 `player.destroy()`。Vue、React 和 Web Component 同样默认提供控件，只需在对应集成中引入这份 CSS。`controls: false` 隐藏控件；GIF 下载不是默认功能，需要单独开启 `gifExport`。
+
+### 颜色定制
+
+无需修改默认 CSS。把现有五个变量设置在宿主或其祖先元素上，即可调整控件颜色：
+
+```css
+#diagram {
+  --flowsvg-control-background: #101828;
+  --flowsvg-control-color: #f4f7fb;
+  --flowsvg-control-border: #64748b;
+  --flowsvg-control-accent: #60a5fa;
+  --flowsvg-control-focus: #fbbf24;
+}
+```
+
+这些变量依次控制背景、文字、边框、强调色和键盘焦点颜色，不要求额外的宿主类。控件颜色不改变图解或导出颜色；图解颜色由核心主题和文档样式决定，见[主题与无障碍](#主题与无障碍)。
+
+### 尺寸选择
+
+标准尺寸默认启用，按钮和选择触发器的最小高度为 `2.75rem`（根字号为 16 像素时是 44 像素）。在宿主或祖先元素添加 `flowsvg-compact`，即可使用 `2rem`（同条件下为 32 像素）的紧凑尺寸：
+
+```html
+<div id="diagram" class="flowsvg-compact" style="width: 100%; height: 360px;"></div>
+```
+
+Vue、React 和 Web Component 也可以放入带有 `flowsvg-compact` 类的容器。移除该类即可恢复标准尺寸。两种尺寸都保留圆角中性控件、浅强调色的播放/暂停按钮，以及悬停、按下、禁用和键盘焦点反馈；窄屏下进度条单独占一行。控件过渡遵循系统的减少动画偏好，控件尺寸不改变图解几何。
+
+### 可选进阶：复用选择菜单
+
+只有在自建宿主设置时才需要此接口；普通播放器接入和换肤无需使用。`flowsvg/browser` 保留 `SelectControl` 和 `SelectChoice` 的公共导出，供宿主复用播放器的菜单样式与键盘交互。
+
+创建 `new SelectControl(document, "Theme", onChange)`，挂载其 `element`，再调用 `render([{ value: "light", label: "Light" }, { value: "dark", label: "Dark" }], "light")`。`SelectChoice` 包含字符串 `value` 和 `label`，同一控件内的选项值必须唯一。回调接收用户请求的值；调用方持有已确认状态，并调用 `render` 同步显示。`render` 的第三个可选布尔参数控制禁用，默认 `false`；空选项列表也会禁用触发器。移除宿主前调用 `destroy()`，释放外部点击监听并移除菜单元素。菜单复用已引入的 `flowsvg/styles.css`，以及上述颜色变量和尺寸类。
+
+## 主题与无障碍
+
+主题：显式选项 → 文档主题 → 浅色，核心不读取系统偏好。浏览器动画默认跟随 `prefers-reduced-motion`，核心默认正常动画。减少动画会立即完成过渡并隐藏传递标记，保留总时长。
+
+两种主题都使用中性边框和蓝色高亮。文档样式覆盖普通颜色，时间线与悬停高亮叠加在其上。显式内容颜色和标签底色保持不变。图解文字使用系统字体，并提供中文字体回退。
+
+画布聚焦后，Space 播放/暂停，方向键逐拍移动；进度条保留原生按键。场景和速度使用自定义选择框：方向键展开并移动，Home/End 移到首项或末项，Enter/Space 确认，Escape 取消，Tab 关闭菜单并继续移动焦点。输入单个字符可高亮匹配项。点击外部区域关闭菜单。说明文字使用礼貌播报区，SVG 提供可访问名称。
+
+## 校验与错误
+
+校验拒绝未知字段、错误引用、循环分组、重复节拍赋值、非法颜色和尺寸/时长。文本按纯文本转义。检查外部 JSON 时，调用 `validateDocument` 并读取各条 `path`、`message`。
+
+`createDiagram` 和首次 `createPlayer` 遇到非法文档会抛出 `DiagramValidationError`，`issues` 包含字段路径。后续 `load` 失败时发送 `error`，保留旧状态。文字溢出不阻止渲染，可读取 `frame.warnings`。
+
+## 内置 GIF 下载
+
+四种宿主均接受 `gifExport: true`；Web Component 的 HTML 属性为 `gif-export`，元素对象属性为 `gifExport`。前面的宿主集成示例开启 GIF 下载，默认接入示例保持关闭。该选项默认 `false`；`controls: false` 同时隐藏 GIF 控件。首次点击导出才加载浏览器导出模块，普通导入与播放不加载该模块。
+
+点击 **Export GIF**，按完整时间线、1×、任务开始时已解析的主题及默认设置导出。控件显示进度、**Cancel export**、完成和可读错误；成功时下载安全处理后的文档标题文件名，无标题时用 `FlowSVG.gif`。播放、调速与跳转独立运行；GIF 不包含控件或悬停效果。
+
+每个播放器最多一个任务。成功加载新文档时，旧任务继续使用固定的文档和主题；后续修改输入对象不改变快照。销毁播放器、卸载组件或因选项变化重建宿主时取消其任务，并阻止后续下载。取消或失败后可重试。需要自定义设置或程序化错误处理时，使用下面独立的 `exportGif` 函数。
+
+## 浏览器 GIF 导出
+
+需要导出时，导入独立浏览器入口：
+
+```ts
+import { exportGif } from "flowsvg/export";
+import { diagramDocument } from "./diagram.js";
+const controller = new AbortController();
+const bytes = await exportGif(diagramDocument, {
+  theme: "dark",
+  includeCaptions: true,
+  signal: controller.signal,
+  onProgress: ({ phase, completed, total }) => console.log(phase, completed, total)
+});
+// 应用自行保存或下载 bytes。任务未完成时可调用 controller.abort() 取消。
+```
+
+`exportGif` 返回 `Promise<Uint8Array>`，在调用时固定文档与选项快照。播放与下载由应用控制。输出不透明，文字使用本机已安装的系统字体。worker 负责调色板量化和编码。
+
+进度阶段为 `preparing`、`sampling`、`encoding` 和 `complete`。从同一入口导入 `GifExportError`，可读取 `code`：`options`、`limit`、`document`、`caption-overflow`、`environment`、`rasterization`、`encoding` 或 `cancelled`。错误消息说明处理方法。
+
+限制：动画有效时长最多 120 秒、采样最多 1800 帧、编码最多 1801 帧（含长停留拆分），最终长边（含说明区域）最多 1920px。超限时，按对应限制缩短时长、降低帧率或减小尺寸。
+
+### GIF 选项
+
+| GIF 选项 | 契约 |
+| --- | --- |
+| `startMs`、`endMs` | 源时间毫秒，默认完整时间线。须满足 `0 <= startMs < endMs <= 总时长`；静态文档仅接受零。片段继承此前场景状态。普通采样不含终点；中间片段停留显示终点前画面，整体终点显示完成状态。 |
+| `speed`、`fps` | 速度须为正有限数，默认 1；帧率须为 1–30 的整数，默认 15。动画有效时长为源区间时长除以速度。GIF 延迟按累计百分之一秒取整，避免逐帧误差累积。 |
+| `width` | 正数图解宽度，四舍五入为像素；默认 `min(viewport.width, 1280)`，不放大。高度保持视口比例，说明区域在下方增加高度。 |
+| `includeCaptions`、`captionHeight` | 默认开启说明区域，高 80px。非负高度四舍五入为像素。系统字体 16px，行高 22px，水平内边距 16px、垂直内边距 12px。自动换行保留显式换行。采样前测量所有有效说明；溢出报告场景/节拍，应增加空间、缩短文字或关闭说明。 |
+| `loopCount` | 默认 0 表示无限循环；1–65,536 的整数表示总播放次数，1 只播放一次。超过上限时明确报错。 |
+| `finalHoldMs` | 有限非负额外延迟，默认 1000ms；零不增加延迟，但保留零延迟的整体完成画面。静态输出至少显示 10ms。长停留按 GIF 16 位延迟拆帧，计入 1801 编码帧上限。 |
+| `theme`、`reducedMotion` | 主题依次采用显式选项、文档主题、浅色。默认完整动画，不继承系统减少动画偏好。显式 `reducedMotion: true` 立即完成过渡并隐藏传递标记，保留时间线时长。 |
+| `signal`、`onProgress` | AbortSignal 取消任务并释放任务资源。回调报告阶段、完成数及总数；取消的任务不报告完成。 |
+
+非法运行时值、空或越界区间及可计算的资源超限，会在分配画布或采样前报错。说明溢出使用 `GifExportError.code === "caption-overflow"`，不静默裁剪或缩字。GIF 调色量化和本机系统字体允许不同环境间的像素差异。
+
+## Node GIF 导出（Node 20+）
+
+Node 入口在隔离的 Chromium context 中运行同一导出器。断网前须准备 Chromium、系统库和字体。安装包和调用导出函数都不会下载浏览器。使用已有 Chromium 时，按下例设置 `executablePath`。也可显式安装匹配的浏览器：
+
+```sh
+npm install playwright-core@1.58.2
+npx --no-install playwright-core install chromium
+```
+
+在受支持的 Linux 系统中，给安装命令添加 `--with-deps` 可准备系统库。字体须单独安装。
+
+```js
+import { exportGif } from "flowsvg/node";
+import { diagramDocument } from "./diagram.js";
+import { writeFile } from "node:fs/promises";
+const bytes = await exportGif(diagramDocument, {
+  executablePath: "/path/to/installed/chromium",
+  theme: "dark", fps: 15, loopCount: 1,
+  onProgress: ({ phase, completed, total }) => console.log(phase, completed, total)
+});
+await writeFile("diagram.gif", bytes);
+```
+
+浏览器导出的全部选项、进度阶段、错误代码及 `AbortSignal` 取消契约同样适用。可以用 `browser` 传入已经启动或连接的 Playwright `Browser`，包括通过 `chromium.connectOverCDP` 获得的会话。`browser` 与 `executablePath` 二选一，同时传入会报告选项错误。函数在成功、失败和取消时关闭自己创建的 context、页面与浏览器，保留传入的浏览器及用户页面。函数返回字节，不写文件。
+
+CLI 读取 `DiagramDocument` 格式的 JSON 文件，不接受 TypeScript 源文件：
+
+```sh
+npx --no-install flowsvg diagram.json --output diagram.gif --format gif --executable-path /path/to/chromium --width 640 --fps 15 --loop-count 1
+```
+
+GIF 命令行选项对应 [GIF 选项](#gif-选项)：`--theme`、`--start-ms`、`--end-ms`、`--speed`、`--width`、`--fps`、`--no-captions`、`--caption-height`、`--loop-count`、`--final-hold-ms`、`--reduced-motion` 和 `--executable-path`。运行 `npx --no-install flowsvg --help` 查看用法。进度输出到 stderr。两种格式均默认保留已有文件，指定 `--overwrite` 才覆盖。失败、SIGINT 或 SIGTERM 取消时以非零状态退出，不发布半成品。
+
+## 离线 HTML（Node 20+）
+
+生成工具将图解数据、播放器和样式内嵌为一个 HTML 文件。接收者可断网通过 `file://` 打开。生成 HTML 不需要浏览器或额外运行依赖。
+
+```js
+import { renderHtml } from "flowsvg/node";
+import { diagramDocument } from "./diagram.js";
+import { writeFile } from "node:fs/promises";
+await writeFile("diagram.html", await renderHtml(diagramDocument, { theme: "dark" }));
+```
+
+```sh
+npx --no-install flowsvg diagram.json --output diagram.html --format html
+```
+
+`renderHtml(document, options)` 返回 `Promise<string>`。以下选项均可省略：`theme: "light" | "dark"`、`autoplay: boolean`、`controls: boolean` 和 `gifExport: boolean`。默认采用文档主题或浅色主题，暂停在零时刻，显示播放控件和说明文字。CLI 读取文档 JSON，接受 `--theme`、`--autoplay`、`--no-controls`、`--gif-export` 和 `--overwrite`。
+
+GIF 导出默认关闭，基础 HTML 不包含编码器。设置 `gifExport: true` 或传入 `--gif-export` 后，生成工具内嵌同版本 GIF 导出器和 worker。接收者可断网通过 `file://` 下载 GIF，查看进度并取消任务，无需旁置脚本、远程字体或网络；所需系统字体须已安装。导出使用完整时间线、1× 速度并包含说明文字。`controls: false` 同时隐藏播放和 GIF 控件。
+
+## 节点内容
+
+### 固定节点内的节点内容
+
+`rect`、`roundedRect`、`cylinder` 支持 `content`；椭圆和分组仅支持普通标签。`content` 与 `label` 互斥，空标签也算声明。`content.blocks` 按顺序排列 `title`、`paragraph`、`list`、`graph` 内容块。段落角色为 `body`（默认）或 `auxiliary`（辅助文字）；空数组只显示形状。
+
+```ts
+import type { DiagramNode } from "flowsvg";
+
+const service = {
+  id: "service", kind: "rect", x: 24, y: 24, width: 260, height: 312,
+  content: {
+    style: { padding: 16, blockGap: 14 },
+    blocks: [
+      { type: "title", text: "Order service" },
+      { type: "paragraph", role: "auxiliary", text: "Core responsibilities" },
+      { type: "paragraph", text: "Validate and persist incoming orders." },
+      { type: "paragraph", text: "Return the order number.", style: { color: "#2563eb", align: "right" } }
+    ]
+  }
+} satisfies DiagramNode;
+```
+
+`service` 节点在浅色主题下的渲染结果：
+
+![固定尺寸的 Order service 节点，包含标题、辅助文字、正文与蓝色右对齐段落](./docs/images/node-content.png)
+
+文字字段接受字符串或 `ContentTextSpan[]`：`{ text, style?: { fontSize, fontWeight, color } }`。片段继承内容块样式，对齐由内容块决定。换行使用宽度估算，保留显式换行和完整 Unicode 字素，优先在空格处断行，必要时拆分长单词或 URL。
+
+文字样式：有限正数 `fontSize`、100–900 整数 `fontWeight`、十六进制 `color`、`align`（`left`、`center`、`right`）。内容的 `padding`、`blockGap` 为非负有限数。默认值按图解单位计：标题 20/700、正文 14/400、辅助文字 12/400、内边距 16、块间距 14。
+
+列表接受 `marker`（默认 `none`，可选 `bullet`、`number`）、`items` 和 `style`。条目支持 `tags`、`status`、`body`、`auxiliary`、`style`、`auxiliaryStyle`、`statusStyle`。列表样式设置正文样式和非负有限数 `itemGap`（默认 12），条目样式可覆盖。辅助文字默认使用 12 单位弱化色。续行与辅助文字对齐正文。缺省部分不占空间，显式空文字保留一行。
+
+```ts
+import type { ContentBlock } from "flowsvg";
+
+const steps: ContentBlock = { type: "list", marker: "number", style: { itemGap: 16 }, items: [
+  { body: "校验请求。", auxiliary: "输入检查" },
+  { body: [{ text: "保存", style: { fontWeight: 700 } }, { text: "订单。" }] }
+] };
+```
+
+将 `steps` 放入 300 × 180 的矩形，设置 `content: { blocks: [steps] }`：
+
+![包含辅助文字和加粗保存文字的两个编号步骤](./docs/images/numbered-list.zh-CN.png)
+
+文字标签接受 `{ text, style?: { fontSize, fontWeight, color, fill, shape } }`，默认字号 11。`shape` 默认为 `rounded`；设为 `shape: "pill"` 时，圆角随标签最终高度形成胶囊。形状不改变文字排版或主题颜色。列表 `tagGap` 默认 6，须为非负有限数。状态靠右，使用 12 单位强调色；`statusStyle` 支持 `fontSize`、`fontWeight`、`color`。空间不足时，标签换行，状态移至下方。正文、辅助文字随后排列。
+
+```ts
+import type { ContentBlock } from "flowsvg";
+
+const records: ContentBlock = { type: "list", items: [{
+  tags: [{ text: "world" }, { text: "experience", style: { fill: "#eadfff", color: "#57319b" } }],
+  status: "new", body: "Alice joined Google", auxiliary: "Mar 2026"
+}] };
+```
+
+将 `records` 放入 300 × 180 的矩形，设置 `content: { blocks: [records] }`：
+
+![记录包含 world 和 experience 标签、new 状态、正文与日期](./docs/images/record-tags.png)
+
+内容保持节点原尺寸，按形状对应的安全区裁剪。溢出时报告带节点 ID、`nodes[index].content` 路径和方向的 `text-overflow`。请增大节点或精简文字；字体不会自动缩小。内容只有节点级交互，不支持内部链接、按钮、图片或 HTML。裁剪文字不扩大命中范围。
+
+`EvaluatedNode.contentLayout` 提供绝对坐标布局与溢出标志。浏览器与静态 SVG 共用该布局；内容不改变端口或路由。
+
+### 节点内的实体关系小图
+
+`graph` 内容块按作者指定的局部坐标绘制无向实体关系图：
+
+```ts
+import type { ContentGraphBlock } from "flowsvg";
+
+const entities: ContentGraphBlock = {
+  type: "graph", height: 130,
+  nodes: [
+    { id: "alice", label: "Alice", x: 120, y: 30, highlighted: true },
+    { id: "google", label: "Google", x: 50, y: 110, highlighted: true },
+    { id: "ml", label: "ML project", x: 190, y: 110 }
+  ],
+  edges: [{ from: "alice", to: "google" }, { from: "alice", to: "ml" }]
+};
+```
+
+将 `entities` 放入 280 × 180 的矩形，设置 `content: { blocks: [entities] }`：
+
+![实体关系图中 Alice 和 Google 高亮，ML project 未选中](./docs/images/entity-graph.png)
+
+`height` 预留固定正数高度。实体中心 `x`/`y` 是相对区域左上角的非负有限坐标。ID 仅在块内唯一，关系端点引用块内 ID。高亮实体使用强调色圆点与粗体；关系两端均高亮时使用强调色。溢出时报告警告，并按父节点裁剪；交互命中父节点。
+
+在节拍起点替换 `content` 可切换实体选中状态。求值后的图形几何可从 `contentLayout.graphs` 读取。
+
+### 编写完整 Facts 时间线
+
+先确定尺寸，再排列内容块。记录用无标记列表，能力清单用圆点，步骤用编号。下例可用于全部四种接入方式：
+
+```ts
+import { createDiagram, type DiagramDocument, type NodeContent } from "flowsvg";
+
+const facts: NodeContent = { blocks: [
+  { type: "title", text: "Facts" },
+  { type: "paragraph", role: "auxiliary", text: "已确认的信息记录" },
+  { type: "list", marker: "none", items: [{
+    tags: [{ text: "world" }, { text: "订单", style: { fill: "#eadfff", color: "#57319b" } }],
+    status: "new",
+    body: [{ text: "订单已保存", style: { fontWeight: 700 } }, { text: " 2026-10-17", style: { fontSize: 11 } }],
+    auxiliary: "等待支付。"
+  }] }
+] };
+const updated: NodeContent = { blocks: [
+  { type: "title", text: "Facts" },
+  { type: "list", items: [{ tags: [{ text: "verified" }], status: "done", body: "支付已确认", auxiliary: "2026-10-18" }] }
+] };
+const document: DiagramDocument = {
+  version: 1, viewport: { width: 300, height: 480 },
+  nodes: [{ id: "facts", kind: "cylinder", x: 24, y: 20, width: 240, height: 440, content: facts }], edges: [],
+  scenes: [{ id: "records", label: "记录", beats: [
+    { durationMs: 1000, actions: [] },
+    { durationMs: 1000, actions: [{ type: "updateNode", target: "facts", value: { content: updated } }] },
+    { durationMs: 1000, actions: [{ type: "updateNode", target: "facts", value: { label: "已归档" } }] },
+    { durationMs: 1000, actions: [{ type: "updateNode", target: "facts", value: { content: facts } }] },
+    { durationMs: 1000, actions: [{ type: "updateNode", target: "facts", value: { content: null } }] }
+  ] }]
+};
+const diagram = createDiagram(document);
+console.log(diagram.evaluateAt(1000).warnings);
+const svg = diagram.renderSvg(1000, { theme: "dark", reducedMotion: true });
+```
+
+左图为 0 ms 的浅色主题初始画面，右图为 1000 ms 的深色主题替换后画面：
+
+![Facts 时间线在记录替换前后的浅色与深色主题画面](./docs/images/facts-timeline.zh-CN.png)
+
+分享前检查 `frame.warnings`。优先使用默认内容颜色，保持主题与高亮下的对比度。
+
+## License
+
+[MIT](https://cdn.jsdelivr.net/npm/flowsvg/LICENSE)。可使用、修改及分发；保留许可证与版权声明。
+
+仓库维护者准备 Chromium 后可运行 `pnpm --filter flowsvg test:browser`。SDK 构建、测试与发布验收使用 SDK 自有输入，无需构建示例工程。

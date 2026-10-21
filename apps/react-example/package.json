@@ -1,0 +1,24 @@
+{
+  "name": "flowsvg-react-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter @flowsvg/showcase build && vite",
+    "build": "pnpm --filter @flowsvg/showcase build && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test:showcase": "vitest run acceptance --maxWorkers=1"
+  },
+  "dependencies": {
+    "flowsvg": "workspace:*",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "@flowsvg/showcase": "workspace:*"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.1.0",
+    "vite": "^7.1.12",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0"
+  }
+}

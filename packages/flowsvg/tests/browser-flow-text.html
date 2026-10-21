@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><title>Flow text markers</title>
+<style>body{margin:24px;font:16px sans-serif;background:#eef2f6;color:#172033}main{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1280px}.case{background:white;padding:16px;border-radius:12px}.host{height:300px}h2{font-size:16px;margin:0 0 12px}pre{white-space:pre-wrap}</style>
+</head><body><h1>Beat-local text capsules</h1><main id="cases"></main><pre id="results"></pre>
+<script type="module">
+import { createPlayer } from "../dist/browser.js";
+import { createDiagram } from "../dist/index.js";
+const model = {
+  version: 1, title: "Request and response", viewport: { width: 600, height: 320 },
+  nodes: [
+    { id: "client", kind: "roundedRect", x: 30, y: 140, width: 100, height: 70, label: "Client" },
+    { id: "service", kind: "ellipse", x: 470, y: 140, width: 100, height: 70, label: "Service" }
+  ],
+  edges: [{ id: "api", from: "client", to: "service", route: "curved", fromPort: "top", toPort: "top", label: "API relation" }],
+  scenes: [{ id: "exchange", label: "Exchange", beats: [
+    { durationMs: 1000, actions: [{ type: "flow", target: "api", direction: "forward", text: "请求 <A>&😀" }] },
+    { durationMs: 1000, actions: [{ type: "flow", target: "api", direction: "reverse", text: "Response OK" }] },
+    { durationMs: 1000, actions: [{ type: "flow", target: "api", direction: "forward" }] }
+  ] }]
+};
+const results = [];
+function assert(condition, message) { if (!condition) throw new Error(message); }
+for (const [theme, reducedMotion, time] of [["light", false, 250], ["dark", false, 1250], ["light", false, 2250], ["dark", true, 250]]) {
+  const card = document.createElement("section"); card.className = "case";
+  card.innerHTML = `<h2>${theme} · ${reducedMotion ? "reduced motion" : time < 1000 ? "请求" : time < 2000 ? "response" : "dot"}</h2><div class="host"></div>`;
+  document.querySelector("main").append(card);
+  const host = card.querySelector(".host");
+  const options = { theme, reducedMotion, controls: false };
+  const player = createPlayer(host, model, options);
+  const diagram = createDiagram(model);
+  try {
+    for (const seekTime of [0, 250, 500, 999, 1000, 1500, 1999, 2000, 2500, 3000, 1500, 500]) {
+      player.seek(seekTime);
+      const expected = document.createElement("div"); expected.innerHTML = diagram.renderSvg(seekTime, options);
+      assert(host.querySelector("svg").outerHTML === expected.firstElementChild.outerHTML, `export equality at ${seekTime}`);
+      assert(JSON.stringify(player.getState().frame) === JSON.stringify(diagram.evaluateAt(seekTime, options)), `frame equality at ${seekTime}`);
+    }
+    player.seek(time);
+    const marker = host.querySelector("[data-flow-id]");
+    assert(Boolean(marker) === !reducedMotion, "reduced motion hides only marker");
+    assert(player.getState().frame.edges[0].highlighted, "transfer highlight remains active");
+    if (marker) {
+      assert(!marker.hasAttribute("tabindex") && marker.getAttribute("pointer-events") === "none", "marker stays decorative");
+      assert(!marker.querySelector("script,textPath") && !marker.querySelector("[transform]"), "message is safe and horizontal");
+      if (time < 2000) {
+        const text = marker.querySelector("text"); const capsule = marker.querySelector("rect");
+        const textBox = text.getBBox(); const capsuleBox = capsule.getBBox();
+        assert(textBox.x >= capsuleBox.x && textBox.x + textBox.width <= capsuleBox.x + capsuleBox.width, "capsule contains text width");
+        assert(textBox.y >= capsuleBox.y && textBox.y + textBox.height <= capsuleBox.y + capsuleBox.height, "capsule contains text height");
+        assert(text.textContent === (time < 1000 ? "请求 <A>&😀" : "Response OK"), "current beat message is intact");
+        assert(host.textContent.includes("API relation"), "static relation label remains");
+      } else assert(marker.tagName.toLowerCase() === "circle", "omitted text retains a dot");
+    }
+    results.push({ theme, reducedMotion, time, passed: true });
+  } catch (error) { results.push({ theme, reducedMotion, time, passed: false, error: error.message }); }
+}
+window.browserFlowTextResults = results;
+document.querySelector("#results").textContent = JSON.stringify(results, null, 2);
+</script></body></html>

@@ -1,0 +1,221 @@
+/* CSS variables style playback and custom choices; core themes own diagram colors. */
+.flowsvg-canvas:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 3px;
+}
+
+.flowsvg-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  border-top: 1px solid var(--flowsvg-control-border, #e2e8f0);
+  color: var(--flowsvg-control-color, #172033);
+  background: var(--flowsvg-control-background, #ffffff);
+  font: 500 0.8125rem/1.4 system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.flowsvg-controls :is(button, input) {
+  box-sizing: border-box;
+  min-height: var(--flowsvg-control-height, 2.75rem);
+  max-width: 100%;
+  color: var(--flowsvg-control-color, #172033);
+  background: var(--flowsvg-control-background, #ffffff);
+  border: 1px solid var(--flowsvg-control-border, #d8dee8);
+  border-radius: 0.5rem;
+  font: inherit;
+  accent-color: var(--flowsvg-control-accent, #2563eb);
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.flowsvg-controls button {
+  padding: var(--flowsvg-control-padding, 0.5rem 0.75rem);
+  cursor: pointer;
+}
+
+.flowsvg-controls button:enabled:hover,
+.flowsvg-select-trigger:enabled:hover {
+  background: color-mix(in srgb, var(--flowsvg-control-color, #172033) 4%, var(--flowsvg-control-background, #ffffff));
+  border-color: color-mix(in srgb, var(--flowsvg-control-color, #172033) 25%, var(--flowsvg-control-border, #d8dee8));
+}
+
+.flowsvg-controls button:enabled:active,
+.flowsvg-select-trigger:enabled:active {
+  background: color-mix(in srgb, var(--flowsvg-control-color, #172033) 8%, var(--flowsvg-control-background, #ffffff));
+}
+
+.flowsvg-controls .flowsvg-play-toggle {
+  min-width: 4.5rem;
+  color: var(--flowsvg-control-accent, #2563eb);
+  background: color-mix(in srgb, var(--flowsvg-control-accent, #2563eb) 10%, var(--flowsvg-control-background, #ffffff));
+  border-color: color-mix(in srgb, var(--flowsvg-control-accent, #2563eb) 35%, var(--flowsvg-control-border, #d8dee8));
+  font-weight: 650;
+}
+
+.flowsvg-controls .flowsvg-play-toggle:enabled:hover {
+  background: color-mix(in srgb, var(--flowsvg-control-accent, #2563eb) 17%, var(--flowsvg-control-background, #ffffff));
+}
+
+.flowsvg-controls .flowsvg-play-toggle:enabled:active {
+  background: color-mix(in srgb, var(--flowsvg-control-accent, #2563eb) 23%, var(--flowsvg-control-background, #ffffff));
+}
+
+.flowsvg-controls :is(button, input):focus-visible {
+  outline: 2px solid var(--flowsvg-control-focus, #2563eb);
+  outline-offset: 2px;
+}
+
+.flowsvg-controls :disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.flowsvg-controls input[type="range"] {
+  flex: 1 1 10rem;
+  min-width: 4rem;
+  margin: 0 0.375rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.flowsvg-controls input[type="range"]:disabled {
+  cursor: not-allowed;
+}
+
+.flowsvg-export-controls {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-inline-start: auto;
+  max-width: 100%;
+}
+
+.flowsvg-export-controls progress {
+  max-width: 7rem;
+  height: 0.375rem;
+  accent-color: var(--flowsvg-control-accent, #2563eb);
+}
+
+.flowsvg-export-controls [role="status"] {
+  font-size: 0.75rem;
+}
+
+.flowsvg-export-controls [role="status"]:empty {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .flowsvg-controls { padding: 0.75rem; }
+  .flowsvg-controls input[type="range"] { flex-basis: 100%; margin: 0; }
+  .flowsvg-export-controls { margin-inline-start: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flowsvg-controls :is(button, input) { transition: none; }
+}
+
+/* Apply to a host or ancestor; sizing affects controls only, never diagram geometry. */
+.flowsvg-compact {
+  --flowsvg-control-height: 2rem;
+  --flowsvg-control-padding: 0.3125rem 0.625rem;
+}
+
+.flowsvg-select {
+  position: relative;
+  display: inline-flex;
+  max-width: 100%;
+  color: var(--flowsvg-control-color, #172033);
+  font: 500 0.8125rem/1.4 system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.flowsvg-select .flowsvg-select-trigger {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  min-height: var(--flowsvg-control-height, 2.75rem);
+  padding: var(--flowsvg-control-padding, 0.5rem 0.75rem);
+  color: inherit;
+  background: var(--flowsvg-control-background, #ffffff);
+  border: 1px solid var(--flowsvg-control-border, #d8dee8);
+  border-radius: 0.5rem;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.flowsvg-select-trigger::after {
+  content: "";
+  width: 0.375rem;
+  height: 0.375rem;
+  margin: -0.1875rem 0.125rem 0 0;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.flowsvg-select-trigger:focus-visible {
+  outline: 2px solid var(--flowsvg-control-focus, #2563eb);
+  outline-offset: 2px;
+}
+
+.flowsvg-select-trigger:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.flowsvg-select-options {
+  box-sizing: border-box;
+  position: absolute;
+  z-index: 2;
+  inset-block-start: calc(100% + 0.375rem);
+  inset-inline-end: 0;
+  width: max-content;
+  min-width: 100%;
+  max-width: min(22rem, calc(100vw - 2.5rem));
+  max-height: 14rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.25rem;
+  color: var(--flowsvg-control-color, #172033);
+  background: var(--flowsvg-control-background, #ffffff);
+  border: 1px solid var(--flowsvg-control-border, #d8dee8);
+  border-radius: 0.625rem;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--flowsvg-control-color, #172033) 14%, transparent);
+}
+
+.flowsvg-controls .flowsvg-select-options {
+  inset-block-start: auto;
+  inset-block-end: calc(100% + 0.375rem);
+}
+
+.flowsvg-select-options [role="option"] {
+  position: relative;
+  padding: 0.5rem 1.875rem 0.5rem 0.625rem;
+  border-radius: 0.375rem;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.flowsvg-select-options [role="option"]:is(:hover, [data-active]) {
+  background: color-mix(in srgb, var(--flowsvg-control-accent, #2563eb) 9%, var(--flowsvg-control-background, #ffffff));
+}
+
+.flowsvg-select-options [aria-selected="true"] {
+  color: var(--flowsvg-control-accent, #2563eb);
+  font-weight: 650;
+}
+
+.flowsvg-select-options [aria-selected="true"]::after {
+  content: "✓";
+  position: absolute;
+  inset-inline-end: 0.625rem;
+}
+
+.flowsvg-compact .flowsvg-play-toggle { min-width: 4rem; }

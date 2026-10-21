@@ -1,0 +1,33 @@
+# Dependencies and package-manager cache
+node_modules/
+.pnpm-store/
+
+# Build and test output
+dist/
+build/
+coverage/
+.nyc_output/
+.vite/
+.turbo/
+.cache/
+*.tsbuildinfo
+*.tgz
+
+# Logs and temporary files
+*.log
+tmp/
+temp/
+.playwright-mcp/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+
+# Local plans, task records and screenshots
+/.scratch/

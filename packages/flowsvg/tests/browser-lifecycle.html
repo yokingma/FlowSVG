@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Player lifecycle behavior checks</title>
+<body><pre id="results">Running…</pre><script type="module">
+import { createPlayer } from "../dist/browser.js";
+const model = {
+  version: 1, viewport: { width: 600, height: 300 },
+  nodes: [{ id: "client", kind: "rect", x: 20, y: 100, width: 100, height: 60, label: "Client" }], edges: [],
+  scenes: [{ id: "request", label: "Request", beats: [
+    { durationMs: 1000, caption: "First", actions: [] },
+    { durationMs: 1000, caption: "Second", actions: [] }
+  ] }]
+};
+const results = [];
+function assert(condition, message) { if (!condition) throw new Error(message); }
+const settle = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+async function test(name, run, options = {}) {
+  const host = document.createElement("div"); document.body.append(host);
+  const player = createPlayer(host, model, options);
+  try { await run(player, host); results.push({ name, passed: true }); }
+  catch (error) { results.push({ name, passed: false, error: error.message }); }
+  finally { player.destroy(); host.remove(); }
+}
+await test("failed reload retains the previous playing document and emits a path-rich error", (player, host) => {
+  const events = [];
+  for (const type of ["playstatechange", "timeupdate", "stepchange", "error"]) host.addEventListener(type, (event) => events.push(event));
+  player.seek(1200); player.play(); events.length = 0;
+  const before = player.getState(); const picture = host.querySelector("svg").outerHTML;
+  player.load({ ...model, viewport: { width: -1, height: 300 } });
+  assert(player.getState().playing && player.getState().timeMs === before.timeMs, "failed reload must retain playback and time");
+  assert(host.querySelector("svg").outerHTML === picture, "failed reload must retain picture");
+  assert(events.length === 1 && events[0].type === "error", "failed reload emits only an error");
+  const detail = events[0].detail;
+  assert(detail.error.name === "DiagramValidationError" && detail.error.issues.some((issue) => issue.path === "viewport.width"), "error includes failing field path");
+  assert(detail.timeMs === before.timeMs && detail.playing, "error detail describes retained state");
+});
+await test("successful reload resets to the new first frame and events match its picture", (player, host) => {
+  player.seek(1200); player.play();
+  const events = [];
+  for (const type of ["playstatechange", "stepchange", "timeupdate"]) host.addEventListener(type, (event) => events.push({ type, detail: event.detail, caption: host.querySelector(".flowsvg-caption").textContent }));
+  for (let index = 0; index < 3; index += 1) {
+    player.load({ ...model, nodes: [{ ...model.nodes[0], label: `Reload ${index}` }] });
+    assert(player.getState().timeMs === 0 && !player.getState().playing, "reload resets and pauses");
+    assert(host.querySelector("svg").textContent.includes(`Reload ${index}`), "new document renders");
+  }
+  assert(events.every(({ detail, caption }) => (detail.frame.caption ?? "") === caption), "all event details match their visible caption");
+  assert(events.at(-1).type === "timeupdate", "timeupdate follows rendering");
+});
+await test("hidden page pauses and stays paused when visible", (player) => {
+  const descriptor = Object.getOwnPropertyDescriptor(document, "visibilityState");
+  try {
+    player.play();
+    Object.defineProperty(document, "visibilityState", { configurable: true, value: "hidden" });
+    document.dispatchEvent(new Event("visibilitychange"));
+    assert(!player.getState().playing, "hidden page pauses");
+    Object.defineProperty(document, "visibilityState", { configurable: true, value: "visible" });
+    document.dispatchEvent(new Event("visibilitychange"));
+    assert(!player.getState().playing, "visible page remains paused");
+  } finally {
+    if (descriptor) Object.defineProperty(document, "visibilityState", descriptor); else delete document.visibilityState;
+  }
+});
+await test("controls can be omitted while instance methods and events remain usable", (player, host) => {
+  let updates = 0; host.addEventListener("timeupdate", () => { updates += 1; });
+  assert(host.querySelectorAll("button,input,select").length === 0, "controls are absent");
+  player.seek(1200); player.step(-1); player.setSpeed(2); player.play(); player.pause();
+  assert(player.getState().timeMs === 1000 && player.getState().speed === 2 && updates === 2, "headless controls remain operable");
+}, { controls: false });
+await test("constrained and resized containers contain the entire diagram without distortion", async (player, host) => {
+  host.style.width = "400px"; host.style.height = "400px";
+  await settle();
+  const check = () => {
+    const svg = host.querySelector("svg"); const box = svg.getBoundingClientRect(); const outer = host.getBoundingClientRect();
+    const matrix = svg.getScreenCTM();
+    assert(box.width <= outer.width + 1 && box.height <= outer.height + 1, "SVG stays within the host");
+    assert(Math.abs(matrix.a - matrix.d) < 0.001, "diagram has equal horizontal and vertical scale");
+    const point = new DOMPoint(600, 300).matrixTransform(matrix);
+    assert(point.x <= box.right + 1 && point.y <= box.bottom + 1, "entire viewBox is visible");
+    assert(box.width >= outer.width - 1, "SVG uses the available container width");
+  };
+  check(); host.style.width = "700px"; host.style.height = "160px"; await settle(); check();
+});
+await test("destroy is silent, permanent and safe during event dispatch", async (player, host) => {
+  player.play(); let events = 0;
+  for (const type of ["playstatechange", "stepchange", "timeupdate", "error"]) host.addEventListener(type, () => { events += 1; });
+  player.destroy(); const frozen = JSON.stringify(player.getState());
+  player.destroy(); player.play(); player.pause(); player.seek(800); player.step(1); player.setSpeed(3); player.load(model);
+  document.dispatchEvent(new Event("visibilitychange")); await settle();
+  assert(events === 0, "destroy and subsequent work emit no events");
+  assert(JSON.stringify(player.getState()) === frozen && !player.getState().playing, "destroyed state remains frozen and paused");
+  assert(host.children.length === 0, "destroy removes all owned DOM");
+  const another = createPlayer(host, model); const lateEvents = [];
+  host.addEventListener("stepchange", () => another.destroy(), { once: true });
+  host.addEventListener("timeupdate", () => lateEvents.push("timeupdate"));
+  another.seek(1200);
+  assert(lateEvents.length === 0 && host.children.length === 0, "reentrant destroy prevents subsequent events and rendering");
+});
+await test("repeated creation and destruction leaves no active player behavior", async (_, host) => {
+  for (let index = 0; index < 5; index += 1) {
+    const next = createPlayer(host, model); next.play(); next.destroy();
+    let events = 0; host.addEventListener("timeupdate", () => { events += 1; }, { once: true });
+    await settle(); assert(events === 0 && host.children.length === 0, "destroyed player cannot update a reused host");
+  }
+});
+window.browserTestResults = results;
+document.querySelector("#results").textContent = JSON.stringify(results, null, 2);
+</script></body></html>

@@ -1,0 +1,144 @@
+# Patterns
+
+- Try centered orthogonal bridges and single outside channels before grid search. Validate candidates against expanded obstacles and endpoint reservations. Include separate ancestor bounds for outside clearance; exclude shared ancestors and keep group interiors traversable.
+
+- Share target position allocation between curved and orthogonal routes. Apply the allocated position before constructing curve controls so cardinal arrival tangents remain exact; keep hidden inputs in each side group.
+
+- Allocate curved and orthogonal target slots from all declared incoming edges on each resolved side, independently of timeline visibility. Order slots by source position, with document order breaking ties. Keep slots in the side's central portion and follow ellipse/cylinder contours. For orthogonal routes, share the SVG marker footprint with routing and extend the endpoint obstacle through the reserved straight arrow approach so grid search cannot fold back into it. Pass evaluated stroke width to geometry. Cap reserved segments by available space in front of each port; narrow endpoint gaps must not cause backtracking through a node.
+
+- Keep tag shape in the shared content model. Resolve pill corners from final tag height during SVG serialization, after wrapping and baseline alignment. Shape must not change text layout, colors or hit targets; omitted shape keeps rounded corners.
+
+- Reuse `SelectControl` for select-only choices. The caller owns the committed value; keyboard navigation only previews until Enter/Space commits. Keep listbox selection separate from active focus, close on blur/outside press/disable, and destroy menus before removing their host. Render options as text and preserve hidden menus.
+
+- Keep control presentation in `styles.css`; use `flowsvg-play-toggle` as the Play/Pause styling hook instead of matching translated labels or DOM position. Preserve CSS variable customization, 44-pixel default targets, opt-in `flowsvg-compact` sizing, visible keyboard focus, native range semantics and hidden export states. Put progress on its own row at narrow widths and disable decorative transitions for reduced-motion users.
+
+- SDK runtime, build, tests, browser acceptance and package artifacts must own their inputs. Keep test fixtures inside the SDK and exclude them from runtime compilation. Preserve generic assertions while moving authored story wording and narrative structure to example-owned acceptance. Release verification must not build apps or private showcase packages. The browser regression runner serves only the SDK directory so external author imports fail visibly.
+
+- Observe GIF worker errors immediately after construction and retain the failure for the entire task. Race image decoding and worker replies with that failure as well as caller cancellation; remove all listeners and release task resources on every exit path. Request-scoped error listeners alone can miss startup errors during rasterization.
+
+- Keep release acceptance at the installed artifact boundary: copy the portable consumer verifier beside the real tarball install, then copy complete built tools/runtime dependencies away from package source. Use prepared executable paths, offline browser contexts and independent GIF decoding; never satisfy release checks by inspecting source or downloading browsers during tests. Explicitly select Node/React type libraries in strict consumer compilation.
+
+- Assemble optional GIF HTML in the Node HTML renderer by reading the same build’s `portable/export.js` before `portable/player.js`. Snapshot and validate the boolean `gifExport` option before asynchronous reads. Forward it through the inert bootstrap payload; reuse the existing player controls and exporter without importing automation or embedding a second encoder. Default HTML reads no GIF asset.
+
+- Node GIF export dynamically imports the pinned `playwright-core` runtime dependency only when launching Chromium. Reuse the pure browser planner before launch, then run the versioned `portable/export.js` inside a task-owned offline context/page. Snapshot documents/options synchronously. Close the context on abort, share its closing promise, close owned browsers including late launch results, and always remove temporary files. Never close a caller-owned browser. Route CLI HTML/GIF through one atomic publisher; exclusive links preserve existing files, and only explicit overwrite uses rename.
+
+- Keep optional GIF UI in `browser/export-controls.ts`. Reserve one task slot and capture the validated document and resolved theme before the first asynchronous boundary. Race module loading with abort, guard callbacks/downloads by task identity, and abort on player destruction. Document loads retain the old task; adapter option changes replace and destroy the old player. Reuse core JSON serialization for source snapshots so Vue reactive documents work without importing Vue into the browser player.
+- Keep the browser export import dynamic in emitted ESM. The portable IIFE build replaces only the export-controls import with an internal bridge to `FlowSVGExport`; basic HTML does not include exporter/worker code. GIF-enabled HTML must explicitly embed the separate same-version exporter asset. Keep this assembly detail out of public player options.
+
+- Validate supplied GIF option types before applying defaults or checking cancellation. Keep dimensions, sample counts and 16-bit hold-delay split counts in the pure planner so browser and Node reject limits before allocating rendering resources. Evaluate range samples on the full original timeline, clamp ordinary samples below the exclusive endpoint, and use the immediate IEEE-754 predecessor for an intermediate end-left hold. Preserve global completion with zero additional delay. Allocate delays from rounded cumulative centiseconds and bound final encoded frames, including hold splits, at 1801.
+- Preflight GIF captions by walking every overlapping source beat interval with inherited caption state, including intervals missed by sampling. Load the effective caption glyphs before measuring with the same font, wrapping, line height and padding used to paint. Preserve explicit blank lines and empty-string captions. Reject horizontal or vertical overflow with scene/beat context instead of clipping or reducing the font.
+
+- Keep browser GIF export under `src/export/`, with the public `src/export.ts` entry and a separate `portable/export.js` IIFE. Core, ordinary browser playback and base offline HTML must not eagerly load the exporter or encoder. Bundle `gifenc` only into an inline Blob worker; transfer one RGBA frame and await acknowledgement before sampling another. Keep timing/dimension planning pure, share core SVG evaluation and font/palette values, snapshot input before awaiting, and release canvas, images, object URLs, listeners and workers in every exit path. Race pending browser font/image work with AbortSignal so cancellation does not wait for those services.
+- Run SDK test files sequentially because offline integration files rebuild the shared `dist` directory. Use the independently maintained `gifuct-js` decoder for actual GIF pixels and raw GCE fields for delay assertions; its decompressed delay normalizes zero values and must not be used to verify metadata.
+
+- Keep default diagram colors and line metrics in the core theme. Use separate highlight fill, border/marker and marker-text colors so active nodes retain readable text in both themes. Browser hover consumes the same theme values; preserve border-only hover by default. Node labels have no halo; edge labels retain background isolation where paths cross text.
+
+- Keep README previews in `docs/images/` inside the SDK package. Package only PNG assets and enumerate the expected images in the release verifier; require each image and reject undeclared files. Use relative image paths in source READMEs for local previews. The release verifier unpacks the built package into a temporary directory and converts only its README copies to npm CDN URLs with the package version. Repack without lifecycle scripts, require the packed file set to remain unchanged, then verify and retain that final tarball. Source READMEs must remain unchanged by release verification.
+
+- Keep shared document/frame types in `src/core/model.ts`, document validation and its single error class in `validation.ts`, and compilation, cloning/freezing, evaluation, SVG and hit-test orchestration in `diagram.ts`. Node-content types and nested validation remain in `node-content.ts`. Import runtime owners directly; use type imports for shared model dependencies.
+- Enumerate public values and types in the root entry, including `wrapText`, `Diagram` and all node-content types. Keep core contract tests in `src/core/` and consume public entries. Separate core, browser, React, Vue and Node TypeScript builds preserve the internal directory hierarchy under `dist`; check worker types separately before bundling its source. Enumerate each emitted module in the release allowlist instead of accepting arbitrary files below `dist`.
+- Keep the browser player implementation under `src/browser/player.ts`, with controls, accessibility, lifecycle, and SVG DOM synchronization beside it. Keep `src/browser.ts` as the explicit public entry; browser tests use that entry while core remains DOM-free.
+- Keep React, Vue, and Web Component implementations under `src/adapters/`; root adapter files are explicit public entries that export the single implementation and preserve runtime identity. Adapter tests live beside their implementations and cross-host business scenarios live under `tests/integration/`; imports use public entries.
+- Keep color interpolation in the pure `src/core/color.ts` module. Timeline and diagram painting import it directly so generic color rules do not depend on timeline semantics. Content highlight paint retains theme-specific semantic colors and adjusts default ink only when the evaluated fill requires more contrast.
+- Keep route construction, path measurements, label anchors, and path hit testing in `src/core/edge-geometry.ts`; share integer and three-decimal formatting through `src/core/svg-number.ts`. Diagram orchestration consumes these internal results without exposing geometry.
+
+- Run release gates sequentially through the root release CLI. Default to a preview without authentication; check authentication before the gates only for explicit publication. Copy the verified tarball after all consumer checks pass, then preview and publish that file without repacking. Stop on any command failure and keep npm stdio attached for authentication prompts.
+
+- Build Vue declarations against the pinned minimum supported version, 3.5.0; newer Vue patch releases can add inferred `DefineComponent` type parameters that older consumers cannot read. Verify both minimum and current framework versions in the packed-package consumer.
+
+- Build through `prepack` so `npm pack` and directory publishing cannot use missing or stale artifacts. Keep publish-only type/test checks separate from packaging to avoid recursive release verification. Verify the packed exports and strict consumer types before publishing.
+
+- Use FlowSVG as the display name. Publish the SDK as `flowsvg` from `packages/flowsvg`. Use the `Flow` prefix for player exports, `<flowsvg-player>` for the default custom element, and `flowsvg-` / `--flowsvg-` for CSS classes and control variables. Keep package imports, declarations, examples and release verification aligned with these names.
+
+- Apply hover to stroke only by default for every node and group. Preserve core fill and content paint, including active flow or explicit highlights. With `hoverFill: true`, paint fill and readable content as well. Forward the same option through every adapter and restore the current core SVG when the pointer leaves.
+
+- Serialize cylinders as one keyed interaction group containing a filled body and a filled top ellipse. Keep the cap separate from the body path so SVG fill rules cannot create an interior hole, while shared group paint keeps hover and timeline updates consistent.
+
+- Use evaluated group rectangles as ordinary edge endpoints. Keep group frames out of global routing obstacles; apply endpoint/ancestor masking and beat-local flow highlights to the group itself.
+- Keep entity graph IDs local to a content block. Derive absolute primitives and text from authored local coordinates, serialize inside the parent clip, and retain the parent node as the sole interaction identity.
+- Preserve local graph selection in evaluated primitives. Parent timeline/hover paint must keep selected and ordinary entities distinguishable, and graph overflow must not change the following block's authored position.
+
+- Verify combinations through one authored content story and public host handles. Compare core frames/SVG across theme and motion options; assert record replacement/mode semantics independently. Packed release smoke must inspect Vue mounting and content updates, not only mount/unmount.
+
+- Apply one content-paint function after core layout for timeline highlights and again to current DOM children for browser hover. Preserve explicit color/fill provenance and reuse current geometry. During fill transitions, check default ink against the evaluated node or tag fill and select contrasting ink when interpolated colors lose readability. Restore the current core SVG before hover paint; never restore saved markup or mutate core frames. Content children remain decorative within one node target.
+
+- Lay out tags in authored rows before status and body. Share a metadata baseline only when natural widths fit, preserve grapheme wrapping inside padded tag boxes, and expose background geometry and explicit-fill provenance alongside text spans. Serialize decorative backgrounds inside the same clip without extra node identities.
+
+- Lay out list entries through the shared deterministic text-part function. Reserve one list-wide marker column and align each marker with the first present text baseline; preserve source item indices and omit height/gaps for absent entries. Aggregate text-part width overflow before checking the outer clip, so alignment cannot conceal an insufficient body column. Include indentation when checking width overflow, and inherit only controlled text fields without allowing undefined item overrides to discard list defaults.
+
+- Store node content in inherited timeline snapshots. Clear the other display mode when applying label/content updates, including `content: null`. Use target text values even at zero transition progress; geometry and paint continue interpolating. Reserve one shared beat assignment key for both node text modes, and validate content with the same nested schema used by initial nodes.
+
+- Segment combined content with `Intl.Segmenter` before applying source styles, so inline boundaries cannot split graphemes or create extra wrapping opportunities. Use the cluster start style for cross-span clusters. Resolve each line's maximum font, shared baseline and left-positioned spans once in the core; preserve author-color provenance and serialize escaped tspans from those results.
+
+- Compute content safe areas from current absolute node geometry. Reserve rounded-corner or cylinder-cap clearance before authored padding, clamp empty dimensions to zero, and use the same area for public layout and SVG clipping. Share the supported-shape predicate between initial content and timeline content validation; keep content separate from node-parent, port, route, focus, and transfer geometry.
+
+- Keep structured node content in a deterministic module that accepts current absolute geometry and a resolved theme. Return the complete layout plus a nonnegative safe area, then consume those same lines and clip geometry in SVG. Keep content child groups keyed separately from the node shape; only the shape uses its node `data-id`. Validate controlled nested fields before cloning, and preserve simple-label overflow behavior.
+
+- Preserve collinear extrema when compacting path points: a reversal contributes distance and bounds even when all samples lie on one axis. For all orthogonal ports, reserve outward endpoint segments before grid search and include inflated endpoint bodies among middle-route obstacles. Reduce reserved segments in narrow gaps so stubs do not enter the opposite node.
+
+- Keep hover in the browser paint layer: restore the current core SVG before applying a hovered node's shared-theme highlight colors. Re-hit the saved screen position through the updated camera after each frame. Include nonempty node label bounds using the capsule's shared width estimate for wide characters. Clear interaction causes on pointer cancellation, successful load, and destroy. Never write hover into the core frame or timeline; removing hover must expose the current explicit/flow highlight or ordinary style.
+- Render transfer text from the evaluated beat-local `flow.text`, without changing the edge label. Estimate capsule width by Unicode code points with full-em space for wide characters, retain horizontal text, escape plain SVG content, and disable marker pointer handling. Verify current browser messages and static SVG equality with `tests/browser-flow-text.html`.
+
+- Treat each beat’s transfers as a synchronized group: derive all marker positions from the same linear progress and union endpoint highlight reasons. Reject a second flow for the same edge regardless of direction or other field errors; keep flow assignments separate from visibility, explicit highlights, and base updates.
+
+- Compile `flow` actions as beat-local state: use the full beat progress for distance-based marker sampling, keep static edge arrows unchanged for reverse transfers, and derive temporary edge/endpoint highlights during frame evaluation so they expire without overwriting explicit highlights or ordinary style updates.
+- Generate curved routes from cardinal port normals and use the same sampled geometry for path consumers. Keep endpoint control points on the outward side of each port so the path enters the target along the inverse normal; separate reverse relationships with a deterministic perpendicular lane.
+
+- Keep the native business example in a fixed view: use the same document across public integration checks, synchronize three request paths then two processing paths, and return messages through reverse flows and a separate response relationship. Compare public frame/SVG output at beat boundaries rather than adding adapter clocks or test-only APIs.
+- Place labels on the longest segment of a routed edge and give them a background halo; remove only collision-free micro-turns so arrow paths remain orthogonal and readable.
+
+- Draw the SVG background at the evaluated camera's x/y/width/height; percentage dimensions at the document origin do not cover an offset viewBox.
+- Hit-test ordinary nodes, edges, then group backgrounds, reversing document order within each layer to match SVG paint priority.
+- Project straight edge endpoints onto ellipse contours with normalized ellipse coordinates; preserve cardinal attachment sides for orthogonal routes.
+- Estimate and slice wrapped text by Unicode code point, so narrow labels cannot split surrogate pairs before SVG export.
+- Apply current playback props to every newly created framework player; an effect keyed only by speed cannot initialize replacements when speed is unchanged.
+- Vue's emitted `error` event already calls `onError`; do not call the same prop manually after emitting it.
+- A player owns at most one pending RAF: clear the consumed handle on tick entry and reuse guarded scheduling after events, because listeners can pause and restart synchronously.
+- Web Component option rebuilds restore the prior time/playback state before starting playback; autoplay governs fresh mounts, not rebuilds of a user-paused instance.
+- Name SVG images directly with escaped `aria-label` and retain a readable `<title>`; document-wide ID references must not couple independent deterministic exports.
+- Release smoke tests await React `act` to flush mounting and cleanup, assert SVG and ref state, exercise playback/reload, then verify unmount cleanup; scheduling a render alone proves no client behavior.
+
+- 源码注释遵循 [注释维护规范](https://github.com/yokingma/FlowSVG/blob/HEAD/docs/agents/code-comments.md)：公开 API 说明行为契约，内部实现说明原因与约束，重要模块说明职责；修改实现时同步核对相邻说明。
+
+- Keep release verification outside the published files: build once, pack the exact tarball, install it in a temporary project with each optional framework peer, import every public entry in Node, create a real `<flowsvg-player>` element to exercise object-document assignment, play/load/state, removal and cleanup, and mount/unmount the native, React and Vue adapters in a DOM smoke test. Keep the package ESM-only and declare CSS as a side effect so bundlers retain control styles.
+
+- Derive focus camera bounds from evaluated geometry and interpolate camera state with the same transition progress as visual values; serialize that camera into the SVG viewBox so static export and browser frames stay equal. Map browser pointer coordinates through the live SVG viewBox before calling the core hit-test seam, and ignore objects whose effective opacity is zero.
+- Keep Web Component registration explicit and idempotent; never touch `customElements` or instantiate a browser player during module evaluation. Convert object/JSON attributes at the element boundary, validate before replacing the current document, and guard URL responses with an abort controller plus request token so stale loads cannot win. Forward player events with bubbling/composed details and destroy the wrapped player on disconnect.
+
+- Keep the React entry as a lifecycle adapter around `createPlayer`: instantiate only from an effect, remove event listeners before destroying a replaced player, and expose the browser player's methods through `useImperativeHandle`. Importing the entry must remain DOM-free for SSR; `initialTimeMs` applies once per mounted component.
+- Keep the Vue entry as a `defineComponent` lifecycle adapter around `createPlayer`: instantiate only from `onMounted`, detach events before `onBeforeUnmount`, and expose the browser player methods with setup `expose`. Importing the entry must remain DOM-free for SSR; `initialTimeMs` applies once per mounted component and option changes recreate the browser player.
+
+- Pass serializable theme and reduced-motion values from the browser to the core; explicit options override document theme and browser motion preferences. With no theme, use light without reading the system color scheme.
+- Resolve all diagram paint and typography in the core SVG; CSS variables customize controls only. Give each SVG its own accessible name without cross-player title ID references.
+- Scope Space/Arrow shortcuts to the focusable canvas and preserve editable/native control keys, key modifiers and repeated key behavior. Own keyboard/media-query listeners and detach them on destroy.
+- Verify automatic reduced motion with real browser media emulation at a fixed transition midpoint; compare player SVG with the core export using the same options. Accessibility checks live in `tests/browser-accessibility.html`.
+
+- Compile ordinary visual values independently of visibility/highlight layers; interpolate base colors first and apply the highlight color afterward, regardless of action order within a beat.
+- Keep theme defaults unresolved until evaluation so interpolated source colors follow the caller's theme. Labels change at beat start; numeric endpoints return exact values and weighted interpolation avoids overflowing a finite endpoint difference.
+- Resolve parent-relative positions and text dimensions from current visual values on each frame before routing against effective visible obstacles; reveal begins blocking at zero opacity and hide stops blocking only when its transition finishes.
+- Validate dynamic browser/core/export equality with `tests/browser-visual-updates.html` at transition starts, middles and ends for both themes and reduced motion settings.
+
+- Validate and compile replacement documents before pausing or replacing a valid player; a failed load reports the retained state with validation field paths.
+- Mark players destroyed before cancelling scheduled work and detaching document listeners; guard event dispatch and rescheduling against destruction during event handlers.
+- Use native flex layout and SVG aspect-preserving scaling for responsive containment, so container changes need no ResizeObserver or resize listener. Restore host styles when tearing down.
+- Run lifecycle checks from `tests/browser-lifecycle.html` in Chromium after building; observe public state, events, rendered geometry and post-destroy behavior.
+
+- Derive controls, captions and typed `stepchange`/`timeupdate`/`playstatechange` events from one evaluated player state; error details include that same state and a typed error.
+- Step to the closest beat start strictly before/after the current time and pause; previous from inside a beat returns to that beat start, while previous at its exact start selects the preceding beat.
+- Apply the core SVG serialization to retained DOM elements keyed by object ID; preserve live object interactions while synchronizing attributes, labels and paint order.
+- Browser behavior checks live in `tests/browser-controls.html`; build first, serve the repository root and inspect `window.browserTestResults` in a real browser.
+
+- Compile beat offsets and before/after visibility and highlight layers once; evaluate the active beat with a binary time lookup and fixed cubic transitions.
+- Keep edge visibility independent from endpoint masking; effective opacity is the minimum of the object, ancestor groups, and endpoints, never multiplied.
+- Derive browser SVG and captions from the same compiled core timeline used by static export.
+
+- Keep document compilation and SVG serialization platform independent. The core package does not read browser globals, use a clock, or make network requests.
+- Compile by cloning and freezing serializable input so later caller mutations cannot change a `Diagram` result.
+- Test the public seams (`createDiagram`, `Diagram.evaluateAt`, `renderSvg`, and browser entry imports) rather than private rendering helpers.
+- Resolve child geometry and inherited visibility during frame construction; SVG serialization consumes the same evaluated lines and geometry as browser output.
+- Keep text wrapping deterministic with fixed typography metrics and retain all lines, reporting overflow through `LayoutWarning` entries with object identifiers.
+- Validate every document field and reference before compilation; reject unsafe colors and duplicate timeline assignments with field paths.
+- Route orthogonal edges against evaluated absolute geometry and inherited visibility; exclude group frames from obstacles and serialize direction markers with the same paths.
+- Build each evaluated edge once as internal path geometry with its serialized path, points, length, bounds, and distance-based sampling; use that geometry for labels, focus bounds, hit testing, and active flow sampling so consumers cannot drift apart.
+
+- Build portable browser assets with an explicit esbuild entry and a same-version manifest. Node HTML assembly reads only built assets and core modules; browser automation and GIF dependencies stay outside this path. Snapshot and validate document/options before asynchronous reads, embed JSON as inert escaped data, and escape page titles separately. CLI writes a sibling temporary file, then links without replacement or renames only when overwrite is explicit. Always remove temporary files on publication failure.

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FlowSVG · Native showcase</title>
+    <script type="module" src="/src/main.ts"></script>
+  </head>
+  <body>
+    <main class="showcase flowsvg-compact">
+      <header class="showcase-header">
+        <p class="eyebrow">FlowSVG / Native browser</p>
+        <h1>Diagram showcase</h1>
+        <p>Explore a diagram, read its purpose, and take the source with you.</p>
+      </header>
+      <div class="showcase-layout">
+        <aside><h2 class="navigation-title">Examples</h2><nav aria-label="Examples"></nav></aside>
+        <section class="current-example" aria-label="Current example">
+          <div id="introduction"></div>
+          <p id="parameter-diagnostics" role="status" aria-label="Parameter diagnostics" hidden></p>
+          <p id="error" role="alert" hidden></p>
+          <fieldset id="visual-settings" hidden>
+            <legend>Presentation</legend>
+            <span id="theme-label">Theme</span><div id="theme"></div>
+            <label><input id="reduced-motion" type="checkbox"> Reduce motion</label>
+          </fieldset>
+          <div id="player" class="flowsvg"></div>
+          <div id="download"></div>
+          <div id="sharing" hidden>
+            <button id="share" type="button">Share current view</button>
+            <p id="share-result" role="status" aria-label="Sharing" hidden></p>
+            <label id="manual-share" hidden>Share URL <input id="share-url" readonly></label>
+          </div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

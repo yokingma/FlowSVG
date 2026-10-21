@@ -1,0 +1,120 @@
+{
+  "name": "flowsvg",
+  "version": "0.1.1",
+  "description": "Declarative SVG player for logic and architecture diagrams, with scenes, beats, static export and browser framework adapters.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yokingma/FlowSVG.git",
+    "directory": "packages/flowsvg"
+  },
+  "homepage": "https://github.com/yokingma/FlowSVG#readme",
+  "bugs": {
+    "url": "https://github.com/yokingma/FlowSVG/issues"
+  },
+  "keywords": [
+    "svg",
+    "diagram",
+    "architecture",
+    "animation",
+    "timeline",
+    "web-component",
+    "react",
+    "vue"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./styles.css": "./dist/styles.css",
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "import": "./dist/browser.js"
+    },
+    "./web-component": {
+      "types": "./dist/web-component.d.ts",
+      "import": "./dist/web-component.js"
+    },
+    "./element": {
+      "types": "./dist/web-component.d.ts",
+      "import": "./dist/web-component.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js"
+    },
+    "./vue": {
+      "types": "./dist/vue.d.ts",
+      "import": "./dist/vue.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "import": "./dist/node.js"
+    },
+    "./export": {
+      "types": "./dist/export.d.ts",
+      "import": "./dist/export.js"
+    }
+  },
+  "files": [
+    "dist",
+    "docs/images/*.png",
+    "README.md",
+    "README.zh-CN.md",
+    "CHANGELOG.md",
+    "PATTERNS.md",
+    "LICENSE"
+  ],
+  "sideEffects": [
+    "./dist/styles.css"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.core.json && tsc -p tsconfig.browser.json && tsc -p tsconfig.react.json && tsc -p tsconfig.vue.json && cp src/styles.css dist/styles.css && tsc -p tsconfig.node.json && tsc -p tsconfig.worker.json && node scripts/build-portable.mjs",
+    "typecheck": "tsc -p tsconfig.core.json --noEmit && tsc -p tsconfig.browser.json --noEmit && tsc -p tsconfig.react.json --noEmit && tsc -p tsconfig.vue.json --noEmit && tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.worker.json",
+    "test": "vitest run",
+    "prepack": "pnpm --silent build",
+    "prepublishOnly": "pnpm typecheck && pnpm test",
+    "release:verify": "node ../../scripts/verify-release.mjs",
+    "test:browser": "vitest run tests/sdk-browser.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "esbuild": "0.25.12",
+    "gifuct-js": "2.1.2",
+    "jsdom": "^26.1.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "vue": "3.5.0"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "vue": ">=3.5.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
+  },
+  "bin": {
+    "flowsvg": "./dist/node/cli.js"
+  },
+  "dependencies": {
+    "gifenc": "1.0.3",
+    "playwright-core": "1.58.2"
+  }
+}

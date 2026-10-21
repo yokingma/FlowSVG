@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Node hover acceptance</title>
+<link rel="stylesheet" href="../dist/styles.css">
+<style>
+  body { margin: 24px; font: 16px sans-serif; }
+  #host { width: 800px; height: 400px; border: 1px solid #cbd5e1; }
+  button { margin: 12px 8px 0 0; }
+</style>
+<h1>Node hover acceptance</h1>
+<div id="host"></div>
+<p>Move over the source shape or its overflowing label. Hover only changes the source.</p>
+<button id="idle">Idle</button><button id="flow">Flow midpoint</button><button id="after">After flow</button>
+<button id="play">Play</button><button id="pause">Pause</button><button id="hide">Hide source</button>
+<button id="reload">Reload</button><button id="destroy">Destroy</button>
+<output id="hover"></output>
+<script type="module">
+import { createPlayer } from "../dist/browser.js";
+import { createDiagram } from "../dist/index.js";
+
+const document = {
+  version: 1, title: "Hover and flow causes", viewport: { width: 400, height: 200 },
+  nodes: [
+    { id: "source", kind: "ellipse", x: 40, y: 70, width: 100, height: 28, label: "Source\nMessage\nSender" },
+    { id: "target", kind: "roundedRect", x: 270, y: 60, width: 110, height: 70, label: "Service" }
+  ],
+  edges: [{ id: "request", from: "source", to: "target", route: "curved", label: "Request" }],
+  scenes: [{ id: "hover", label: "Hover", beats: [
+    { durationMs: 1000, transitionMs: 0, actions: [] },
+    { durationMs: 1000, transitionMs: 0, actions: [{ type: "flow", target: "request", direction: "forward" }] },
+    { durationMs: 1000, transitionMs: 0, actions: [{ type: "updateNode", target: "source", value: { fill: "#123456" } }] },
+    { durationMs: 1000, transitionMs: 0, actions: [{ type: "hide", target: "source" }] }
+  ] }]
+};
+const host = window.document.querySelector("#host");
+const player = createPlayer(host, document, { controls: false, reducedMotion: false });
+host.addEventListener("hover", (event) => {
+  window.document.querySelector("#hover").textContent = event.detail?.id ?? "No hit";
+});
+for (const [id, time] of [["idle", 500], ["flow", 1500], ["after", 2500], ["hide", 3500]]) {
+  window.document.querySelector(`#${id}`).onclick = () => player.seek(time);
+}
+window.document.querySelector("#play").onclick = () => player.play();
+window.document.querySelector("#pause").onclick = () => player.pause();
+window.document.querySelector("#reload").onclick = () => player.load(document);
+window.document.querySelector("#destroy").onclick = () => player.destroy();
+window.hoverFixture = { player, document, diagram: createDiagram(document), host };
+</script>
+</html>

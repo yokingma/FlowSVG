@@ -1,0 +1,57 @@
+:root { font-family: Inter, "Segoe UI", system-ui, sans-serif; color: #23303b; background: #f7f7f2; font-synthesis: none; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+.showcase { max-width: 1400px; margin: 0 auto; padding: 56px 40px; }
+.showcase-header { border-bottom: 1px solid #d5d9d3; padding-bottom: 28px; margin-bottom: 36px; }
+.eyebrow { color: #526257; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
+h1 { font-size: clamp(32px, 4vw, 52px); font-weight: 500; letter-spacing: -.04em; margin: 14px 0; }
+p { line-height: 1.6; }
+.showcase-header > p:last-child, #introduction p { color: #617067; }
+.showcase-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 48px; }
+.navigation-title { font-size: 12px; font-weight: 600; color: #617067; text-transform: uppercase; letter-spacing: .08em; margin: 6px 0 18px; }
+nav { display: grid; gap: 24px; }
+.example-group { display: grid; align-content: start; min-width: 0; gap: 6px; }
+.category-title { margin: 0 0 4px; padding: 0 12px; font-size: 12px; font-weight: 600; color: #617067; letter-spacing: .04em; }
+nav button { border-radius: 8px; transition: background-color 160ms ease, border-color 160ms ease; text-align: left; border: 1px solid transparent; padding: 12px; background: transparent; font: inherit; color: inherit; cursor: pointer; }
+nav button:hover { background: #e9ede5; }
+nav button[aria-current="true"] { border-color: #c4cec0; background: #e9ede5; }
+.current-example { min-width: 0; }
+#introduction h2 { font-size: 26px; font-weight: 500; margin: 0; }
+#introduction p { margin: 10px 0 24px; }
+#player:empty { display: none; }
+#player { background: white; border: 1px solid #d5d9d3; border-radius: 12px; }
+#player .flowsvg-canvas > svg { border-radius: 12px 12px 0 0; }
+#player .flowsvg-caption { padding: 16px 18px; margin: 0; font-size: 14px; color: #526257; }
+#player .flowsvg-controls { flex-wrap: wrap; border-radius: 0 0 12px 12px; }
+#download { display: inline-block; margin: 20px 8px 0 0; vertical-align: top; }
+a { color: #315b43; text-underline-offset: 4px; }
+#error { color: #9c3434; border-left: 3px solid currentColor; padding-left: 12px; }
+button:focus-visible, a:focus-visible { outline: 2px solid #315b43; outline-offset: 3px; }
+@media (max-width: 760px) { .showcase { padding: 30px 20px; } .showcase-layout { grid-template-columns: 1fr; gap: 28px; } nav { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 20px 16px; } }
+
+#visual-settings { border: 0; padding: 0; margin: 0 0 20px; }
+#visual-settings legend { font-size: 12px; color: #617067; margin-bottom: 10px; }
+#visual-settings:not([hidden]) { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+#visual-settings label, #theme-label { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: #526257; }
+#visual-settings label:has(input) { margin-left: 8px; }
+#visual-settings input { width: 16px; height: 16px; margin: 0; accent-color: #315b43; }
+#visual-settings input:focus-visible, #share-url:focus-visible { outline: 2px solid #315b43; outline-offset: 3px; }
+
+#sharing { margin-top: 20px; max-width: 100%; vertical-align: top; }
+#sharing:not([hidden]) { display: inline-block; }
+#share, #download a { display: inline-flex; align-items: center; justify-content: center; min-height: 32px; padding: 6px 11px; border: 1px solid #cbd5c7; border-radius: 8px; background: #f0f3ec; color: #315b43; font: 500 13px/1.4 system-ui, sans-serif; text-decoration: none; cursor: pointer; transition: background-color 160ms ease, border-color 160ms ease; }
+#download a { background: #fff; border-color: #d5d9d3; }
+#share:hover, #download a:hover { background: #e5ecdf; border-color: #b4c2ad; }
+#share:active, #download a:active { background: #dbe5d4; }
+#manual-share { display: block; margin-top: 12px; }
+#manual-share[hidden] { display: none; }
+#share-url { display: block; width: 100%; margin-top: 6px; padding: 10px; border: 1px solid #c4cec0; border-radius: 8px; font: inherit; }
+#parameter-diagnostics { color: #855516; border-left: 3px solid currentColor; padding-left: 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  nav button, #share, #download a { transition: none; }
+}
+
+.showcase { --flowsvg-control-accent: #315b43; --flowsvg-control-focus: #315b43; }
+#theme .flowsvg-select { min-width: 6rem; }
+#player .flowsvg-controls { padding: 0.625rem 0.75rem; }

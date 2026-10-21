@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Player accessibility behavior checks</title>
+<link rel="stylesheet" href="../dist/styles.css">
+<body><pre id="results">Running…</pre><div id="preview"></div><script type="module">
+import { createPlayer } from "../dist/browser.js";
+import { createDiagram } from "../dist/index.js";
+const model = {
+  version: 1, title: "Accessible request flow", viewport: { width: 600, height: 260 },
+  nodes: [
+    { id: "client", kind: "rect", x: 20, y: 100, width: 100, height: 60, label: "Client" },
+    { id: "service", kind: "rect", x: 300, y: 100, width: 100, height: 60, label: "Service", visible: false }
+  ], edges: [{ id: "request", from: "client", to: "service", label: "Request" }],
+  scenes: [{ id: "request", label: "Request", beats: [
+    { durationMs: 1000, transitionMs: 400, caption: "Service appears", actions: [{ type: "show", target: "service" }] },
+    { durationMs: 1000, caption: "Client sends", actions: [{ type: "highlight", target: "client" }] }
+  ] }]
+};
+const results = [];
+function assert(condition, message) { if (!condition) throw new Error(message); }
+function key(target, key, extra = {}) {
+  return target.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true, ...extra }));
+}
+function test(name, run) {
+  const host = document.createElement("div"); document.body.append(host);
+  const player = createPlayer(host, model, { reducedMotion: false });
+  try { run(player, host); results.push({ name, passed: true }); }
+  catch (error) { results.push({ name, passed: false, error: error.message }); }
+  finally { player.destroy(); host.remove(); }
+}
+test("keyboard shortcuts operate the focused canvas without taking over native controls", (player, host) => {
+  const canvas = host.querySelector(".flowsvg-canvas");
+  canvas.focus();
+  assert(document.activeElement === canvas, "canvas must be keyboard focusable");
+  assert(!key(canvas, " ") && player.getState().playing, "Space starts playback and prevents page scrolling");
+  key(canvas, " ", { repeat: true });
+  assert(player.getState().playing, "holding Space must not toggle repeatedly");
+  key(canvas, " "); assert(!player.getState().playing, "Space pauses playback");
+  key(canvas, "ArrowRight"); assert(player.getState().timeMs === 1000, "Right steps forward");
+  player.seek(1200); player.play(); key(canvas, "ArrowLeft");
+  assert(player.getState().timeMs === 1000 && !player.getState().playing, "Left steps back and pauses");
+  player.seek(200);
+  for (const control of host.querySelectorAll('button:not([role="combobox"]),input')) {
+    assert(key(control, "ArrowRight") && key(control, " "), "native control keys must remain available");
+    assert(player.getState().timeMs === 200 && !player.getState().playing, "control keys must not trigger canvas shortcuts");
+  }
+  const editor = document.createElement("div"); editor.contentEditable = "true"; canvas.append(editor);
+  key(editor, "ArrowRight"); assert(player.getState().timeMs === 200, "editable text must retain arrow keys");
+  key(canvas, "ArrowRight", { altKey: true }); assert(player.getState().timeMs === 200, "modified keys must retain browser behavior");
+  const detachedCanvas = canvas; player.destroy(); key(detachedCanvas, " ");
+  assert(!player.getState().playing, "destroy detaches shortcut handling");
+});
+test("explicit reduced motion overrides the browser preference without changing timeline position", (player, host) => {
+  player.seek(200);
+  assert(player.getState().frame.nodes[1].opacity === 0.5, "explicit false preserves the transition midpoint");
+  const reducedHost = document.createElement("div"); document.body.append(reducedHost);
+  const reduced = createPlayer(reducedHost, model, { reducedMotion: true, theme: "dark" });
+  try {
+    reduced.seek(200);
+    assert(reduced.getState().frame.nodes[1].opacity === 1, "explicit true completes the transition");
+    assert(reduced.getState().timeMs === 200 && reduced.getState().frame.caption === "Service appears", "reduced motion preserves time and caption");
+    const exported = document.createElement("div"); exported.innerHTML = createDiagram(model).renderSvg(200, { reducedMotion: true, theme: "dark" });
+    assert(reducedHost.querySelector("svg").outerHTML === exported.firstElementChild.outerHTML, "reduced-motion picture equals the static export");
+  } finally { reduced.destroy(); reducedHost.remove(); }
+});
+test("controls expose labels and visible keyboard focus while CSS variables leave diagram colors intact", (player, host) => {
+  player.seek(200);
+  const svg = host.querySelector("svg");
+  assert(svg.getAttribute("role") === "img" && svg.getAttribute("aria-label") === model.title, "SVG must expose the document title");
+  assert(svg.querySelector("title").textContent === model.title, "SVG title remains readable");
+  const caption = host.querySelector(".flowsvg-caption");
+  assert(caption.getAttribute("aria-live") === "polite" && caption.getAttribute("aria-atomic") === "true", "captions use an atomic polite live region");
+  const before = svg.outerHTML;
+  host.style.setProperty("--flowsvg-control-background", "rgb(17, 34, 51)");
+  host.style.setProperty("--flowsvg-control-color", "rgb(255, 255, 255)");
+  for (const control of host.querySelectorAll("button,input,select")) {
+    assert(control.getAttribute("aria-label"), "every control needs a name");
+    control.focus();
+    assert(document.activeElement === control, "enabled controls must be focusable");
+    assert(getComputedStyle(control).outlineStyle !== "none", "focused controls need a visible outline");
+  }
+  assert(getComputedStyle(host.querySelector("button")).backgroundColor === "rgb(17, 34, 51)", "CSS variables customize controls");
+  assert(svg.outerHTML === before, "control CSS variables must not change diagram styles");
+});
+test("theme choices remain explicit across document reloads and ignore system color scheme", (player, host) => {
+  player.load({ ...model, scenes: [] });
+  assert(player.getState().frame.nodes[0].style.fill === "#ffffff", "unspecified theme stays light");
+  player.load({ ...model, theme: "dark", scenes: [] });
+  assert(player.getState().frame.nodes[0].style.fill === "#1d2939", "document theme applies on reload");
+  const overrideHost = document.createElement("div"); document.body.append(overrideHost);
+  const override = createPlayer(overrideHost, { ...model, theme: "dark" }, { theme: "light" });
+  try {
+    assert(override.getState().frame.nodes[0].style.fill === "#ffffff", "explicit theme overrides document theme");
+    override.load({ ...model, theme: "dark" });
+    assert(override.getState().frame.nodes[0].style.fill === "#ffffff", "explicit override survives reload");
+  } finally { override.destroy(); overrideHost.remove(); }
+});
+window.browserAccessibilityResults = results;
+document.querySelector("#results").textContent = JSON.stringify(results, null, 2);
+const host = document.querySelector("#preview");
+const player = createPlayer(host, model, { theme: "dark" });
+player.seek(200);
+window.accessibilityPreview = { player, host, model, createPlayer, createDiagram };
+window.verifyMotionPreference = (reducedMotion) => {
+  const { player, host } = window.accessibilityPreview;
+  assert(matchMedia("(prefers-reduced-motion: reduce)").matches === reducedMotion, "browser preference is emulated");
+  assert(player.getState().timeMs === 200 && !player.getState().playing, "preference changes preserve paused timeline position");
+  assert(player.getState().frame.nodes[1].opacity === (reducedMotion ? 1 : 0.5), "automatic player follows browser preference");
+  const expected = document.createElement("div"); expected.innerHTML = createDiagram(model).renderSvg(200, { theme: "dark", reducedMotion });
+  assert(host.querySelector("svg").outerHTML === expected.firstElementChild.outerHTML, "automatic player and same-option static export agree");
+  return true;
+};
+</script></body></html>

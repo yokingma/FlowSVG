@@ -1,0 +1,27 @@
+{
+  "name": "@flowsvg/showcase",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./author": {
+      "types": "./dist/author.d.ts",
+      "import": "./dist/author.js"
+    },
+    "./build": {
+      "types": "./dist/build.d.ts",
+      "import": "./dist/build.js"
+    },
+    "./session": {
+      "types": "./dist/session.d.ts",
+      "import": "./dist/session.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/generate.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --maxWorkers=1"
+  },
+  "devDependencies": {
+    "flowsvg": "workspace:*"
+  }
+}

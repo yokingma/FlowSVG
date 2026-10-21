@@ -1,0 +1,23 @@
+{
+  "name": "flowsvg-vue-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter @flowsvg/showcase build && vite",
+    "build": "pnpm --filter @flowsvg/showcase build && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test:showcase": "vitest run acceptance --maxWorkers=1"
+  },
+  "dependencies": {
+    "flowsvg": "workspace:*",
+    "vue": "^3.5.0",
+    "@flowsvg/showcase": "workspace:*"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.1",
+    "vite": "^7.1.12",
+    "playwright-core": "1.58.2",
+    "@types/node": "22.19.1"
+  }
+}

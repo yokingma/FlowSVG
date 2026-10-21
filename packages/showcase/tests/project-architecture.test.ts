@@ -1,0 +1,104 @@
+import { expect, it } from "vitest";
+import { createDiagram } from "flowsvg";
+import { compileCatalog } from "../src/build.js";
+import { catalogSource } from "../src/formal.js";
+
+function getArchitecture() {
+  const compiled = compileCatalog(catalogSource);
+  const example = compiled.catalog.get("project-architecture");
+  if (!example) throw new Error("The formal project architecture example is missing");
+  return { ...compiled, example, diagram: createDiagram(example.document) };
+}
+
+it("offers the architecture as a standalone third example with the original default", () => {
+  const { catalog, json, example } = getArchitecture();
+  expect(catalog.entries.map(({ id }) => id)).toEqual(["request-response", "rag-workflow", "project-architecture", "vllm-metal-stack", "job-lifecycle", "order-event-pipeline", "web-service-deployment", "cache-aside-sequence"]);
+  expect(catalog.defaultId).toBe("request-response");
+  expect(example.name).toBe("FlowSVG：图解如何运行");
+  expect(example.durationMs).toBe(24_000);
+  expect(example.defaults).toEqual({ speed: 1, theme: "light", reducedMotion: false });
+  expect(JSON.parse(json.get(example.jsonPath)!)).toEqual(example.document);
+});
+
+it("explains the core, shared player, optional exports and private consumer boundary", () => {
+  const { diagram } = getArchitecture();
+  const textFor = (id: string) => diagram.evaluateAt(24_000).nodes.find((node) => node.id === id)!
+    .contentLayout!.lines.map(({ text }) => text).join("");
+  expect(textFor("document")).toContain("DiagramDocument");
+  expect(textFor("core")).toContain("无 DOM");
+  expect(textFor("core")).toContain("浏览器时钟");
+  expect(textFor("adapters")).toContain("React · Vue · Web Component");
+  expect(textFor("browser")).toContain("控件");
+  expect(textFor("svg")).toContain("renderSvg(t)");
+  expect(textFor("gif")).toContain("按需");
+  expect(textFor("gif")).toContain("Worker");
+  expect(textFor("node-tools")).toContain("HTML");
+  expect(textFor("node-tools")).toContain("仅 GIF 需要 Chromium");
+  expect(textFor("showcase")).toContain("私有消费方");
+  expect(textFor("showcase")).toContain("不被 SDK 依赖");
+  expect(diagram.evaluateAt(17_000).caption).toContain("不启动 Chromium");
+  expect(diagram.evaluateAt(19_000).caption).toContain("同一浏览器导出器");
+  expect(diagram.evaluateAt(23_000).caption).toContain("SDK 不依赖展示工程");
+});
+
+it("shows evaluation, playback, export and consumer calls in their actual directions", () => {
+  const { diagram } = getArchitecture();
+  const transfersAt = (time: number) => diagram.evaluateAt(time).edges.filter(({ flow }) => flow)
+    .map(({ from, to }) => [from, to]);
+  expect(transfersAt(1500)).toEqual([["document", "core"]]);
+  expect(transfersAt(4500)).toEqual([["core", "svg"]]);
+  expect(transfersAt(7000)).toEqual([["adapters", "browser"]]);
+  expect(transfersAt(9000)).toEqual([["core", "browser"]]);
+  expect(transfersAt(11_000)).toEqual([["browser", "core"]]);
+  expect(transfersAt(13_000)).toEqual([["core", "browser"]]);
+  expect(transfersAt(15_000)).toEqual([["svg", "gif"]]);
+  expect(transfersAt(17_000)).toEqual([["browser", "node-tools"]]);
+  expect(transfersAt(19_000)).toEqual([["node-tools", "gif"]]);
+  expect(transfersAt(23_000)).toEqual([["showcase", "adapters"], ["showcase", "browser"]]);
+});
+
+it("keeps six stages readable in both themes and retains meaning with reduced motion", () => {
+  const { example, diagram } = getArchitecture();
+  expect(example.document.nodes).toHaveLength(8);
+  expect(example.document.nodes.every(({ style }) => style === undefined)).toBe(true);
+  expect(example.document.edges.every(({ style, route }) => style === undefined && route === "curved")).toBe(true);
+  const stages = [[0, "define"], [3000, "evaluate"], [6000, "integrate"], [10_000, "operate"], [14_000, "export"], [22_000, "boundary"]] as const;
+  for (const [time, sceneId] of stages) {
+    expect(diagram.evaluateAt(time).sceneId).toBe(sceneId);
+    if (time > 0) expect(diagram.evaluateAt(time - 1).sceneId).not.toBe(sceneId);
+    for (const theme of ["light", "dark"] as const) {
+      const frame = diagram.evaluateAt(time + 500, { theme });
+      const reduced = diagram.evaluateAt(time + 500, { theme, reducedMotion: true });
+      expect(frame.warnings).toEqual([]);
+      expect(reduced.warnings).toEqual([]);
+      expect(reduced.caption).toBe(frame.caption);
+      expect(reduced.edges.every(({ flow }) => flow === undefined)).toBe(true);
+      expect(reduced.nodes.filter(({ highlighted }) => highlighted).map(({ id }) => id))
+        .toEqual(frame.nodes.filter(({ highlighted }) => highlighted).map(({ id }) => id));
+      for (const node of frame.nodes) {
+        expect(node.contentLayout!.lines.some(({ role }) => role === "title")).toBe(true);
+        expect(node.contentLayout!.tags.length).toBeGreaterThan(0);
+        expect(node.contentLayout!.tags.every(({ shape }) => shape === "pill")).toBe(true);
+      }
+    }
+  }
+});
+
+it("keeps every active transfer inside the viewport and outside all node interiors", () => {
+  const { diagram, example } = getArchitecture();
+  for (let time = 0; time < diagram.totalDuration; time += 50) {
+    const frame = diagram.evaluateAt(time);
+    for (const edge of frame.edges.filter(({ flow }) => flow)) {
+      const point = edge.flow!.point;
+      expect(point.x).toBeGreaterThanOrEqual(0);
+      expect(point.y).toBeGreaterThanOrEqual(0);
+      expect(point.x).toBeLessThanOrEqual(example.document.viewport.width);
+      expect(point.y).toBeLessThanOrEqual(example.document.viewport.height);
+      for (const node of frame.nodes) {
+        const inside = point.x > node.x + 2 && point.x < node.x + node.width - 2
+          && point.y > node.y + 2 && point.y < node.y + node.height - 2;
+        expect(inside, `${edge.id} enters ${node.id} at ${time} ms`).toBe(false);
+      }
+    }
+  }
+});

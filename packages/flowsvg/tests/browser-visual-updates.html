@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Visual update behavior checks</title>
+<body><pre id="results">Running…</pre><script type="module">
+import { createPlayer } from "../dist/browser.js";
+import { createDiagram } from "../dist/index.js";
+const model = {
+  version: 1, viewport: { width: 600, height: 320 },
+  nodes: [
+    { id: "client", kind: "rect", x: 20, y: 100, width: 100, height: 60, label: "Client", style: { fill: "#000" } },
+    { id: "system", kind: "group", x: 300, y: 50, width: 250, height: 200 },
+    { id: "service", kind: "rect", parentId: "system", x: 40, y: 50, width: 100, height: 60, label: "Service" },
+    { id: "obstacle", kind: "rect", x: 180, y: 90, width: 80, height: 80, visible: false }
+  ], edges: [{ id: "request", from: "client", to: "service", route: "orthogonal", label: "Request", style: { stroke: "#000" } }],
+  scenes: [{ id: "change", label: "Change", beats: [
+    { durationMs: 1000, transitionMs: 400, actions: [
+      { type: "updateNode", target: "system", value: { y: 130 } },
+      { type: "updateNode", target: "client", value: { fill: "#fff", label: "Caller" } },
+      { type: "updateEdge", target: "request", value: { stroke: "#fff", strokeWidth: 6, label: "Call" } },
+      { type: "show", target: "obstacle" }
+    ] },
+    { durationMs: 1000, transitionMs: 400, actions: [
+      { type: "highlight", target: "client" }, { type: "highlight", target: "request" },
+      { type: "updateNode", target: "client", value: { fill: "#00f" } },
+      { type: "updateEdge", target: "request", value: { stroke: "#00f" } },
+      { type: "hide", target: "obstacle" }
+    ] },
+    { durationMs: 1000, transitionMs: 400, actions: [
+      { type: "updateNode", target: "client", value: { fill: "#0f0" } },
+      { type: "updateEdge", target: "request", value: { stroke: "#0f0" } },
+      { type: "unhighlight", target: "client" }, { type: "unhighlight", target: "request" }
+    ] }
+  ] }]
+};
+const results = [];
+function assert(condition, message) { if (!condition) throw new Error(message); }
+for (const theme of ["light", "dark"]) {
+  for (const reducedMotion of [false, true]) {
+    const host = document.createElement("div"); document.body.append(host);
+    const options = { theme, reducedMotion, controls: false };
+    const player = createPlayer(host, model, options);
+    try {
+      const diagram = createDiagram(model);
+      for (const time of [0, 200, 400, 1000, 1200, 1400, 2000, 2200, 2400, 3000]) {
+        player.seek(time);
+        const expected = document.createElement("div"); expected.innerHTML = diagram.renderSvg(time, options);
+        assert(host.querySelector("svg").outerHTML === expected.firstElementChild.outerHTML, `SVG at ${time} must equal export`);
+        assert(JSON.stringify(player.getState().frame) === JSON.stringify(diagram.evaluateAt(time, options)), `frame at ${time} must equal core`);
+      }
+      player.seek(0);
+      assert(host.textContent.includes("Caller") && host.textContent.includes("Call"), "updated text must switch at zero");
+      if (!reducedMotion) {
+        assert(player.getState().frame.nodes[3].opacity === 0, "obstacle starts at zero opacity");
+        assert(host.querySelector('[data-id="request"]').getAttribute("d").includes("82"), "revealed obstacle must reroute immediately");
+        player.seek(200);
+        assert(host.querySelector('[data-id="service"]').getAttribute("y") === "140", "child follows animated parent");
+        assert(host.querySelector('[data-id="client"]').getAttribute("fill") === "#808080", "midpoint color is interpolated");
+        assert(host.querySelector('[data-id="request"]').getAttribute("stroke-width") === "4", "midpoint width is interpolated");
+      }
+      player.seek(2400);
+      assert(host.querySelector('[data-id="client"]').getAttribute("fill") === "#0f0", "unhighlight exposes latest base color");
+      assert(host.querySelector('[data-id="request"]').getAttribute("stroke") === "#0f0", "edge exposes latest base color");
+      results.push({ theme, reducedMotion, passed: true });
+    } catch (error) { results.push({ theme, reducedMotion, passed: false, error: error.message }); }
+    finally { player.destroy(); host.remove(); }
+  }
+}
+window.browserTestResults = results;
+document.querySelector("#results").textContent = JSON.stringify(results, null, 2);
+</script></body></html>
