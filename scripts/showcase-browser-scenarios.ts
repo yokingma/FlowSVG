@@ -1,6 +1,7 @@
 /** Shared behavior checks run against independently built, real showcase hosts. */
 import { CATEGORY_STORIES, FORMAL_CATEGORIES, FORMAL_NAMES, inspectCategoryStory } from "./showcase-category-stories.js";
 import { chooseOption } from "./showcase-choice.js";
+import { loadStoryDiagram, sceneTime, beatTime } from "./showcase-timing.js";
 import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -20,6 +21,46 @@ export function registerShowcaseBrowserScenarios(config: { packageName: string }
     ({ root, origin, browser, page } = site);
   }, 120_000);
   afterAll(async () => { await site?.close(); }, 30_000);
+  it("loops on request and preserves the choice through player replacements and history", async () => {
+    const loopPage = await browser.newPage();
+    try {
+      await loopPage.goto(`${origin}/acceptance/`);
+      const loop = loopPage.getByRole("button", { name: "Loop", exact: true });
+      expect(await loop.count()).toBe(1);
+      expect(await loop.getAttribute("aria-pressed")).toBe("false");
+      await loop.click();
+      expect(await loop.getAttribute("aria-pressed")).toBe("true");
+      await chooseOption(loopPage.getByRole("combobox", { name: "Theme", exact: true }), "light");
+      expect(await loop.getAttribute("aria-pressed")).toBe("true");
+      await loopPage.getByRole("checkbox", { name: "Reduce motion", exact: true }).check();
+      expect(await loop.getAttribute("aria-pressed")).toBe("true");
+      const examples = loopPage.getByRole("navigation", { name: "Examples" });
+      await examples.getByRole("button", { name: "Signal at rest", exact: true }).click();
+      expect(await loop.getAttribute("aria-pressed")).toBe("true");
+      expect(await loopPage.getByRole("button", { name: "Play", exact: true }).isDisabled()).toBe(true);
+      await loopPage.goBack();
+      await expect.poll(() => loopPage.getByRole("heading", { name: "Signal in motion", exact: true }).count()).toBe(1);
+      expect(await loop.getAttribute("aria-pressed")).toBe("true");
+      await loopPage.evaluate(() => {
+        window.dispatchEvent(new PageTransitionEvent("pagehide", { persisted: true }));
+        window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }));
+      });
+      expect(await loop.getAttribute("aria-pressed")).toBe("true");
+      await seekProgress(loopPage, 2300);
+      await loopPage.getByRole("button", { name: "Play", exact: true }).click();
+      await expect.poll(async () => Number(await loopPage.getByRole("slider", { name: "Progress" }).inputValue())).toBeLessThan(1000);
+      expect(await loopPage.getByRole("button", { name: "Pause", exact: true }).count()).toBe(1);
+      await loopPage.getByRole("button", { name: "Pause", exact: true }).click();
+      await loop.click();
+      await chooseOption(loopPage.getByRole("combobox", { name: "Theme", exact: true }), "dark");
+      expect(await loop.getAttribute("aria-pressed")).toBe("false");
+      expect(new URL(loopPage.url()).searchParams.has("loop")).toBe(false);
+      await loopPage.reload();
+      expect(await loop.getAttribute("aria-pressed")).toBe("false");
+    } finally {
+      await loopPage.close();
+    }
+  }, 20_000);
   it("uses compact choices with keyboard commit and cancellation for theme, scene and speed", async () => {
     await page.goto(`${origin}/acceptance/?theme=light`);
     const theme = page.getByRole("combobox", { name: "Theme", exact: true });
@@ -118,9 +159,11 @@ export function registerShowcaseBrowserScenarios(config: { packageName: string }
 
     await page.getByRole("navigation", { name: "Examples" }).getByRole("button", { name: "RAG：从资料到答案", exact: true }).click();
     expect(await page.getByRole("heading", { name: "RAG：从资料到答案", exact: true }).count()).toBe(1);
-    expect(await page.getByRole("slider", { name: "Progress" }).getAttribute("max")).toBe("21000");
+    const ragDiagram = await loadStoryDiagram(page, `${origin}/formal/`, "rag-workflow");
+    const answerTime = beatTime(ragDiagram, 10);
+    expect(await page.getByRole("slider", { name: "Progress" }).getAttribute("max")).toBe(String(ragDiagram.totalDuration));
     await chooseOption(page.getByRole("combobox", { name: "Scene", exact: true }), "rerank");
-    expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe("11000");
+    expect(Number(await page.getByRole("slider", { name: "Progress" }).inputValue())).toBeCloseTo(sceneTime(ragDiagram, "rerank"), 6);
     expect(await page.locator('.flowsvg-canvas [data-content-id="reranker"] tspan').allTextContents())
       .toEqual(expect.arrayContaining(["C1", "C2", "保留", "申请流程 · §4.1", "审批要求 · §4.2"]));
     const download = page.waitForEvent("download");
@@ -128,15 +171,67 @@ export function registerShowcaseBrowserScenarios(config: { packageName: string }
     const downloaded = JSON.parse(await readFile((await (await download).path())!, "utf8"));
     expect(downloaded).toMatchObject({ title: "RAG：从资料到答案", version: 1 });
     expect(downloaded).toEqual(await (await page.request.get(`${origin}/formal/json/rag-workflow.json`)).json());
-    await page.goto(`${origin}/formal/?example=rag-workflow&theme=dark&reduced=1&time=19500`);
+    await page.goto(`${origin}/formal/?example=rag-workflow&theme=dark&reduced=1&time=${answerTime}`);
     expect(await page.getByRole("heading", { name: "RAG：从资料到答案", exact: true }).count()).toBe(1);
-    expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe("19500");
+    expect(Number(await page.getByRole("slider", { name: "Progress" }).inputValue())).toBeCloseTo(answerTime, 6);
     expect(await page.getByRole("combobox", { name: "Theme", exact: true }).getAttribute("data-value")).toBe("dark");
     expect(await page.getByRole("checkbox", { name: "Reduce motion", exact: true }).isChecked()).toBe(true);
     expect(await page.locator(".flowsvg-canvas").textContent()).toContain("直属负责人审批");
     await page.reload();
-    expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe("19500");
+    expect(Number(await page.getByRole("slider", { name: "Progress" }).inputValue())).toBeCloseTo(answerTime, 6);
 
+  });
+
+  it("fits RAG cards to the current stage and restores compact geometry after seeking backwards", async () => {
+    // Keep stage seeks out of the shared page history, which Chromium caps at 50 entries.
+    const stagePage = await browser.newPage();
+    try {
+      await stagePage.goto(`${origin}/formal/?example=rag-workflow`);
+      await expect.poll(() => stagePage.locator('.flowsvg-canvas rect[data-id="context"]').count()).toBe(1);
+      const readCards = () => stagePage.locator(".flowsvg-canvas rect[data-id]").evaluateAll((nodes) => nodes.map((node) => ({
+        id: node.getAttribute("data-id"),
+        y: Number(node.getAttribute("y")),
+        height: Number(node.getAttribute("height"))
+      })));
+      const readCamera = () => stagePage.locator(".flowsvg-canvas > svg").getAttribute("viewBox");
+      const initialCamera = await readCamera();
+      expect(initialCamera).toBe("0 0 1120 612");
+      const initial = await readCards();
+      const expanding = ["retriever", "reranker", "context", "answer"];
+      expect(initial.filter(({ id }) => expanding.includes(id!)).map(({ height }) => height)).toEqual([141, 141, 141, 141]);
+      const progress = stagePage.getByRole("slider", { name: "Progress" });
+      const diagram = await loadStoryDiagram(stagePage, `${origin}/formal/`, "rag-workflow");
+      const retrievalTime = Math.ceil(sceneTime(diagram, "retrieve", 2));
+      const rerankTime = Math.ceil(sceneTime(diagram, "rerank"));
+      const contextTime = Math.ceil(sceneTime(diagram, "context"));
+      const answerTime = Math.ceil(sceneTime(diagram, "generate", 1));
+      for (const time of [retrievalTime, rerankTime, contextTime, answerTime, 0]) {
+        await progress.evaluate((element, value) => {
+          (element as HTMLInputElement).value = String(value);
+          element.dispatchEvent(new Event("input", { bubbles: true }));
+        }, time);
+        expect(Number(await progress.inputValue())).toBeCloseTo(time, 6);
+        const cards = await readCards();
+        const middle = cards.filter(({ id }) => ["question", "retriever", "reranker"].includes(id!));
+        const bottom = cards.filter(({ id }) => ["context", "language-model", "answer"].includes(id!));
+        expect(Math.min(...bottom.map(({ y }) => y)) - Math.max(...middle.map(({ y, height }) => y + height))).toBe(50);
+        if (time === rerankTime) {
+          expect(cards.find(({ id }) => id === "reranker")!.height).toBe(219);
+          expect(cards.find(({ id }) => id === "context")!.y).toBeGreaterThan(initial.find(({ id }) => id === "context")!.y);
+        }
+        if (time === contextTime) expect(cards.find(({ id }) => id === "context")!.height).toBe(241);
+        if (time === answerTime) {
+          expect(cards.find(({ id }) => id === "answer")!.height).toBe(197);
+          expect(await readCamera()).toBe("0 0 1120 790");
+        }
+        if (time === 0) {
+          expect(cards).toEqual(initial);
+          expect(await readCamera()).toBe(initialCamera);
+        }
+      }
+    } finally {
+      await stagePage.close();
+    }
   });
 
   it("opens the project architecture with scene selection, direct entry and a matching JSON download", async () => {
@@ -145,22 +240,25 @@ export function registerShowcaseBrowserScenarios(config: { packageName: string }
     expect(await architecture.count()).toBe(1);
     await architecture.click();
     expect(await page.getByRole("heading", { name: "FlowSVG：图解如何运行", exact: true }).count()).toBe(1);
-    expect(await page.getByRole("slider", { name: "Progress" }).getAttribute("max")).toBe("24000");
+    const diagram = await loadStoryDiagram(page, `${origin}/formal/`, "project-architecture");
+    const exportTime = sceneTime(diagram, "export");
+    const nodeGifTime = beatTime(diagram, 8);
+    expect(await page.getByRole("slider", { name: "Progress" }).getAttribute("max")).toBe(String(diagram.totalDuration));
     await chooseOption(page.getByRole("combobox", { name: "Scene", exact: true }), "export");
-    expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe("14000");
+    expect(Number(await page.getByRole("slider", { name: "Progress" }).inputValue())).toBeCloseTo(exportTime, 6);
     expect(await page.locator('.flowsvg-canvas [data-content-id="node-tools"]').textContent()).toContain("仅 GIF 需要 Chromium");
     const download = page.waitForEvent("download");
     await page.getByRole("link", { name: "Download diagram JSON" }).click();
     const downloaded: unknown = JSON.parse(await readFile((await (await download).path())!, "utf8"));
     expect(downloaded).toMatchObject({ title: "FlowSVG：图解如何运行", version: 1 });
     expect(downloaded).toEqual(await (await page.request.get(`${origin}/formal/json/project-architecture.json`)).json());
-    await page.goto(`${origin}/formal/?example=project-architecture&theme=dark&reduced=1&time=19000`);
-    expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe("19000");
+    await page.goto(`${origin}/formal/?example=project-architecture&theme=dark&reduced=1&time=${nodeGifTime}`);
+    expect(Number(await page.getByRole("slider", { name: "Progress" }).inputValue())).toBeCloseTo(nodeGifTime, 6);
     expect(await page.getByRole("combobox", { name: "Theme", exact: true }).getAttribute("data-value")).toBe("dark");
     expect(await page.getByRole("checkbox", { name: "Reduce motion", exact: true }).isChecked()).toBe(true);
     expect(await page.locator(".flowsvg-caption").textContent()).toContain("同一浏览器导出器");
     await page.reload();
-    expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe("19000");
+    expect(Number(await page.getByRole("slider", { name: "Progress" }).inputValue())).toBeCloseTo(nodeGifTime, 6);
   });
 
   it("opens the nested vllm-metal stack with scene selection and a standalone download", async () => {
@@ -168,9 +266,12 @@ export function registerShowcaseBrowserScenarios(config: { packageName: string }
     const choice = page.getByRole("navigation", { name: "Examples" }).getByRole("button", { name: "vllm-metal：分层推理架构", exact: true });
     expect(await choice.count()).toBe(1);
     await choice.click();
-    expect(await page.getByRole("slider", { name: "Progress" }).getAttribute("max")).toBe("24000");
+    const diagram = await loadStoryDiagram(page, `${origin}/formal/`, "vllm-metal-stack");
+    const attentionTime = sceneTime(diagram, "attention");
+    const conditionalTime = beatTime(diagram, 4);
+    expect(await page.getByRole("slider", { name: "Progress" }).getAttribute("max")).toBe(String(diagram.totalDuration));
     await chooseOption(page.getByRole("combobox", { name: "Scene", exact: true }), "attention");
-    expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe("11000");
+    expect(Number(await page.getByRole("slider", { name: "Progress" }).inputValue())).toBeCloseTo(attentionTime, 6);
     expect(await page.locator('.flowsvg-canvas [data-id="mlx-primitives"]').count()).toBe(1);
     expect(await page.locator('.flowsvg-canvas [data-id="metal-owned"]').count()).toBe(1);
     expect(await page.locator('.flowsvg-canvas [data-content-id="paged-attention"]').textContent()).toContain("cu_seqlens");
@@ -179,13 +280,13 @@ export function registerShowcaseBrowserScenarios(config: { packageName: string }
     const downloaded: unknown = JSON.parse(await readFile((await (await download).path())!, "utf8"));
     expect(downloaded).toMatchObject({ title: "vllm-metal：分层推理架构", version: 1 });
     expect(downloaded).toEqual(await (await page.request.get(`${origin}/formal/json/vllm-metal-stack.json`)).json());
-    await page.goto(`${origin}/formal/?example=vllm-metal-stack&theme=dark&reduced=1&time=14500`);
+    await page.goto(`${origin}/formal/?example=vllm-metal-stack&theme=dark&reduced=1&time=${conditionalTime}`);
     expect(await page.getByRole("heading", { name: "vllm-metal：分层推理架构", exact: true }).count()).toBe(1);
     expect(await page.getByRole("combobox", { name: "Theme", exact: true }).getAttribute("data-value")).toBe("dark");
     expect(await page.getByRole("checkbox", { name: "Reduce motion", exact: true }).isChecked()).toBe(true);
     expect(await page.locator(".flowsvg-caption").textContent()).toContain("并非每次请求");
     await page.reload();
-    expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe("14500");
+    expect(Number(await page.getByRole("slider", { name: "Progress" }).inputValue())).toBeCloseTo(conditionalTime, 6);
   });
 
   it.each(CATEGORY_STORIES)("opens $id with scene selection, direct entry and a matching download", async (story) => {
@@ -539,7 +640,8 @@ export function registerShowcaseBrowserScenarios(config: { packageName: string }
       expect(await target.getByRole("combobox", { name: "Theme", exact: true }).getAttribute("data-value")).toBe("dark");
       expect(await target.getByRole("status", { name: "Parameter diagnostics" }).textContent()).toMatch(/example.*theme.*reduced.*time/);
       await target.goto(`${origin}/acceptance/?time=999999`);
-      expect(await target.getByRole("slider", { name: "Progress" }).inputValue()).toBe("2400");
+      const diagram = await loadStoryDiagram(target, `${origin}/acceptance/`, "signal-motion");
+      expect(Number(await target.getByRole("slider", { name: "Progress" }).inputValue())).toBeCloseTo(diagram.totalDuration, 6);
       await target.goto(`${origin}/acceptance/?example=signal-still&time=600`);
       expect(await target.getByRole("slider", { name: "Progress" }).inputValue()).toBe("0");
       expect(await target.getByRole("checkbox", { name: "Reduce motion", exact: true }).isChecked()).toBe(true);

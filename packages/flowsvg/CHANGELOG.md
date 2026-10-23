@@ -2,35 +2,33 @@
 
 ## Unreleased
 
-- Center unobstructed orthogonal bridges in node gaps; use one outside channel for matching ports and clear separate ancestor frames. Preserve obstacle search, input slots and arrow approaches.
+- Add the background task lifecycle as the typical example in both SDK READMEs, with an SDK-exported GIF and complete `examples/job-lifecycle.json` in the npm package. Demonstrate structured state cards, pill tags, explicit current-state highlights and event flows without automatic endpoint highlights. Include a command to generate an offline player from the installed JSON.
 
-- Extend stable same-side target positions to curved routes, preserving separate input arrows when an example changes route families.
+- Place the animated FlowSVG wordmark first in centered headers in both SDK READMEs. Use larger text inside a compact frame, a closely cropped 50 fps GIF, and a closed signal loop at the upper-right corner. Ship the shared GIF under `docs/images/` and rewrite relative Markdown and HTML image paths to the versioned npm CDN URL during release verification.
 
-- Separate same-side orthogonal incoming arrow tips by source position (document order breaks ties), including hidden inputs so timeline reveals keep their slots. Reserve a stroke-width-aware straight approach before each orthogonal arrow where space permits, shrink reserved segments in narrow gaps to avoid backtracking, and keep ellipse/cylinder tips on their contours.
+## 0.2.0 - 2026-10-22
 
-- Add opt-in `ContentTagStyle.shape: "pill"` for capsule tags in SVG and player/export output. Derive the radius from the final aligned tag height; retain the default rounded corners, typography and theme colors. Validate supported shapes at the authored field path.
+### Timing and rendering changes
 
-- Add opt-in `flowsvg-compact` sizing (32-pixel controls; standard remains 44 pixels). Replace scene/speed native selects with the reusable public `SelectControl` combobox, styled options, keyboard preview/commit/cancel, type-ahead and outside dismissal. Release menu listeners on player destruction.
+- A beat with one flow now lasts for distance-based movement plus a 500 ms post-arrival interval, replacing authored `durationMs`. Movement targets 180 diagram units/second with a 400 ms minimum. Receiver paint fades in for 200 ms, holds for 100 ms, then automatic node/edge highlights fade out for 200 ms. Explicit highlights retain authored timing; reduced motion skips fades. Multi-flow and no-flow beats retain authored timing. Use the frozen public `Diagram.beats` schedule for effective boundaries and separate no-flow beats for longer reading.
+- Orthogonal routes use rounded bends, centered clear bridges, separate stable incoming tips and stroke-aware arrow approaches. Curved inputs also retain stable separate tips. SVG paths, markers, labels, bounds and hit testing share the same geometry.
 
-- Refine built-in controls with compact typography, rounded neutral buttons, an accent-tinted Play/Pause action, softer borders and hover/pressed/disabled/focus feedback. Keep 44-pixel targets and native progress keyboard interaction; narrow screens give the progress slider its own row. Respect reduced-motion preferences for control transitions.
+### Added
 
-- Decoupled SDK tests and browser acceptance from example author data. Preserved parallel-flow, content, geometry and four-host contracts with SDK-owned typed fixtures; moved narrative assertions to a separate example check. Release gates no longer build example apps. Added executable SDK-only Chromium acceptance and dependency auditing.
+- Browser GIF export through `flowsvg/export`, with snapshot inputs, range/speed/dimensions/captions, progress, cancellation, frame limits and an inline encoding worker. Optional player download controls work across Native, React, Vue and Web Component integrations; ordinary playback loads no encoder.
+- Node 20+ `flowsvg/node` and CLI for standalone offline HTML and Chromium-based GIF export. HTML can embed optional GIF controls. GIF tasks use explicitly prepared Chromium or a caller-owned browser. Exports clean up task resources; CLI publication is atomic and preserves existing files unless overwrite is explicit. Copyable versioned portable assets include licenses.
+- Opt-in live Loop playback and accessible Loop controls across integrations and portable HTML. Preserve elapsed remainder and speed at automatic wraps. GIF repetition remains independent.
+- Deterministic DOM-free `measureNodeContent` and public measurement types for fixed-width authoring across explicit content versions. Preserve diagnostics and caller inputs; reject unrepresentable heights with field-path `DiagramValidationError`.
+- Optional `viewport.fitHeight: { padding }` fits current painted geometry while retaining authored width and origin. Full-view SVG and playback fit height; GIF retains authored fixed dimensions and scale. Explicit focus retains authored viewport semantics.
+- Optional `flow.highlightParticipants: false` suppresses automatic endpoint paint while retaining explicit highlights, edge paint and moving dots/capsules.
+- Pill-shaped structured-content tags, reusable public `SelectControl`, opt-in compact controls, keyboard menus, refined control styles and responsive progress layout.
 
-- Reject asynchronous GIF worker startup failures even while image decoding is pending. Release task resources and permit a subsequent export after a worker error, including browser content security policy rejection.
+### Fixed and verified
 
-- Extended release verification to clean-build and install the real tarball with normal dependency lifecycle scripts, strict new-entry declarations, optional Node 18 minimum-runtime checks, and Node 20 public tools. Detached assets exercise offline HTML playback/download and CLI GIF output with independent GIF decoding; package versions, licenses, inline workers and explicit browser preparation are checked.
-
-- Added opt-in offline HTML GIF download with `renderHtml(document, { gifExport: true })` and `--gif-export`. Same-version exporter and inline worker assets join the player only when enabled; default HTML retains playback alone. File URLs need no network, additional runtime installation or sidecar assets.
-
-- Added Node 20+ `exportGif` and GIF CLI options using the same offline browser exporter. Explicitly prepared Chromium can be selected by executable path, or functions can reuse a caller-owned Playwright browser. Runtime automation loads only for GIF tasks; HTML still needs no browser or installed dependencies when copied. Shared preflight validation, input snapshots, progress, aborts and cleanup cover each task. SIGINT/SIGTERM exit nonzero, and HTML/GIF output uses the same atomic, default-no-overwrite publication.
-
-- Added opt-in `gifExport` player controls across native browser, React, Vue and Web Component (`gif-export`). Downloads show progress, cancellation, completion and actionable errors. Each task captures its document/resolved theme, remains independent of playback and document reloads, and is cancelled on destruction or adapter option rebuild. Ordinary ESM playback keeps a real lazy import; base portable player assets exclude the exporter and encoder.
-
-- Completed GIF range, speed, size, frame-rate, caption, loop and motion options with strict runtime validation. Preserve inherited scene state and the representable end-left picture; retain global completion with zero extra hold and cumulative centisecond timing. Measure every effective caption before sampling, preserving newlines and reporting overflow. Reject more than 1801 final encoded frames, including long-hold splits, before resource allocation; loop counts support at most 65,536 total plays.
-
-- Added the independent `flowsvg/export` browser GIF API and copyable `portable/export.js` asset. Inline workers quantize and encode one acknowledged frame at a time; exports snapshot inputs, report progress and support cancellation, including pending font/image preparation. Defaults preserve complete timeline evaluation, system Chinese font fallback, themed opaque captions and an accurate 15 fps timeline with a 1s final hold. Added independent GIF decoding and real offline Chromium checks.
-
-- Added copyable, versioned offline player/CSS assets and licenses, `flowsvg/node` HTML generation (Node 20+) and the `flowsvg` HTML CLI. Generated files safely embed text and work through offline `file://`; playback defaults to paused at zero with controls/captions. CLI publication is atomic and preserves existing files unless explicitly overwritten.
+- Reject asynchronous GIF worker startup errors during pending rasterization. Release export resources on errors, cancellation and player destruction, and permit subsequent exports.
+- Validate GIF options, effective captions and final encoded-frame limits before resource allocation. Preserve inherited state, range-end pictures and cumulative centisecond timing.
+- Preserve content diagnostics for large block collections and avoid fractional-origin false positives in graph-label height checks.
+- Keep SDK tests and release gates independent of showcase data. Verify cold packaging, file allowlists, DOM-free imports, strict consumer types, minimum framework versions, all four integrations and real offline HTML/GIF output through the installed tarball.
 
 ## 0.1.1 - 2026-10-20
 

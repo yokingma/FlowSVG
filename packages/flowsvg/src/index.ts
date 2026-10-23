@@ -15,6 +15,7 @@ export type {
   DiagramDocument,
   Scene,
   Beat,
+  DiagramBeat,
   NodeVisualState,
   EdgeVisualState,
   Action,
@@ -53,3 +54,10 @@ export type {
   ContentLine,
   NodeContentLayout
 } from "./core/node-content.js";
+
+export { measureNodeContent } from "./core/node-content-measurement.js";
+export type {
+  NodeContentMeasurementInput,
+  NodeContentMeasurement,
+  NodeContentMeasurementDiagnostic
+} from "./core/node-content-measurement.js";

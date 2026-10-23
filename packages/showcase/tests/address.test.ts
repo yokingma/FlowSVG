@@ -8,7 +8,7 @@ const { catalog } = compileCatalog(catalogSource);
 it("restores a shared address paused at its decimal time with target defaults and unchanged unrelated bytes", () => {
   const address = "https://example.test/showcase/?u=%20&phrase=one+two&slash=%2f&flag&&example=signal-motion&theme=light&reduced=1&time=00012.500#part%2f";
   const result = restoreSession(catalog, address, 7);
-  expect(result.session).toEqual({ exampleId: "signal-motion", settings: { theme: "light", reducedMotion: true, speed: 1.5 }, timeMs: 12.5, version: 7, diagnostics: [] });
+  expect(result.session).toEqual({ exampleId: "signal-motion", settings: { theme: "light", reducedMotion: true, speed: 1.5 }, timeMs: 12.5, loop: false, version: 7, diagnostics: [] });
   expect(result.replacePlayer).toBe(true);
   expect(result.addressUpdates).toEqual([{ method: "replace", address: "https://example.test/showcase/?u=%20&phrase=one+two&slash=%2f&flag&&example=signal-motion&theme=light&reduced=1&time=12.5#part%2f" }]);
   expect(serializeSession(address, result.session)).toBe(result.addressUpdates[0].address);
@@ -35,7 +35,7 @@ it.each(["", " ", "+1", "-0", "-1", "1e2", "0x10", "Infinity", "NaN", "1.", ".5"
 
 it("clamps finite decimal time, normalizes idempotently and retains the empty catalog", () => {
   const result = restoreSession(catalog, "/base/?time=9000&u=%2f#x%20");
-  expect(result.session.timeMs).toBe(2400);
+  expect(result.session.timeMs).toBe(catalog.get("signal-motion")!.durationMs);
   expect(result.session.diagnostics).toEqual([]);
   const canonical = result.addressUpdates[0].address;
   expect(restoreSession(catalog, canonical).addressUpdates).toEqual([]);
@@ -56,13 +56,13 @@ it("roundtrips tiny fractional milliseconds without producing exponent links", (
 it("saves the old action snapshot before pushing a selection or visual target", async () => {
   const { createSession, transitionSession } = await import("../src/session.js");
   const current = createSession(catalog);
-  const result = transitionSession(catalog, current, { type: "theme", theme: "light" }, { timeMs: 600, speed: 2 }, "/showcase/?u=%20#x");
+  const result = transitionSession(catalog, current, { type: "theme", theme: "light" }, { timeMs: 600, speed: 2, loop: false }, "/showcase/?u=%20#x");
   expect(result.addressUpdates).toEqual([
     { method: "replace", address: "/showcase/?u=%20&example=signal-motion&theme=dark&reduced=0&time=600#x" },
     { method: "push", address: "/showcase/?u=%20&example=signal-motion&theme=light&reduced=0&time=600#x" }
   ]);
   expect(result.session).toMatchObject({ version: 1, timeMs: 600, settings: { speed: 2, theme: "light" } });
-  const selected = transitionSession(catalog, result.session, { type: "select", exampleId: "signal-still" }, { timeMs: 700, speed: 3 }, result.addressUpdates[1].address);
+  const selected = transitionSession(catalog, result.session, { type: "select", exampleId: "signal-still" }, { timeMs: 700, speed: 3, loop: false }, result.addressUpdates[1].address);
   expect(selected.addressUpdates[0].address).toContain("time=700");
   expect(selected.addressUpdates[1].address).toContain("example=signal-still&theme=light&reduced=0&time=0");
   expect(selected.session.settings?.speed).toBe(0.5);
@@ -71,7 +71,7 @@ it("saves the old action snapshot before pushing a selection or visual target", 
 it("shares an operation snapshot without replacement and restores a new ownership version at default speed", async () => {
   const { createSession, transitionSession } = await import("../src/session.js");
   const current = createSession(catalog);
-  const share = transitionSession(catalog, current, { type: "share" }, { timeMs: 900, speed: 2 }, "/?source=%2f#x");
+  const share = transitionSession(catalog, current, { type: "share" }, { timeMs: 900, speed: 2, loop: false }, "/?source=%2f#x");
   expect(share.replacePlayer).toBe(false);
   expect(share.session.version).toBe(current.version);
   expect(share.addressUpdates).toEqual([{ method: "replace", address: share.copyAddress }]);
@@ -80,7 +80,7 @@ it("shares an operation snapshot without replacement and restores a new ownershi
   expect(restored.replacePlayer).toBe(true);
   expect(restored.session).toMatchObject({ version: 1, timeMs: 900, settings: { speed: 1.5 } });
   expect(restored.addressUpdates).toEqual([]);
-  const repeated = transitionSession(catalog, current, { type: "theme", theme: "dark" }, { timeMs: 900, speed: 2 }, "/");
+  const repeated = transitionSession(catalog, current, { type: "theme", theme: "dark" }, { timeMs: 900, speed: 2, loop: false }, "/");
   expect(repeated.replacePlayer).toBe(false);
   expect(repeated.addressUpdates).toEqual([]);
 });

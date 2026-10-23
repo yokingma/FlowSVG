@@ -51,6 +51,26 @@ describe("React entry", () => {
     }
   });
 
+  it("updates loop mode without rebuilding or losing position and forwards loop changes", () => {
+    const host = window.document.createElement("div");
+    const root = createRoot(host);
+    const ref = { current: null as FlowPlayerHandle | null };
+    const changes: boolean[] = [];
+    const props = { ref, document: narrativeDocument, reducedMotion: false, loop: true,
+      onLoopChange: (state: { loop: boolean }) => changes.push(state.loop) };
+    try {
+      act(() => root.render(createElement(FlowPlayer, props)));
+      expect(ref.current?.getState().loop).toBe(true);
+      act(() => ref.current?.seek(250));
+      const svg = host.querySelector("svg");
+      act(() => root.render(createElement(FlowPlayer, { ...props, loop: false })));
+      expect(ref.current?.getState()).toMatchObject({ loop: false, timeMs: 250 });
+      expect(host.querySelector("svg")).toBe(svg);
+      act(() => ref.current?.setLoop(true));
+      expect(changes).toEqual([false, true]);
+    } finally { act(() => root.unmount()); }
+  });
+
   it("can render on the server without touching the DOM", () => {
     const markup = renderToStaticMarkup(createElement(FlowPlayer, { document }));
 

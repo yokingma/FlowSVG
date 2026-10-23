@@ -1,5 +1,11 @@
 # Patterns
 
+- Follow the SDK 500 ms single-flow post-arrival interval: 200 ms receiver fade-in, 100 ms full paint and 200 ms automatic node/edge fade-out. Consume compiled intervals for navigation and sampling; preserve explicit unique-state highlights.
+
+- Follow SDK single-flow movement plus a fixed 500 ms post-arrival interval. Sample compiled intervals for stage checks and navigation; keep longer reading in separate no-flow beats.
+
+- Keep loop as session runtime state, separate from authored visual/speed defaults. Capture the SDK loop choice with time/speed at operations and pass it to each replacement player. History restores address fields but retains the current loop choice; fresh entry defaults off. Let the SDK clock wrap playback.
+
 - Use orthogonal routes for state transitions, order data transformations and deployment topology; keep event labels and group titles clear, with cardinal arrow approaches.
 
 - New category stories enter through the shared catalog only. Verify category membership, scene choices, direct addresses and downloads through the real host, including straight message rows in sequence stories.
@@ -33,3 +39,5 @@
 - Share through the same session operation, update history before awaiting clipboard, and guard completion with a request token invalidated by every replacement or exit. Do not mirror the SDK clock into app state.
 
 - Use root `build:examples` for ordered shared preparation across all hosts, and `test:examples` for the complete example flow. Keep individual host scenarios and independent copied-artifact delivery checks complementary; SDK release checks remain separate.
+
+- Consume SDK `Diagram.beats` for effective scene/beat boundaries. Never reconstruct a timeline by summing authored `durationMs`; single-flow movement plus 500 ms replaces authored beat timing. Keep reading time and unique task-state highlights independent of marker arrival.

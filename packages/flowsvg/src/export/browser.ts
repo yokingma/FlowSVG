@@ -17,9 +17,12 @@ export async function exportGif(input: DiagramDocument, options: GifExportOption
   validateGifOptions(options);
   const captured = { ...options };
   checkAbort(captured.signal);
-  let diagram: Diagram;
-  try { diagram = createDiagram(input); } catch (cause) { throw new GifExportError("document", "Invalid diagram document; correct the validation issues before exporting.", { cause }); }
+  try { createDiagram(input); } catch (cause) { throw new GifExportError("document", "Invalid diagram document; correct the validation issues before exporting.", { cause }); }
   const document = JSON.parse(JSON.stringify(input)) as DiagramDocument;
+  // GIF frames share the authored camera so changing live canvas height cannot stretch diagram pixels.
+  // Validate the original option above before omitting it from this private export snapshot.
+  const { fitHeight: _fitHeight, ...viewport } = document.viewport;
+  const diagram: Diagram = createDiagram({ ...document, viewport });
   const plan = planGif(document, diagram.totalDuration, captured);
   if (typeof globalThis.document === "undefined" || typeof Worker !== "function") throw new GifExportError("environment", "GIF export requires a modern browser with canvas and workers; use flowsvg/node in Node.");
   const report = (phase: GifExportProgress["phase"], completed: number) => { checkAbort(captured.signal); captured.onProgress?.({ phase, completed, total: plan.frames.length }); checkAbort(captured.signal); };
@@ -33,7 +36,7 @@ export async function exportGif(input: DiagramDocument, options: GifExportOption
   try {
     const context = canvas.getContext("2d", { willReadFrequently: true });
     if (!context) throw new GifExportError("environment", "Canvas 2D is unavailable; enable browser canvas support.");
-    const captions = captured.includeCaptions === false ? [] : collectCaptions(document, plan.startMs, plan.endMs);
+    const captions = captured.includeCaptions === false ? [] : collectCaptions(diagram, plan.startMs, plan.endMs);
     await waitForFonts([document.title ?? "中文", ...captions.map(({ text }) => text)].join("\n"), captured.signal);
     preflightCaptions(context, captions, plan);
     checkAbort(captured.signal);

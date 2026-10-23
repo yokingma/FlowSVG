@@ -23,6 +23,8 @@ import type {
 /** Creation options: controls default on, motion follows browser preferences, and theme falls back to the document/light. */
 export interface PlayerOptions extends EvaluateOptions {
   controls?: boolean;
+  /** Defaults to false. Wrap positive-duration playback; manual seek and step keep their explicit position. */
+  loop?: boolean;
   /** Defaults to false. GIF controls require visible playback controls; exports use the full timeline at 1×. */
   gifExport?: boolean;
   /** Hover highlights borders by default; true also paints the background and adjusts content ink. Applies to groups too. */
@@ -34,6 +36,7 @@ export interface PlayerState {
   timeMs: number;
   totalDuration: number;
   playing: boolean;
+  loop: boolean;
   speed: number;
   frame: DiagramFrameState;
 }
@@ -50,7 +53,7 @@ export interface PlayerInteractionDetail extends HitObject {
 export interface FlowPlayer {
   /** The supplied host, also used as the CustomEvent dispatch target. */
   readonly element: HTMLElement;
-  /** Play from the current position; do not start for static diagrams, at the end, or while the page is hidden. */
+  /** Play from the current position; loop mode restarts at the end. Static or page-hidden players cannot start. */
   play(): void;
   /** Stop time advancement, retaining the current frame. */
   pause(): void;
@@ -60,6 +63,8 @@ export interface FlowPlayer {
   step(direction: 1 | -1): void;
   /** Set a finite positive speed multiplier; ignore invalid values. */
   setSpeed(speed: number): void;
+  /** Change live loop mode without changing playback or position; emit loopchange only when the value changes. */
+  setLoop(loop: boolean): void;
   /** Compile before replacing; reset/pause at zero on success, or emit error and retain the old document/time/playback. */
   load(document: DiagramDocument): void;
   /** Read current player state; the last state remains readable after destruction. */
@@ -82,6 +87,7 @@ export type PlayerEventMap = {
   stepchange: CustomEvent<PlayerState>;
   timeupdate: CustomEvent<PlayerState>;
   playstatechange: CustomEvent<PlayerState>;
+  loopchange: CustomEvent<PlayerState>;
   error: CustomEvent<PlayerErrorDetail>;
   hover: CustomEvent<PlayerInteractionDetail | null>;
   click: CustomEvent<PlayerInteractionDetail | null>;
@@ -112,6 +118,8 @@ class BrowserPlayer implements FlowPlayer {
   private timeMs = 0;
   private speed = 1;
   private playing = false;
+  private loop: boolean;
+  private playbackIntent = 0;
   private destroyed = false;
   private frameHandle: number | undefined;
   private lastTimestamp: number | undefined;
@@ -131,10 +139,11 @@ class BrowserPlayer implements FlowPlayer {
 
   constructor(host: HTMLElement, diagram: Diagram, document: DiagramDocument, options: PlayerOptions) {
     this.element = host;
+    this.loop = options.loop ?? false;
     this.diagram = diagram;
     this.sourceDocument = cloneSourceDocument(document);
-    this.beatStarts = collectBeatStarts(document);
-    this.scenes = collectScenes(document);
+    this.beatStarts = diagram.beats.map((beat) => beat.startMs);
+    this.scenes = collectScenes(document, diagram);
     const owner = host.ownerDocument;
     const motion = observeReducedMotion(owner, options.reducedMotion, (reducedMotion) => {
       if (this.destroyed) return;
@@ -157,7 +166,8 @@ class BrowserPlayer implements FlowPlayer {
         toggle: this.togglePlayback,
         step: (direction) => this.step(direction),
         seek: (timeMs) => this.seek(timeMs),
-        setSpeed: (speed) => this.setSpeed(speed)
+        setSpeed: (speed) => this.setSpeed(speed),
+        toggleLoop: () => this.setLoop(!this.loop)
       });
     }
     if (options.gifExport && this.controls) {
@@ -177,7 +187,15 @@ class BrowserPlayer implements FlowPlayer {
   }
 
   play(): void {
-    if (this.destroyed || this.playing || this.element.ownerDocument.visibilityState === "hidden" || this.diagram.totalDuration <= this.timeMs) return;
+    if (this.destroyed || this.playing || this.isPageHidden() || this.diagram.totalDuration <= 0) return;
+    if (this.timeMs >= this.diagram.totalDuration) {
+      if (!this.loop) return;
+      const intent = this.playbackIntent;
+      this.timeMs = 0;
+      this.updateFrame();
+      // Rendering dispatches events; a newer pause, seek or load must override this restart.
+      if (this.destroyed || this.playing || intent !== this.playbackIntent || this.isPageHidden()) return;
+    }
     this.playing = true;
     this.lastTimestamp = undefined;
     this.renderControls();
@@ -186,7 +204,9 @@ class BrowserPlayer implements FlowPlayer {
   }
 
   pause(): void {
-    if (this.destroyed || !this.playing) return;
+    if (this.destroyed) return;
+    this.playbackIntent += 1;
+    if (!this.playing) return;
     this.playing = false;
     if (this.frameHandle !== undefined) cancelAnimationFrame(this.frameHandle);
     this.frameHandle = undefined;
@@ -196,6 +216,7 @@ class BrowserPlayer implements FlowPlayer {
 
   seek(timeMs: number): void {
     if (this.destroyed) return;
+    this.playbackIntent += 1;
     this.timeMs = clamp(timeMs, 0, this.diagram.totalDuration);
     this.lastTimestamp = undefined;
     this.updateFrame();
@@ -216,6 +237,13 @@ class BrowserPlayer implements FlowPlayer {
     this.renderControls();
   }
 
+  setLoop(loop: boolean): void {
+    if (this.destroyed || this.loop === loop) return;
+    this.loop = loop;
+    this.renderControls();
+    this.emit("loopchange");
+  }
+
   load(document: DiagramDocument): void {
     if (this.destroyed) return;
     try {
@@ -226,8 +254,8 @@ class BrowserPlayer implements FlowPlayer {
       this.diagram = diagram;
       this.sourceDocument = cloneSourceDocument(document);
       this.options = { ...this.options, theme: this.themeOverride ?? document.theme ?? "light" };
-      this.beatStarts = collectBeatStarts(document);
-      this.scenes = collectScenes(document);
+      this.beatStarts = diagram.beats.map((beat) => beat.startMs);
+      this.scenes = collectScenes(document, diagram);
       this.timeMs = 0;
       // A replacement document owns new interaction targets, even when it reuses the same node IDs.
       this.pointerPosition = undefined;
@@ -266,8 +294,11 @@ class BrowserPlayer implements FlowPlayer {
     this.frameHandle = undefined;
     const previous = this.lastTimestamp ?? timestamp;
     this.lastTimestamp = timestamp;
-    this.timeMs += (timestamp - previous) * this.speed;
-    if (this.timeMs >= this.diagram.totalDuration) {
+    const elapsed = timestamp - previous;
+    this.timeMs = this.loop
+      ? advanceLoopTime(this.timeMs, elapsed, this.speed, this.diagram.totalDuration)
+      : this.timeMs + elapsed * this.speed;
+    if (!this.loop && this.timeMs >= this.diagram.totalDuration) {
       this.timeMs = this.diagram.totalDuration;
       this.updateFrame();
       this.pause();
@@ -293,6 +324,10 @@ class BrowserPlayer implements FlowPlayer {
     this.emit("timeupdate");
   }
 
+  private isPageHidden(): boolean {
+    return this.element.ownerDocument.visibilityState === "hidden";
+  }
+
   private togglePlayback = (): void => {
     if (this.playing) this.pause(); else this.play();
   };
@@ -307,7 +342,7 @@ class BrowserPlayer implements FlowPlayer {
     this.controls?.render({ ...this.state(), sceneId: this.frame.sceneId, scenes: this.scenes });
   }
   private state(): PlayerState {
-    return { timeMs: this.timeMs, totalDuration: this.diagram.totalDuration, playing: this.playing, speed: this.speed, frame: this.frame };
+    return { timeMs: this.timeMs, totalDuration: this.diagram.totalDuration, playing: this.playing, loop: this.loop, speed: this.speed, frame: this.frame };
   }
   private handlePointer(type: "hover" | "click", event: PointerEvent): void {
     if (this.destroyed) return;
@@ -383,22 +418,12 @@ function clamp(value: number, min: number, max: number): number {
 
 export type { ThemeName };
 
-function collectBeatStarts(document: DiagramDocument): number[] {
-  let startMs = 0;
-  return document.scenes.flatMap((scene) => scene.beats.map((beat) => {
-    const start = startMs;
-    startMs += beat.durationMs;
-    return start;
+/** Reuse effective starts from core; authored durations can be shorter than a single transfer. */
+function collectScenes(document: DiagramDocument, diagram: Diagram): SceneChoice[] {
+  const labels = new Map(document.scenes.map((scene) => [scene.id, scene.label]));
+  return diagram.beats.filter((beat) => beat.beatIndex === 0).map((beat) => ({
+    id: beat.sceneId, label: labels.get(beat.sceneId)!, startMs: beat.startMs
   }));
-}
-
-function collectScenes(document: DiagramDocument): SceneChoice[] {
-  let startMs = 0;
-  return document.scenes.map((scene) => {
-    const choice = { id: scene.id, label: scene.label, startMs };
-    startMs += scene.beats.reduce((duration, beat) => duration + beat.durationMs, 0);
-    return choice;
-  });
 }
 
 interface PointerHandlers {
@@ -451,4 +476,25 @@ function pointerToDiagramPoint(canvas: HTMLElement, camera: DiagramFrameState["c
 /** Validation admits JSON documents; the same serialization as the core also handles reactive host document objects. */
 function cloneSourceDocument(document: DiagramDocument): DiagramDocument {
   return JSON.parse(JSON.stringify(document)) as DiagramDocument;
+}
+
+/** Preserve the modular elapsed result even when finite speed and elapsed values overflow their product. */
+function advanceLoopTime(timeMs: number, elapsedMs: number, speed: number, duration: number): number {
+  let scaledSpeed = speed;
+  let elapsed = elapsedMs * scaledSpeed;
+  let doublings = 0;
+  while (!Number.isFinite(elapsed)) {
+    scaledSpeed /= 2;
+    doublings += 1;
+    elapsed = elapsedMs * scaledSpeed;
+  }
+  let remainder = elapsed % duration;
+  // Reducing before each doubling avoids overflow without discarding elapsed remainder.
+  for (let index = 0; index < doublings; index += 1) remainder = addLoopRemainder(remainder, remainder, duration);
+  return addLoopRemainder(timeMs % duration, remainder, duration);
+}
+
+function addLoopRemainder(left: number, right: number, duration: number): number {
+  const gap = duration - right;
+  return left >= gap ? left - gap : left + right;
 }

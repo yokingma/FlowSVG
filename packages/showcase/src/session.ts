@@ -8,6 +8,8 @@ export interface ShowcaseSession {
   readonly exampleId: string | null;
   readonly settings: ShowcaseDefaults | null;
   readonly timeMs: number;
+  /** Runtime preference, default false; never serialized into diagram documents or addresses. */
+  readonly loop: boolean;
   /** Monotonic ownership token for mounted resources and callbacks. */
   readonly version: number;
   readonly diagnostics: readonly ParameterDiagnostic[];
@@ -29,6 +31,7 @@ export interface AddressUpdate {
 export interface PlaybackSnapshot {
   readonly timeMs: number;
   readonly speed: number;
+  readonly loop: boolean;
 }
 
 /** Navigation, visual, sharing and history operations; the host executes returned browser effects. */
@@ -53,12 +56,16 @@ export interface SessionTransition {
 /** Start at the explicit default, paused at zero; empty catalogs never invent a selected ID. */
 export function createSession(catalog: ShowcaseCatalog): ShowcaseSession {
   const definition = catalog.defaultId === null ? undefined : catalog.get(catalog.defaultId);
-  return { exampleId: definition?.id ?? null, settings: definition?.defaults ?? null, timeMs: 0, version: 0, diagnostics: [] };
+  return { exampleId: definition?.id ?? null, settings: definition?.defaults ?? null, timeMs: 0, loop: false, version: 0, diagnostics: [] };
 }
 
 /** Compute targets and ordered address effects from an operation snapshot, or the saved target without a player. */
 export function transitionSession(catalog: ShowcaseCatalog, current: ShowcaseSession, operation: SessionOperation, snapshot?: PlaybackSnapshot, address = ""): SessionTransition {
-  if (operation.type === "restore") return restoreSession(catalog, operation.address, current.version + 1);
+  if (operation.type === "restore") {
+    const restored = restoreSession(catalog, operation.address, current.version + 1);
+    // History restores shareable fields; the current player's loop choice stays in this page session.
+    return { ...restored, session: { ...restored.session, loop: snapshot?.loop ?? current.loop } };
+  }
   if (operation.type === "share") {
     const session = saveSnapshot(current, snapshot);
     const copyAddress = serializeSession(address, session);
@@ -74,7 +81,7 @@ export function transitionSession(catalog: ShowcaseCatalog, current: ShowcaseSes
 
 function saveSnapshot(session: ShowcaseSession, snapshot?: PlaybackSnapshot): ShowcaseSession {
   return !session.settings || !snapshot ? session : {
-    ...session, timeMs: snapshot.timeMs, settings: { ...session.settings, speed: snapshot.speed }
+    ...session, timeMs: snapshot.timeMs, loop: snapshot.loop, settings: { ...session.settings, speed: snapshot.speed }
   };
 }
 
@@ -84,19 +91,19 @@ function transitionPresentation(catalog: ShowcaseCatalog, current: ShowcaseSessi
     const definition = catalog.get(operation.exampleId);
     if (!definition || definition.id === current.exampleId) return { session: current, replacePlayer: false, addressUpdates: [] };
     return { replacePlayer: true, addressUpdates: [], session: {
-      exampleId: definition.id, timeMs: 0, version: current.version + 1, diagnostics: [],
+      exampleId: definition.id, timeMs: 0, loop: snapshot?.loop ?? current.loop, version: current.version + 1, diagnostics: [],
       settings: { ...current.settings, speed: definition.defaults.speed }
     } };
   }
   const visualUpdate = operation.type === "theme" ? { theme: operation.theme } : operation.type === "reducedMotion" ? { reducedMotion: operation.reducedMotion } : {};
   if (operation.type === "theme" && current.settings.theme === operation.theme || operation.type === "reducedMotion" && current.settings.reducedMotion === operation.reducedMotion) return { session: current, replacePlayer: false, addressUpdates: [] };
   return { replacePlayer: true, addressUpdates: [], session: {
-    ...current, diagnostics: [], version: current.version + 1, timeMs: snapshot?.timeMs ?? current.timeMs,
+    ...current, diagnostics: [], version: current.version + 1, timeMs: snapshot?.timeMs ?? current.timeMs, loop: snapshot?.loop ?? current.loop,
     settings: { ...current.settings, ...visualUpdate, speed: snapshot?.speed ?? current.settings.speed }
   } };
 }
 
-/** Serialize a shareable selected snapshot; speed and playing state never enter the address. */
+/** Serialize a shareable selected snapshot; speed, loop and playing state never enter the address. */
 export function serializeSession(address: string, session: ShowcaseSession): string {
   return writeAddress(address, session);
 }
@@ -131,7 +138,7 @@ export function restoreSession(catalog: ShowcaseCatalog, address: string, versio
       reducedMotion: reduced === "0" || reduced === "1" ? reduced === "1" : definition.defaults.reducedMotion
     } : null,
     timeMs: Math.min(definition?.durationMs ?? 0, validTime ? Number(time ?? 0) : 0),
-    version, diagnostics
+    loop: false, version, diagnostics
   };
   const canonical = serializeSession(address, session);
   return { session, replacePlayer: session.exampleId !== null, addressUpdates: canonical === address ? [] : [{ method: "replace", address: canonical }] };

@@ -62,6 +62,12 @@
   background: color-mix(in srgb, var(--flowsvg-control-accent, #2563eb) 23%, var(--flowsvg-control-background, #ffffff));
 }
 
+.flowsvg-controls .flowsvg-loop-toggle[aria-pressed="true"] {
+  color: var(--flowsvg-control-accent, #2563eb);
+  background: color-mix(in srgb, var(--flowsvg-control-accent, #2563eb) 10%, var(--flowsvg-control-background, #ffffff));
+  border-color: var(--flowsvg-control-accent, #2563eb);
+}
+
 .flowsvg-controls :is(button, input):focus-visible {
   outline: 2px solid var(--flowsvg-control-focus, #2563eb);
   outline-offset: 2px;

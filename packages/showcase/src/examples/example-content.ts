@@ -1,7 +1,7 @@
-/** Compact semantic content shared by the three card-based category examples; all paint comes from the SDK theme. */
-import type { NodeContent } from "flowsvg";
+/** Shared author formatting and build-time sizing; all paint comes from the SDK theme. */
+import { measureNodeContent, type DiagramNode, type NodeContent, type NodeContentMeasurementInput } from "flowsvg";
 
-/** Four short blocks fit a 144-unit rounded card at its authored width; longer text still needs overflow checks. */
+/** Share four-block content styles across category and project architecture stories. */
 export function createExampleContent(title: string, tag: string, body: string, detail: string): NodeContent {
   return { style: { padding: 12, blockGap: 6 }, blocks: [
     { type: "title", text: title },
@@ -9,4 +9,19 @@ export function createExampleContent(title: string, tag: string, body: string, d
     { type: "paragraph", text: body },
     { type: "paragraph", role: "auxiliary", text: detail }
   ] };
+}
+
+type MeasuredExampleNode = DiagramNode & { kind: NodeContentMeasurementInput["kind"]; content: NodeContent };
+
+/**
+ * Measure the initial content and explicit replacements before serializing the author document.
+ * Authored height is a minimum; callers still own placement, group bounds and route clearance.
+ * @throws When content cannot fit the authored width, with the node ID and SDK diagnostics.
+ */
+export function measureExampleNode(node: MeasuredExampleNode, ...versions: NodeContent[]): DiagramNode {
+  const measurement = measureNodeContent({ kind: node.kind, width: node.width, content: [node.content, ...versions] });
+  if (measurement.diagnostics.length > 0) {
+    throw new Error(`Showcase node "${node.id}" content does not fit its authored width: ${JSON.stringify(measurement.diagnostics)}`);
+  }
+  return { ...node, height: Math.max(node.height, measurement.height) };
 }

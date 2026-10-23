@@ -177,3 +177,20 @@ it("matches browser-export representative frames, raw delays and loops in the sa
     expect(requests).toEqual([]);
   } finally { await browser.close(); }
 }, 30_000);
+
+it("keeps the authored camera and node scale in Node GIF when live height fitting is enabled", async () => {
+  const { exportGif } = await import(NODE_ENTRY);
+  const fitted = {
+    version: 1, viewport: { width: 240, height: 160, fitHeight: { padding: 8 } },
+    nodes: [{ id: "card", kind: "rect", x: 20, y: 20, width: 60, height: 30, style: { fill: "#ff0000" } }], edges: [], scenes: []
+  };
+  const before = JSON.stringify(fitted);
+  const bytes: Uint8Array = await exportGif(fitted, { executablePath: process.env.FLOWSVG_CHROMIUM_PATH, includeCaptions: false });
+  const parsed = parseGIF(bytes.buffer as ArrayBuffer);
+  expect(parsed.lsd).toMatchObject({ width: 240, height: 160 });
+  const frame = decompressFrames(parsed, true)[0]!;
+  const pixel = (x: number, y: number) => Array.from(frame.patch.slice((y * 240 + x) * 4, (y * 240 + x) * 4 + 4));
+  expect(pixel(40, 45)).toEqual([255, 0, 0, 255]);
+  expect(pixel(40, 80)).toEqual([255, 255, 255, 255]);
+  expect(JSON.stringify(fitted)).toBe(before);
+});

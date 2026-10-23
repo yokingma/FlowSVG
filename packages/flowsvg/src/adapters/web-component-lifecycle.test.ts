@@ -42,3 +42,28 @@ describe.each([
     expect(element.getState()).toBeUndefined();
   });
 });
+
+describe("Web Component loop mode", () => {
+  it("reflects initial and dynamic loop options without rebuilding, and forwards loopchange once", () => {
+    const element = window.document.createElement(FLOW_PLAYER_TAG) as FlowPlayerElement;
+    element.reducedMotion = false;
+    element.setAttribute("loop", "");
+    element.document = document;
+    const changes: boolean[] = [];
+    element.addEventListener("loopchange", (event) => changes.push((event as CustomEvent<{ loop: boolean }>).detail.loop));
+    try {
+      window.document.body.append(element);
+      expect(element.getState()?.loop).toBe(true);
+      element.seek(250);
+      const svg = element.querySelector("svg");
+      element.loop = false;
+      expect(element.getState()).toMatchObject({ timeMs: 250, loop: false });
+      expect(element.querySelector("svg")).toBe(svg);
+      element.setLoop(true);
+      expect(element.loop).toBe(true);
+      expect(changes).toEqual([false, true]);
+      element.theme = "dark";
+      expect(element.getState()?.loop).toBe(true);
+    } finally { element.remove(); }
+  });
+});

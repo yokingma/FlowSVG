@@ -274,7 +274,7 @@ describe("orthogonal edge routing", () => {
     expect(diagram.renderSvg()).toContain(`d="${path}"`);
   });
 
-  it("attaches orthogonal edges to boundaries and uses only horizontal/vertical segments", () => {
+  it("attaches orthogonal edges to boundaries with cardinal runs and rounded bends", () => {
     const document: DiagramDocument = {
       version: 1,
       viewport: { width: 500, height: 360 },
@@ -288,7 +288,9 @@ describe("orthogonal edge routing", () => {
     };
 
     const path = createDiagram(document).evaluateAt(0).edges[0]?.path;
-    expect(path).toBe("M 120 130 L 210 130 L 210 250 L 300 250");
+    expect(path).toMatch(/^M 120 130 L \d+ 130 Q /);
+    expect(path?.match(/ Q /g)).toHaveLength(2);
+    expect(path).toMatch(/ L 300 250$/);
     expect(path).not.toContain("container");
   });
 
@@ -308,7 +310,11 @@ describe("orthogonal edge routing", () => {
     const diagram = createDiagram(document);
     const first = diagram.evaluateAt(0).edges[0]?.path;
     const second = diagram.evaluateAt(0).edges[0]?.path;
-    expect(first).toBe("M 120 130 L 172 130 L 172 82 L 316 82 L 316 130 L 340 130");
+    expect(first).toMatch(/^M 120 130 L /);
+    expect(first).toContain(" Q ");
+    expect(first).toMatch(/ L 340 130$/);
+    for (const time of [0, 200, 400, 600, 800]) expect(diagram.evaluateAt(time).edges[0]?.path).toBe(first);
+    expect(diagram.hitTest(0, { x: 220, y: 82 })).toEqual({ id: "flow", type: "edge" });
     expect(second).toBe(first);
     expect(first).not.toContain("M 120 130 L 340 130");
   });

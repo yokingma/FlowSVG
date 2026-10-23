@@ -25,6 +25,8 @@ export interface FlowPlayerProps {
   document: DiagramDocument;
   /** Positive playback multiplier; omit to use the player default. */
   speed?: number;
+  /** Defaults to false. Changes update live loop mode without rebuilding the player. */
+  loop?: boolean;
   theme?: ThemeName;
   controls?: boolean;
   /** Defaults to false. Enable GIF downloads when controls are visible; export is independent of playback. */
@@ -39,6 +41,7 @@ export interface FlowPlayerProps {
   onStepChange?: (state: PlayerState) => void;
   onTimeUpdate?: (state: PlayerState) => void;
   onPlayStateChange?: (state: PlayerState) => void;
+  onLoopChange?: (state: PlayerState) => void;
   onError?: (detail: PlayerErrorDetail) => void;
 }
 
@@ -54,6 +57,8 @@ export interface FlowPlayerHandle {
   step(direction: 1 | -1): void;
   /** Set a finite positive multiplier; ignore invalid values. */
   setSpeed(speed: number): void;
+  /** Toggle whole-timeline playback without changing the current position or play state. */
+  setLoop(loop: boolean): void;
   /** Reset/pause at zero on success; emit an error and retain playback state if validation fails. */
   load(document: DiagramDocument): void;
   /** Read the current browser-player snapshot. */
@@ -72,6 +77,7 @@ interface PlayerOptionsSnapshot {
 const propsOptions = {
   document: { type: Object as PropType<DiagramDocument>, required: true },
   speed: { type: Number, required: false },
+  loop: { type: Boolean as PropType<boolean | undefined>, default: undefined },
   theme: { type: String as PropType<ThemeName>, required: false },
   gifExport: { type: Boolean as PropType<boolean | undefined>, default: undefined },
   controls: { type: Boolean as PropType<boolean | undefined>, default: undefined },
@@ -83,6 +89,7 @@ const propsOptions = {
   onStepChange: { type: Function as PropType<(state: PlayerState) => void>, required: false },
   onTimeUpdate: { type: Function as PropType<(state: PlayerState) => void>, required: false },
   onPlayStateChange: { type: Function as PropType<(state: PlayerState) => void>, required: false },
+  onLoopChange: { type: Function as PropType<(state: PlayerState) => void>, required: false },
   onError: { type: Function as PropType<(detail: PlayerErrorDetail) => void>, required: false }
 } as const;
 
@@ -98,6 +105,7 @@ export const FlowPlayer = defineComponent({
     stepchange: (_state: PlayerState) => true,
     timeupdate: (_state: PlayerState) => true,
     playstatechange: (_state: PlayerState) => true,
+    loopchange: (_state: PlayerState) => true,
     error: (_detail: PlayerErrorDetail) => true
   },
   setup(props, { attrs, emit, expose }) {
@@ -119,6 +127,7 @@ export const FlowPlayer = defineComponent({
       seek: (timeMs: number) => requirePlayer().seek(timeMs),
       step: (direction: 1 | -1) => requirePlayer().step(direction),
       setSpeed: (speed: number) => requirePlayer().setSpeed(speed),
+      setLoop: (loop: boolean) => requirePlayer().setLoop(loop),
       load: (document: DiagramDocument) => requirePlayer().load(document),
       getState: () => requirePlayer().getState()
     } satisfies FlowPlayerHandle);
@@ -147,6 +156,11 @@ export const FlowPlayer = defineComponent({
         emit("playstatechange", state);
         props.onPlayStateChange?.(state);
       };
+      const onLoopChange = (event: Event) => {
+        const state = (event as CustomEvent<PlayerState>).detail;
+        emit("loopchange", state);
+        props.onLoopChange?.(state);
+      };
       const onError = (event: Event) => {
         const detail = (event as CustomEvent<PlayerErrorDetail>).detail;
         // Vue's error event already invokes the onError prop; an explicit callback would duplicate delivery.
@@ -155,20 +169,22 @@ export const FlowPlayer = defineComponent({
       next.element.addEventListener("stepchange", onStepChange);
       next.element.addEventListener("timeupdate", onTimeUpdate);
       next.element.addEventListener("playstatechange", onPlayStateChange);
+      next.element.addEventListener("loopchange", onLoopChange);
       next.element.addEventListener("error", onError);
       return () => {
         next.element.removeEventListener("stepchange", onStepChange);
         next.element.removeEventListener("timeupdate", onTimeUpdate);
         next.element.removeEventListener("playstatechange", onPlayStateChange);
+        next.element.removeEventListener("loopchange", onLoopChange);
         next.element.removeEventListener("error", onError);
       };
     };
 
     // Keep initialApplied across option rebuilds so initialTimeMs is not reapplied.
-    const mount = (): void => {
+    const mount = (previousLoop?: boolean): void => {
       const host = hostRef.value;
       if (!host || player) return;
-      const next = createPlayer(host, props.document, currentOptions());
+      const next = createPlayer(host, props.document, { ...currentOptions(), loop: props.loop ?? previousLoop });
       player = next;
       optionsSnapshot = currentOptions();
       cleanupEvents = attachEvents(next);
@@ -188,8 +204,9 @@ export const FlowPlayer = defineComponent({
 
     const rebuild = (): void => {
       if (!mounted || !player) return;
+      const previousLoop = player.getState().loop;
       unmount();
-      mount();
+      mount(previousLoop);
     };
 
     onMounted(() => {
@@ -211,6 +228,8 @@ export const FlowPlayer = defineComponent({
     watch(() => props.speed, (speed) => {
       if (player && speed !== undefined) player.setSpeed(speed);
     });
+
+    watch(() => props.loop, (loop) => player?.setLoop(loop ?? false));
 
     onBeforeUnmount(() => {
       mounted = false;

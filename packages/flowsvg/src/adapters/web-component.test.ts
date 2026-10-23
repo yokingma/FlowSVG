@@ -18,7 +18,8 @@ describe("web component entry", () => {
       "theme",
       "reduced-motion",
       "hover-fill",
-      "gif-export"
+      "gif-export",
+      "loop"
     ]);
   });
 });

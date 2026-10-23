@@ -10,8 +10,10 @@ const PREVIEW_IMAGES = [
   "docs/images/quick-start.png", "docs/images/node-content.png",
   "docs/images/numbered-list.png", "docs/images/numbered-list.zh-CN.png",
   "docs/images/record-tags.png", "docs/images/entity-graph.png",
-  "docs/images/facts-timeline.png", "docs/images/facts-timeline.zh-CN.png"
+  "docs/images/facts-timeline.png", "docs/images/facts-timeline.zh-CN.png", "docs/images/flowsvg-wordmark.gif",
+  "docs/images/job-lifecycle.gif"
 ];
+const EXAMPLE_FILES = ["examples/job-lifecycle.json"];
 const fixtures: string[] = [];
 
 interface Invocation {
@@ -145,7 +147,7 @@ function verifyPackedFiles(extraFiles: string[], omittedFiles: string[] = []) {
     "dist/portable/export.js", "dist/portable/LICENSE.gifenc.txt", "dist/portable/player.js", "dist/portable/styles.css", "dist/portable/manifest.json",
     "dist/portable/LICENSE.flowsvg.txt", "dist/portable/LICENSE.esbuild.txt"
   ];
-  const packedFiles = [...documents, ...PREVIEW_IMAGES, ...portableFiles, "dist/node/cli.js", "dist/node.d.ts", "dist/export.d.ts", "dist/export/worker-source.js", ...extraFiles].filter((file) => !omittedFiles.includes(file));
+  const packedFiles = [...documents, ...PREVIEW_IMAGES, ...EXAMPLE_FILES, ...portableFiles, "dist/node/cli.js", "dist/node.d.ts", "dist/export.d.ts", "dist/export/worker-source.js", ...extraFiles].filter((file) => !omittedFiles.includes(file));
   writeFileSync(join(fixture.binaries, "npm"), `#!${process.execPath}
     const fs = require("node:fs");
     const path = require("node:path");
@@ -161,7 +163,7 @@ function verifyPackedFiles(extraFiles: string[], omittedFiles: string[] = []) {
         const packageDir = path.join(source, "package");
         fs.mkdirSync(packageDir, { recursive: true });
         for (const name of ["README.md", "README.zh-CN.md"]) {
-          fs.writeFileSync(path.join(packageDir, name), "![Preview](./docs/images/quick-start.png)");
+          fs.writeFileSync(path.join(packageDir, name), '![Preview](./docs/images/quick-start.png)\\n<p align="center"><img src="./docs/images/flowsvg-wordmark.gif" alt="FlowSVG" width="360"></p>');
         }
         execFileSync("tar", ["-czf", path.join(destination, "fixture.tgz"), "-C", source, "package"]);
       }
@@ -178,6 +180,20 @@ function verifyPackedFiles(extraFiles: string[], omittedFiles: string[] = []) {
 }
 
 describe("packed release files", () => {
+  it("accepts the runnable lifecycle example and its preview before installing the consumer", () => {
+    const result = verifyPackedFiles([]);
+    expect(result.stderr).toContain("TEST_CONSUMER_INSTALL_REACHED");
+    expect(result.stderr).not.toContain("unexpected tarball file");
+  });
+
+  it.each([...EXAMPLE_FILES, "docs/images/job-lifecycle.gif"])(
+    "rejects a missing lifecycle example artifact %s before installing the consumer", (file) => {
+      const result = verifyPackedFiles([], [file]);
+      expect(result.stderr).toContain(`tarball missing ${file}`);
+      expect(result.stderr).not.toContain("TEST_CONSUMER_INSTALL_REACHED");
+    }
+  );
+
   it("verifies a normal consumer installation with dependency lifecycle scripts enabled", () => {
     const result = verifyPackedFiles([]);
     expect(result.stderr).toContain("TEST_INSTALL_SCRIPTS_ENABLED: true");
@@ -196,6 +212,14 @@ describe("packed release files", () => {
     const image = `![Preview](https://cdn.jsdelivr.net/npm/flowsvg@${FIXTURE_VERSION}/docs/images/quick-start.png)`;
     expect(result.stderr).toContain(`TEST_PACKED_README: ${image}`);
     expect(result.stderr).toContain(`TEST_PACKED_ZH_README: ${image}`);
+    expect(result.stderr).toContain("TEST_CONSUMER_INSTALL_REACHED");
+  });
+
+  it("converts centered HTML logos to versioned public URLs in both README languages", () => {
+    const result = verifyPackedFiles([]);
+    const logo = `<p align="center"><img src="https://cdn.jsdelivr.net/npm/flowsvg@${FIXTURE_VERSION}/docs/images/flowsvg-wordmark.gif" alt="FlowSVG" width="360"></p>`;
+    expect(result.stderr.split(logo)).toHaveLength(3);
+    expect(result.stderr).not.toContain('src="./docs/images/');
     expect(result.stderr).toContain("TEST_CONSUMER_INSTALL_REACHED");
   });
 

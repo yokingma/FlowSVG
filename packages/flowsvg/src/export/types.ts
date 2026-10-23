@@ -27,7 +27,8 @@ export interface GifExportOptions {
   /** Positive finite source-time multiplier, default 1. Output duration is source range / speed. */
   speed?: number;
   /**
-   * Positive diagram width in pixels, rounded to an integer. Diagram height preserves the viewport ratio.
+   * Positive diagram width in pixels, rounded to an integer. Diagram height preserves the authored viewport ratio.
+   * GIF ignores viewport.fitHeight for all frames to keep pixel dimensions and diagram scale stable.
    * Defaults to min(viewport.width, 1280), without upscaling; captions add height below the diagram.
    */
   width?: number;

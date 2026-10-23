@@ -3,7 +3,7 @@ import type { NodeContent, NodeContentLayout } from "./node-content.js";
 
 /** Supported shapes; a group also supplies the origin and visibility constraints for its children. */
 export type NodeKind = "rect" | "roundedRect" | "ellipse" | "cylinder" | "group";
-/** Route families generated from node geometry; orthogonal routes avoid obstacles, and curved routes use cubic Bézier controls. */
+/** Route families generated from node geometry; orthogonal routes avoid obstacles with rounded bends, and curved routes use cubic Bézier controls. */
 export type EdgeRoute = "straight" | "orthogonal" | "curved";
 /** Cardinal node sides used for explicit edge attachments. */
 export type PortDirection = "top" | "right" | "bottom" | "left";
@@ -16,6 +16,12 @@ export type ThemeName = "light" | "dark";
 export interface Viewport {
   width: number;
   height: number;
+  /**
+   * Fit full-view height to current painted geometry plus finite nonnegative bottom padding, in diagram units.
+   * Round height outward to whole units. Keep origin and authored width; empty frames use authored height. Explicit focus keeps authored viewport semantics.
+   * GIF export uses authored fixed dimensions for every frame to preserve diagram scale.
+   */
+  fitHeight?: { padding: number };
 }
 
 /** Initial base style; colors accept hexadecimal RGB/RGBA only, and dashed is used for group borders. */
@@ -92,15 +98,27 @@ export interface Scene {
   beats: Beat[];
 }
 
+/** Immutable effective beat interval in global milliseconds; caption includes inherited text. */
+export interface DiagramBeat {
+  readonly sceneId: string;
+  readonly beatId: string;
+  /** Zero-based index within the scene. */
+  readonly beatIndex: number;
+  readonly startMs: number;
+  readonly endMs: number;
+  readonly caption?: string;
+}
+
 /**
  * Persistent actions take effect from the beat start and inherit into later beats; durationMs must be positive.
  * transitionMs defaults to min(250, durationMs) within [0, durationMs]; omitted captions inherit the previous text.
- * Flows on distinct edges share the full beat progress and expire together without inheritance, independently of transitionMs.
+ * One flow moves at a reference 180 diagram units/second with a 400 ms minimum, then uses a 500 ms post-arrival interval.
+ * Single-flow duration replaces authored timing; multiple flows share authored full-beat progress. All flows expire without inheritance.
  */
 export interface Beat {
-  /** Total length in milliseconds, including the transition and any remaining hold time. */
+  /** Authored beat length in milliseconds for no-flow/multi-flow beats; one flow uses movement plus 500 ms. */
   durationMs: number;
-  /** Opening transition in milliseconds; defaults to min(250, durationMs), and zero applies changes immediately. */
+  /** Opening transition in milliseconds; defaults to min(250, durationMs), clamps to effective beat length, and zero applies changes immediately. */
   transitionMs?: number;
   /** Replaces the inherited caption at the beat start; an empty string clears it. */
   caption?: string;
@@ -136,7 +154,11 @@ export interface EdgeVisualState {
 
 /**
  * Declarative beat action. Visibility, explicit highlighting, base updates and focus persist into later beats.
- * Flow markers and their temporary participant highlights expire at the beat end without changing persistent layers.
+ * Flow markers and their temporary highlights expire at the beat end without changing persistent layers.
+ * Flows highlight their edge and, by default, both endpoints; highlightParticipants: false excludes the endpoints.
+ * Single-flow receiver paint fades in for 200 ms after arrival, holds for 100 ms, then automatic node/edge paint fades out for 200 ms.
+ * Logical participant flags and markers last for the whole beat; explicit highlights retain authored timing.
+ * Reduced motion skips paint interpolation. Multiple flows retain synchronized endpoint paint.
  * focus accepts a node/group ID or null for the full view; duplicate assignments within one beat are rejected.
  * A beat permits at most one flow per edge, regardless of direction; other visual layers can coexist.
  */
@@ -165,6 +187,8 @@ export type Action =
     direction: FlowDirection;
     /** Plain short message for this transfer; provided text uses a horizontal capsule instead of a dot. */
     text?: string;
+    /** Defaults to true. False disables temporary endpoint highlights; explicit highlights and the flow edge are unchanged. */
+    highlightParticipants?: boolean;
   };
 /** Validation path and reason, for example scenes[0].beats[1].actions[0].target. */
 export interface ValidationIssue {
@@ -174,13 +198,13 @@ export interface ValidationIssue {
 
 /**
  * Reproducible visual options: theme overrides the document theme, with light as the final default.
- * reducedMotion completes transitions immediately and hides flow markers while retaining flow participant highlights.
+ * reducedMotion completes transitions immediately and hides flow markers while retaining the flow's configured highlights.
  * Beat durations and timeline positions do not change.
  */
 export interface EvaluateOptions {
   /** Override the document theme; the final fallback is light. */
   theme?: ThemeName;
-  /** Apply target values immediately and hide flow markers; retain participant highlights, beat durations and selection. */
+  /** Apply target values immediately and hide flow markers; retain configured flow highlights, beat durations and selection. */
   reducedMotion?: boolean;
 }
 
@@ -203,6 +227,7 @@ export interface EvaluatedNode extends DiagramNode {
   visible: boolean;
   /** Effective opacity in [0, 1], including visibility transitions and ancestor opacity. */
   opacity: number;
+  /** Logical highlight state; automatic single-flow paint can still be pending or interpolating. */
   highlighted: boolean;
   labelLines: string[];
   labelBoxes: TextLine[];
@@ -225,7 +250,7 @@ export interface EvaluatedEdge extends DiagramEdge {
 /** Deterministic transfer state derived from the current beat and edge path. */
 export interface EdgeFlowMarker {
   direction: FlowDirection;
-  /** Linear completion from the selected direction's start, in the inclusive range [0, 1). */
+  /** Linear movement completion in [0, 1]; a single flow holds at 1 until its beat ends. */
   progress: number;
   point: DiagramPoint;
   /** Unmodified beat-local message; SVG uses deterministic code-point widths and keeps the capsule horizontal. */

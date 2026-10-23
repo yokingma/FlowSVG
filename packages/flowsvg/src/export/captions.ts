@@ -1,5 +1,5 @@
 /** Browser caption layout shares system font fallback with diagram SVG and preserves explicit newlines. */
-import type { DiagramDocument } from "../core/model.js";
+import type { Diagram } from "../core/diagram.js";
 import { GifExportError } from "./types.js";
 import type { GifPlan } from "./plan.js";
 import { DIAGRAM_FONT_FAMILY } from "../core/theme.js";
@@ -23,20 +23,12 @@ export function wrapCaption(context: CanvasRenderingContext2D, text: string, wid
 
 /** Effective plain text and the source location used in actionable overflow errors. */
 export interface CaptionInterval { text: string; location: string }
-/** Enumerate half-open source intervals rather than samples, retaining captions inherited before the range. */
-export function collectCaptions(document: DiagramDocument, startMs: number, endMs: number): CaptionInterval[] {
-  const captions: CaptionInterval[] = [];
-  let text = document.title ?? "";
-  let cursor = 0;
-  for (const scene of document.scenes ?? []) {
-    for (const [index, beat] of scene.beats.entries()) {
-      text = beat.caption ?? text;
-      const until = cursor + beat.durationMs;
-      if (cursor < endMs && until > startMs) captions.push({ text, location: `scene "${scene.id}", beat ${index + 1}` });
-      cursor = until;
-    }
-  }
-  return cursor === 0 ? [{ text, location: "static document title" }] : captions;
+/** Enumerate compiled half-open intervals rather than samples; core already resolves caption inheritance. */
+export function collectCaptions(diagram: Diagram, startMs: number, endMs: number): CaptionInterval[] {
+  if (diagram.beats.length === 0) return [{ text: diagram.evaluateAt(0).caption ?? "", location: "static document title" }];
+  return diagram.beats.filter((beat) => beat.startMs < endMs && beat.endMs > startMs).map((beat) => ({
+    text: beat.caption ?? "", location: `scene "${beat.sceneId}", beat ${beat.beatIndex + 1}`
+  }));
 }
 /** Measure every effective caption with the same fixed font, wrapping and spacing used by painting. */
 export function preflightCaptions(context: CanvasRenderingContext2D, captions: CaptionInterval[], plan: GifPlan): void {

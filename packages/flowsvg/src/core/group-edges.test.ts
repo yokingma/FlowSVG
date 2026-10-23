@@ -30,6 +30,6 @@ describe("group edge endpoints", () => {
     expect(frame.edges[0]?.flow?.direction).toBe("reverse");
     expect(frame.nodes.find(({ id }) => id === "index")?.highlighted).toBe(true);
     expect(frame.nodes.find(({ id }) => id === "inside")?.highlighted).toBe(false);
-    expect(diagram.evaluateAt(1000).edges[0]?.opacity).toBe(0);
+    expect(diagram.evaluateAt(diagram.beats[1]!.startMs).edges[0]?.opacity).toBe(0);
   });
 });

@@ -19,8 +19,9 @@ function getExample(id: string) {
 
 function expectOrthogonalEdges(edges: readonly EvaluatedEdge[]): void {
   const normals = { top: [0, -1], right: [1, 0], bottom: [0, 1], left: [-1, 0] } as const;
+  expect(edges.some(({ path }) => path.includes("Q"))).toBe(true);
   for (const edge of edges) {
-    expect(edge.path).not.toMatch(/[CQ]/);
+    expect(edge.path).not.toContain("C");
     const values = edge.path.match(/-?\d+(?:\.\d+)?/g)!.map(Number);
     const points = Array.from({ length: values.length / 2 }, (_, index) => [values[index * 2]!, values[index * 2 + 1]!] as const);
     expect(points.every((point, index) => index === 0 || point[0] === points[index - 1]![0] || point[1] === points[index - 1]![1])).toBe(true);
@@ -41,8 +42,7 @@ it.each(NEW_EXAMPLES)("offers %s with readable stable geometry and consistent ro
   expect(example.category).toBe(category);
   expect(example.defaults).toEqual({ speed: 1, theme: "light", reducedMotion: false });
   expect(example.document.edges.every((edge) => edge.route === route)).toBe(true);
-  const starts = example.document.scenes.flatMap(({ beats }) => beats).reduce<number[]>((times, { durationMs }) =>
-    [...times, times.at(-1)! + durationMs], [0]);
+  const starts = [...diagram.beats.map(({ startMs }) => startMs), diagram.totalDuration];
   const initial = diagram.evaluateAt(0);
   if (route === "orthogonal") expectOrthogonalEdges(initial.edges);
   for (const time of starts) {
@@ -60,15 +60,16 @@ it.each(NEW_EXAMPLES)("offers %s with readable stable geometry and consistent ro
 
 it("keeps exactly one current task state and separates successful, exhausted and cancelled tasks", () => {
   const { example, diagram } = getExample("job-lifecycle");
-  for (const [time, state, task] of [[0, "queued", "A"], [2000, "running", "A"], [4000, "retry", "A"],
-    [6000, "running", "A"], [8000, "completed", "A"], [10_000, "running", "B"],
-    [12_000, "failed", "B"], [14_000, "queued", "C"], [16_000, "cancelled", "C"]] as const) {
+  for (const [index, state, task] of [[0, "queued", "A"], [1, "running", "A"], [2, "retry", "A"],
+    [3, "running", "A"], [4, "completed", "A"], [5, "running", "B"],
+    [6, "failed", "B"], [7, "queued", "C"], [8, "cancelled", "C"]] as const) {
+    const time = diagram.beats[index]!.startMs;
     const frame = diagram.evaluateAt(time);
     expect(frame.nodes.filter(({ highlighted }) => highlighted).map(({ id }) => id)).toEqual([state]);
     expect(frame.caption).toContain(`任务 ${task}`);
   }
   expect(example.document.edges.filter(({ from }) => ["completed", "failed", "cancelled"].includes(from))).toEqual([]);
-  expect(diagram.evaluateAt(12_000).caption).toContain("上限");
+  expect(diagram.evaluateAt(diagram.beats[6]!.startMs).caption).toContain("上限");
 });
 
 it("conserves order events through deduplication, quarantine and aggregation", () => {
@@ -92,7 +93,7 @@ it("expresses deployment boundaries, read-only replication and traffic after an 
   expect(nodes.get("app-b")?.parentId).toBe("applications");
   expect(nodes.get("replica")?.parentId).toBe("data");
   expect(example.document.edges.find(({ id }) => id === "replication")).toMatchObject({ from: "primary", to: "replica" });
-  const final = diagram.evaluateAt(18_000);
+  const final = diagram.evaluateAt(diagram.beats.at(-1)!.startMs);
   expect(final.caption).toContain("副本 B");
   expect(final.edges.filter(({ flow }) => flow).map(({ id }) => id)).toEqual(["route-b"]);
   expect(final.nodes.find(({ id }) => id === "app-a")!.contentLayout!.lines.map(({ text }) => text).join(" ")).toContain("不健康");
@@ -102,7 +103,8 @@ it("places cache-aside messages on increasing time rows and preserves response d
   const { diagram } = getExample("cache-aside-sequence");
   const messages = ["request", "cache-get", "cache-miss", "database-get", "database-result", "cache-set", "response"];
   const rows = messages.map((id, index) => {
-    const frame = diagram.evaluateAt(index * 2500 + 1250);
+    const beat = diagram.beats[index]!;
+    const frame = diagram.evaluateAt((beat.startMs + beat.endMs) / 2);
     const flows = frame.edges.filter(({ flow }) => flow);
     expect(flows.map((edge) => edge.id)).toEqual([id]);
     const edge = flows[0]!;
@@ -113,13 +115,13 @@ it("places cache-aside messages on increasing time rows and preserves response d
     return from.y;
   });
   expect(rows.every((row, index) => index === 0 || row > rows[index - 1]!)).toBe(true);
-  expect(diagram.evaluateAt(6250).caption).toContain("未命中");
-  expect(diagram.evaluateAt(11_250).caption).toContain("存在记录");
+  expect(diagram.evaluateAt(diagram.beats[2]!.startMs).caption).toContain("未命中");
+  expect(diagram.evaluateAt(diagram.beats[4]!.startMs).caption).toContain("存在记录");
 });
 
 it("separates the task error and retry event labels", () => {
   const { diagram } = getExample("job-lifecycle");
-  const frame = diagram.evaluateAt(6000);
+  const frame = diagram.evaluateAt(diagram.beats[3]!.startMs);
   const [error, retry] = ["temporary-error", "retry-timer"].map((id) => frame.edges.find((edge) => edge.id === id)!.labelBoxes[0]!);
   // Distinct rows keep both four-character labels readable at the same time.
   expect(Math.abs(error!.y - retry!.y)).toBeGreaterThanOrEqual(24);
@@ -143,20 +145,51 @@ it("keeps deployment transfers clear of component cards and the application head
   }
 });
 
-it("uses clear outer channels and centers state transitions between rows", () => {
+it.each([
+  ["order-event-pipeline", 3, "invalid-record"],
+  ["web-service-deployment", 8, "health-a"]
+] as const)("keeps %s outer-channel capsules within the viewport", (id, beatIndex, edgeId) => {
+  const { example, diagram } = getExample(id);
+  const beat = diagram.beats[beatIndex]!;
+  const time = (beat.startMs + beat.endMs) / 2;
+  const marker = diagram.renderSvg(time).match(new RegExp(
+    `<g[^>]*data-flow-id="${edgeId}"[^>]*><rect x="([^"]+)"[^>]*width="([^"]+)"`
+  ));
+  expect(marker).not.toBeNull();
+  const left = Number(marker![1]);
+  const width = Number(marker![2]);
+  expect(left).toBeGreaterThanOrEqual(0);
+  expect(left + width).toBeLessThanOrEqual(example.document.viewport.width);
+});
+
+it("uses single outer channels and retains a straight arrow approach between state rows", () => {
   const deployment = getExample("web-service-deployment").diagram.evaluateAt(0);
   for (const id of ["route-a", "route-b", "health-a"]) {
     const edge = deployment.edges.find((edge) => edge.id === id)!;
     const values = edge.path.match(/-?\d+(?:\.\d+)?/g)!.map(Number);
-    expect(values).toHaveLength(8);
-    expect(values[2]).toBe(40);
-    expect(values[4]).toBe(40);
+    const xs = values.filter((_, index) => index % 2 === 0);
+    expect(Math.min(...xs)).toBe(40);
+    expect(edge.path).toContain("Q");
   }
   const order = getExample("order-event-pipeline").diagram.evaluateAt(0);
-  expect(order.edges.find(({ id }) => id === "invalid-record")!.path).toBe("M 904 96 L 928 96 L 928 484 L 904 484");
+  const quarantine = order.edges.find(({ id }) => id === "invalid-record")!.path;
+  const quarantineValues = quarantine.match(/-?\d+(?:\.\d+)?/g)!.map(Number);
+  expect(quarantineValues.slice(0, 2)).toEqual([904, 96]);
+  expect(quarantineValues.slice(-2)).toEqual([904, 484]);
+  expect(Math.max(...quarantineValues.filter((_, index) => index % 2 === 0))).toBe(940);
+  expect(quarantine).toContain("Q");
   const state = getExample("job-lifecycle").diagram.evaluateAt(0);
   const exhausted = state.edges.find(({ from, to }) => from === "running" && to === "failed")!;
   const values = exhausted.path.match(/-?\d+(?:\.\d+)?/g)!.map(Number);
-  expect(values[3]).toBe(229);
-  expect(values[5]).toBe(229);
+  const source = state.nodes.find(({ id }) => id === exhausted.from)!;
+  const target = state.nodes.find(({ id }) => id === exhausted.to)!;
+  const sourceBottom = source.y + source.height;
+  expect(values[1]).toBe(sourceBottom);
+  expect(values.at(-1)).toBe(target.y);
+  expect(exhausted.path).toContain("Q");
+  expect(target.y - values.at(-3)!).toBeGreaterThanOrEqual(24);
+  const points = Array.from({ length: values.length / 2 }, (_, index) => ({ x: values[index * 2]!, y: values[index * 2 + 1]! }));
+  const bridge = points.find((point, index) => index > 0 && point.y === points[index - 1]!.y && point.x !== points[index - 1]!.x)!;
+  expect(bridge.y).toBeGreaterThan(sourceBottom);
+  expect(bridge.y).toBeLessThan(target.y);
 });

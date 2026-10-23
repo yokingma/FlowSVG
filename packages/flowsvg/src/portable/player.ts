@@ -4,7 +4,7 @@ import type { DiagramDocument, ThemeName } from "../core/model.js";
 
 interface PlaybackData {
   document: DiagramDocument;
-  options: { theme?: ThemeName; controls?: boolean; autoplay?: boolean; gifExport?: boolean };
+  options: { theme?: ThemeName; controls?: boolean; autoplay?: boolean; loop?: boolean; gifExport?: boolean };
 }
 
 const data = document.getElementById("flowsvg-data");

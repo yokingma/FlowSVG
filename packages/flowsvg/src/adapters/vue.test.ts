@@ -47,6 +47,29 @@ describe("Vue entry", () => {
     }
   });
 
+  it("updates loop mode without rebuilding or losing position and emits each change once", async () => {
+    const host = window.document.createElement("div");
+    const handle = ref<FlowPlayerHandle | null>(null);
+    const loop = ref(true);
+    const changes: boolean[] = [];
+    const app = createApp({ render: () => h(FlowPlayer, {
+      document: narrativeDocument, reducedMotion: false, ref: handle, loop: loop.value,
+      onLoopChange: (state: { loop: boolean }) => changes.push(state.loop)
+    }) });
+    try {
+      app.mount(host);
+      expect(handle.value?.getState().loop).toBe(true);
+      handle.value?.seek(250);
+      const svg = host.querySelector("svg");
+      loop.value = false;
+      await nextTick();
+      expect(handle.value?.getState()).toMatchObject({ timeMs: 250, loop: false });
+      expect(host.querySelector("svg")).toBe(svg);
+      handle.value?.setLoop(true);
+      expect(changes).toEqual([false, true]);
+    } finally { app.unmount(); }
+  });
+
   it("can render on the server without touching the DOM", async () => {
     const markup = await renderToString(h(FlowPlayer, { document: staticDocument }));
     expect(markup).toContain("flowsvg");

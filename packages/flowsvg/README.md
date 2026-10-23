@@ -1,668 +1,250 @@
-# FlowSVG
+<p align="center">
+  <img src="./docs/images/flowsvg-wordmark.gif" alt="FlowSVG" width="280">
+</p>
 
-English | [简体中文](https://cdn.jsdelivr.net/npm/flowsvg/README.zh-CN.md)
+<p align="center">Declarative SVG diagrams with timeline playback and SVG/GIF export.</p>
 
-FlowSVG turns JSON or TypeScript documents into animated SVG diagrams. Define nodes, edges, scenes, and beats; play them in a browser, export SVG or GIF, or share a single offline HTML file.
+<p align="center">English | <a href="https://cdn.jsdelivr.net/npm/flowsvg@0.2.0/README.zh-CN.md">简体中文</a></p>
 
-The ESM SDK includes a DOM-free core and native browser, Vue, React, and Web Component integrations. All integrations share the same document and timeline.
+<p align="center">
+  <a href="#define-a-diagram">Quick&nbsp;start</a> ·
+  <a href="#typical-example-background-task-lifecycle">Example</a> ·
+  <a href="#control-playback">Playback&nbsp;API</a> ·
+  <a href="#core-api--flowsvg">Core&nbsp;API</a> ·
+  <a href="#document-and-actions">Document&nbsp;model</a> ·
+  <a href="#export-api">Export&nbsp;API</a>
+</p>
 
-[Install](#installation) · [Quick start](#quick-start) · [Vue](#vue-integration) · [React](#react-integration) · [Native browser](#native-browser) · [Web Component](#web-component) · [Documents](#documents-and-timelines) · [Node content](#structured-node-content) · [API](#api) · [Controls](#player-controls) · [GIF](#browser-gif-export) · [Node / CLI](#node-gif-export-node-20) · [Offline HTML](#offline-html-node-20)
-
-## Installation
-
-Install from npm:
+Define the data once and use it in native browser, Vue, React, or Web Component integrations.
 
 ```sh
 npm install flowsvg
 ```
 
-Install only the framework for your chosen entry:
+## Typical example: background task lifecycle
+
+Task A retries and completes, task B exhausts its retries, and task C is cancelled before execution. These are three independent cases. Structured cards and pill tags display the current task and retry count; rounded orthogonal edges carry transition events.
+
+![Background task lifecycle: retry, completion, failure and cancellation](./docs/images/job-lifecycle.gif)
+
+The full document ships as `node_modules/flowsvg/examples/job-lifecycle.json`, with Chinese labels and captions. Use its contents as the `diagram` document in the integrations below. On Node 20+, generate an offline player with playback controls and GIF download:
 
 ```sh
-# Vue applications
-npm install vue
-# React applications
-npm install react react-dom
-# React TypeScript applications
-npm install -D @types/react @types/react-dom
+npx flowsvg node_modules/flowsvg/examples/job-lifecycle.json --format html --output job-lifecycle.html --gif-export
 ```
 
-ESM only, with TypeScript declarations. Core and native browser entries need no framework. Core: Node.js 18+ or an ES2022-compatible browser. Playback: DOM, SVG, and `requestAnimationFrame`. Frameworks: Vue 3.5+ or React 18+.
+Open `job-lifecycle.html` in a browser. HTML generation needs no Chromium installation. The example sets `flow.highlightParticipants: false` and explicitly highlights one state at a time, so moving event markers do not highlight both states. Retry limits are teaching data.
 
-The browser GIF API also requires Canvas 2D, image decoding and Blob workers allowed by the host content security policy. The Node entry and CLI require Node 20+; HTML generation needs no browser, while Node GIF export needs preinstalled Chromium and system fonts.
-
-| Import path | Purpose |
-| --- | --- |
-| `flowsvg` | DOM-free document validation, compilation, evaluation, hit testing, and SVG export |
-| `flowsvg/browser` | Native browser player |
-| `flowsvg/export` | Browser GIF export, progress, cancellation and errors |
-| `flowsvg/node` | Node 20+ offline HTML generation and Chromium-based GIF export |
-| `flowsvg/vue` | Vue component and handle types |
-| `flowsvg/react` | React component and ref types |
-| `flowsvg/web-component` | Explicit custom element registration; also available as `flowsvg/element` |
-| `flowsvg/styles.css` | Control layout and visible focus styles |
-
-## Quick start
-
-### 1. Create a diagram document
-
-Save this 5.2-second order workflow as `diagram.ts`. All integration and export examples reuse this file. Compile TypeScript before running the Node examples; the `.js` import paths refer to the compiled files.
+## Define a diagram
 
 ```ts
+// diagram.ts
 import type { DiagramDocument } from "flowsvg";
 
-export const diagramDocument: DiagramDocument = {
+export const diagram: DiagramDocument = {
   version: 1,
-  title: "Order request lifecycle",
-  viewport: { width: 960, height: 440 },
+  viewport: { width: 640, height: 240 },
   nodes: [
-    { id: "client", kind: "roundedRect", x: 40, y: 205, width: 120, height: 70, label: "Client" },
-    { id: "gateway", kind: "roundedRect", x: 260, y: 205, width: 130, height: 70, label: "API gateway" },
-    { id: "auth", kind: "ellipse", x: 260, y: 40, width: 130, height: 72, label: "Auth" },
-    { id: "orders", kind: "roundedRect", x: 500, y: 205, width: 150, height: 70, label: "Order service" },
-    { id: "database", kind: "cylinder", x: 780, y: 65, width: 140, height: 90, label: "Orders" },
-    { id: "events", kind: "rect", x: 780, y: 330, width: 140, height: 70, label: "Event queue" }
+    { id: "client", kind: "roundedRect", x: 40, y: 90, width: 140, height: 64, label: "Client" },
+    { id: "service", kind: "roundedRect", x: 400, y: 90, width: 180, height: 64, label: "Service" }
   ],
-  edges: [
-    { id: "request", from: "client", to: "gateway", route: "straight" },
-    { id: "authorize", from: "gateway", to: "auth", route: "straight", fromPort: "top", toPort: "bottom" },
-    { id: "create", from: "gateway", to: "orders", route: "straight" },
-    { id: "persist", from: "orders", to: "database", route: "orthogonal", fromPort: "right", toPort: "left" },
-    { id: "publish", from: "orders", to: "events", route: "curved", fromPort: "bottom", toPort: "left" },
-    { id: "result", from: "orders", to: "gateway", route: "curved", fromPort: "bottom", toPort: "bottom" }
-  ],
-  scenes: [
-    { id: "request", label: "Receive and authorize", beats: [
-      { durationMs: 800, caption: "Receive the order request", actions: [
-        { type: "flow", target: "request", direction: "forward", text: "POST" }
+  edges: [{ id: "request", from: "client", to: "service", route: "orthogonal" }],
+  scenes: [{
+    id: "request-response",
+    label: "Request and response",
+    beats: [
+      { durationMs: 1000, caption: "Send request", actions: [
+        { type: "flow", target: "request", direction: "forward", text: "Request" }
       ] },
-      { durationMs: 800, caption: "Validate the access token", actions: [
-        { type: "flow", target: "authorize", direction: "forward", text: "Token" }
+      { durationMs: 1000, caption: "Return response", actions: [
+        { type: "flow", target: "request", direction: "reverse" }
       ] }
-    ] },
-    { id: "create-order", label: "Create the order", beats: [
-      { durationMs: 1000, caption: "Send the authorized request to the order service", actions: [
-        { type: "flow", target: "create", direction: "forward", text: "Create" }
-      ] },
-      { durationMs: 1000, caption: "Persist the new order", actions: [
-        { type: "flow", target: "persist", direction: "forward", text: "INSERT" }
-      ] }
-    ] },
-    { id: "response", label: "Publish and respond", beats: [
-      { durationMs: 1600, caption: "Publish OrderCreated and return the order number", actions: [
-        { type: "flow", target: "publish", direction: "forward", text: "OrderCreated" },
-        { type: "flow", target: "result", direction: "forward", text: "201 Created" },
-        { type: "flow", target: "request", direction: "reverse", text: "Order ID" }
-      ] }
-    ] }
-  ]
+    ]
+  }]
 };
 ```
 
-At 4400 ms with the light theme, the event and response messages move together. Only their participating nodes are highlighted.
+Nodes use explicit positions and dimensions. Routes are `straight`, `orthogonal` (rounded bends), or `curved`. Flow text produces a capsule; omitting text produces a moving dot.
 
-![Order workflow with Client, API gateway, Auth, Order service, Orders database and Event queue; OrderCreated and response messages are in flight](./docs/images/quick-start.png)
+## Play
 
-### 2. Evaluate and export SVG
-
-```ts
-import { createDiagram, renderSvg } from "flowsvg";
-import { diagramDocument } from "./diagram.js";
-
-const diagram = createDiagram(diagramDocument);
-const frame = diagram.evaluateAt(125);
-console.log(diagram.totalDuration, frame.sceneId, frame.warnings);
-
-const svg = diagram.renderSvg(125, { theme: "dark" });
-const finalSvg = renderSvg(diagramDocument, 5200);
+```html
+<div id="diagram"></div>
 ```
 
-Both results are static SVG strings. Reuse `createDiagram` for repeated queries; use `renderSvg` for a single export.
+```ts
+import { createPlayer } from "flowsvg/browser";
+import "flowsvg/styles.css";
+import { diagram } from "./diagram.js";
 
-## Vue integration
+const player = createPlayer(document.querySelector<HTMLElement>("#diagram")!, diagram, {
+  theme: "light",
+  loop: true,
+  gifExport: true
+});
 
-Create a component in your Vue application, with `diagram.ts` in the same directory:
+player.play();
+// On disposal: player.destroy();
+```
+
+Players start paused, with playback controls enabled. Loop and GIF downloads default off. Import the CSS once. Call `destroy()` when disposing of a native player; framework components handle cleanup.
+
+### Vue
 
 ```vue
 <script setup lang="ts">
-import { ref } from "vue";
-import { FlowPlayer, type FlowPlayerHandle } from "flowsvg/vue";
-import type { PlayerErrorDetail } from "flowsvg/browser";
+import { FlowPlayer } from "flowsvg/vue";
 import "flowsvg/styles.css";
-import { diagramDocument } from "./diagram.js";
-
-const player = ref<FlowPlayerHandle | null>(null);
-const timeMs = ref(0);
-
-function handleError({ error }: PlayerErrorDetail): void {
-  console.error(error);
-}
+import { diagram } from "./diagram.js";
 </script>
 
 <template>
-  <FlowPlayer
-    ref="player"
-    :document="diagramDocument"
-    :speed="1.25"
-    :gif-export="true"
-    theme="dark"
-    @timeupdate="timeMs = $event.timeMs"
-    @error="handleError"
-  />
-  <button type="button" @click="player?.play()">Play</button>
-  <button type="button" @click="player?.seek(0)">Back to start</button>
-  <output>{{ timeMs }} ms</output>
+  <FlowPlayer :document="diagram" loop gif-export />
 </template>
 ```
 
-Unmounting destroys the player. In scripts, call methods through `player.value`; templates unwrap the ref. Events pass their detail directly: `stepchange`, `timeupdate`, `playstatechange`, and `error`. Callback props are also supported.
-
-## React integration
+### React
 
 ```tsx
-import { useRef } from "react";
-import { FlowPlayer, type FlowPlayerHandle } from "flowsvg/react";
+import { FlowPlayer } from "flowsvg/react";
 import "flowsvg/styles.css";
-import { diagramDocument } from "./diagram.js";
+import { diagram } from "./diagram.js";
 
-export default function DiagramExample() {
-  const player = useRef<FlowPlayerHandle | null>(null);
-
-  return (
-    <section>
-      <FlowPlayer
-        ref={player}
-        document={diagramDocument}
-        speed={1.25}
-        gifExport
-        theme="dark"
-        onError={({ error }) => console.error(error)}
-      />
-      <button type="button" onClick={() => player.current?.play()}>Play</button>
-      <button type="button" onClick={() => player.current?.seek(0)}>Back to start</button>
-    </section>
-  );
+export function Diagram() {
+  return <FlowPlayer document={diagram} loop gifExport />;
 }
 ```
 
-The component releases resources on unmount. Callbacks are `onStepChange`, `onTimeUpdate`, `onPlayStateChange`, and `onError`.
+## Control playback
 
-### Vue / React props and updates
+`createPlayer(host: HTMLElement, document: DiagramDocument, options?: PlayerOptions): FlowPlayer` mounts into the host, replacing its children. Invalid initial documents throw `DiagramValidationError`.
 
-| Prop | Default or behavior |
+| Method / property | Behavior |
 | --- | --- |
-| `document` | Required diagram document; a new object reference triggers a reload, pausing at zero on success |
-| `speed` | Positive playback multiplier, default `1`; changes update the speed |
-| `theme` | `light` / `dark`; falls back to the document theme, then light |
-| `controls` | Default `true`; set to `false` to hide built-in controls |
-| `gifExport` | Default `false`; enable GIF progress, cancel and download controls; requires visible controls |
-| `reducedMotion` | Follows the browser's reduced-motion preference when omitted |
-| `hoverFill` | Default `false`: hover highlights the border only; set `true` to also highlight the background and content |
-| `initialTimeMs` | Applied only on initial mount; use `seek` for later changes |
-| `className` / `style` | Host container styles |
+| `play(): void` / `pause(): void` | Resume / pause at the current position. At the end, `play()` restarts only when Loop is enabled; static diagrams cannot play. |
+| `seek(timeMs: number): void` | Clamp to the timeline; retain playback except at the end. Non-finite values become zero. |
+| `step(direction: 1 \| -1): void` | Pause and move to a beat boundary. Backward from inside a beat goes to that beat's start. |
+| `setSpeed(speed: number): void` | Set a finite positive multiplier; ignore invalid values. Default `1`. |
+| `setLoop(loop: boolean): void` | Change whole-timeline looping without changing position or playback. |
+| `load(document: DiagramDocument): void` | Pause at zero on success; emit `error` and retain the old document/state on failure. |
+| `getState(): PlayerState` | Read `{ timeMs, totalDuration, playing, loop, speed, frame }`. Times are milliseconds. |
+| `destroy(): void` | Release DOM, listeners and animation resources. Safe to repeat. Not exposed by Vue/React refs. |
+| `element: HTMLElement` | Readonly host and event target. Not exposed by Vue/React refs. |
 
-Changing `theme`, `controls`, `gifExport`, `reducedMotion`, or `hoverFill` recreates the player, paused at zero, without reapplying `initialTimeMs`. Reload documents with a new object reference. Handles expose seven methods listed under [Player API](#player-api); calls before mount or after unmount throw.
+Vue/React refs expose the eight playback/state methods above. Replace the `document` object to reload a component. Changes to `theme`, `controls`, `gifExport`, `reducedMotion`, or `hoverFill` recreate the player paused at zero.
 
-Both entries support server-side imports. SSR renders a container; the player is created on client mount. Use `renderSvg` for server-side diagram previews.
+### Options and component props
 
-## Native browser
-
-Add a container to your page:
-
-```html
-<div id="diagram" style="width: 100%; height: 360px;"></div>
-```
-
-Create the player in a client-side application module:
-
-```ts
-import { createPlayer } from "flowsvg/browser";
-import "flowsvg/styles.css";
-import { diagramDocument } from "./diagram.js";
-
-const host = document.querySelector<HTMLElement>("#diagram");
-if (!host) throw new Error("Diagram host is missing");
-
-const player = createPlayer(host, diagramDocument, { theme: "light", gifExport: true });
-player.play();
-```
-
-`createPlayer` replaces the container children. Call `destroy()` on disposal and before reusing the container. Plain HTML requires an import map or build tooling for package imports.
-
-## Web Component
-
-Place the element in HTML, then register it explicitly from a client-side module:
-
-```html
-<flowsvg-player gif-export></flowsvg-player>
-```
-
-```ts
-import { defineFlowPlayer, type FlowPlayerElement } from "flowsvg/web-component";
-import "flowsvg/styles.css";
-import { diagramDocument } from "./diagram.js";
-
-defineFlowPlayer();
-const element = document.querySelector<FlowPlayerElement>("flowsvg-player");
-if (element) element.document = diagramDocument;
-```
-
-Registration defaults to `<flowsvg-player>` and is idempotent. Assign objects to `element.document`, JSON strings to the HTML `document` attribute, or a JSON URL to `src`. URLs resolve against the page and follow browser CORS rules.
-
-Attributes: `autoplay`, `controls`, `speed`, `theme`, `reduced-motion`, `hover-fill`, and `gif-export`. Controls default on; autoplay, hover fill and GIF export default off. Use `controls="false"` to hide controls. Changes to theme, controls, GIF, or motion/hover options preserve time and playback state; `autoplay` explicitly starts or pauses playback. Removal cancels requests and destroys the player; reconnection uses the retained document.
-
-Methods: `play`, `pause`, `seek`, `step`, `setSpeed`, `getState`, and `destroy`. Update documents through `element.document`. Before mount or after destruction, `getState()` returns `undefined`. Playback/error events bubble across Shadow DOM boundaries.
-
-Register in a DOM environment. DOM-free imports are safe, but that module instance cannot register after a DOM is added later.
-
-## Documents and timelines
-
-| Document field | Contract |
+| `PlayerOptions` | Default / meaning |
 | --- | --- |
-| `version` | Currently `1` |
-| `viewport` | Finite positive `width` and `height`, defining the initial viewport |
-| `nodes` | Node array; `id`, `kind`, `x`, `y`, `width`, and `height` are required |
-| `edges` | Edge array; `id`, `from`, and `to` are required; endpoints reference nodes or group boundaries |
-| `scenes` | `[]` creates a static diagram; each scene has a unique `id`, a `label`, and nonempty `beats` |
-| `title` / `theme` | Optional title and `light` / `dark` document theme |
+| `theme?: "light" \| "dark"` | Document theme, then `"light"`. |
+| `controls?: boolean` | `true`; show playback controls. |
+| `loop?: boolean` | `false`; loop the entire timeline. |
+| `gifExport?: boolean` | `false`; show GIF download controls when `controls` is enabled. |
+| `hoverFill?: boolean` | `false`; hover marks borders only. `true` also highlights backgrounds. |
+| `reducedMotion?: boolean` | Follow browser preference; `true` hides flow markers and completes visual transitions immediately without changing timing. |
 
-Node and edge IDs are globally unique. Shapes: `rect`, `roundedRect`, `ellipse`, `cylinder`, `group`. `parentId` names a parent group; child coordinates are group-relative. Labels are plain text; `visible` defaults to `true`. Node styles: `fill`, `stroke`, `strokeWidth`, `textColor`, `dashed` (group borders). Edge styles: `stroke`, `strokeWidth`, `dashed`. Colors use hexadecimal RGB/RGBA, such as `#2563eb` or `#2563eb80`.
-
-Routes: `straight` (default), `orthogonal`, or `curved`. Curves follow endpoint ports without avoiding other nodes. Orthogonal routes avoid visible ordinary nodes and use a fixed fallback if blocked; shortest paths and zero crossings are not guaranteed. Set `fromPort` / `toPort` to `top`, `right`, `bottom`, or `left`. Orthogonal routes prefer bridges at the gap midpoint when arrow space permits and single outside channels for matching port sides. Separate ancestor frames add outside clearance; shared containers remain traversable. Orthogonal routes reserve outward endpoint segments and a straight arrow approach scaled to the evaluated stroke width, shortened when adjacent nodes leave insufficient space. Curved and orthogonal inputs on the same target side receive separate positions ordered by source position, with document order breaking ties; hidden edges keep their positions. Positions use the central portion of the side, so crowded or very small nodes can still require more space. Curved ports set tangents. Omitted ports follow the dominant center-to-center axis; ellipse endpoints lie on the contour. Simple labels wrap by estimated width and remain visible on height overflow, with a `text-overflow` warning.
-
-Edges can connect nodes or group boundaries. Group endpoints follow evaluated geometry and explicit ports. Hidden ancestors mask connected edges. Transfers highlight the endpoint group, not its descendants. Group frames are excluded from routing obstacles.
-
-### Beats and actions
-
-Each beat has a positive `durationMs` and an `actions` array, with optional `transitionMs` and `caption`. Transition duration defaults to `min(250, durationMs)` and must be within `[0, durationMs]`. An omitted caption inherits the previous caption; an empty string clears it.
-
-| Action | Example or update fields |
-| --- | --- |
-| `show` / `hide` | `{ type: "show", target: "service" }`; targets a node, group, or edge |
-| `highlight` / `unhighlight` | Changes the highlight layer; removing a highlight reveals the latest ordinary style |
-| `flow` | `{ type: "flow", target: "request", direction: "forward" }`; moves a beat-local marker along an edge. `direction` is `forward` or `reverse`; the static edge arrow does not change. Add `text: "Request"` for a horizontal text capsule; omit `text` for a solid dot. |
-| `updateNode` | `value` supports `x`, `y`, `width`, `height`, `label`, `content`, `fill`, `stroke`, and `opacity` |
-| `updateEdge` | `value` supports `label`, `stroke`, `strokeWidth`, and `opacity` |
-| `focus` | `target` is a node/group ID; `null` restores the full viewport |
-
-`updateNode.value.content` replaces all content at beat start, regardless of transition duration, and persists across beats/scenes. `label` switches to simple-label mode; `content` switches to structured content. `content: null` clears either mode without restoring old labels or resizing. Assigning both modes, or assigning one repeatedly within a beat, produces a field-path error.
-
-Scenes share a millisecond timeline and inherit the previous scene’s final state. Text changes at beat start; interpolated values change during the transition. Beats include their start and exclude their end; the final time returns the completed frame. Hidden nodes/groups mask connected edges; showing them restores each edge’s saved visibility.
-
-A beat supports one transfer per distinct edge. Transfers share linear progress over `durationMs`, so longer paths move faster. Markers and endpoint highlights expire at beat end; the next beat supplies a new transfer group. Explicit highlights and ordinary styles persist.
-
-Transfer `text` is escaped, stays horizontal, and uses estimated capsule widths without font measurement. It does not replace the edge label or create an interaction target. An empty string still produces a capsule.
-
-## API
-
-### Core API
-
-Import from `flowsvg`:
-
-| API | Result and behavior |
-| --- | --- |
-| `validateDocument(input: unknown)` | Returns `{ path, message }[]`; an empty array means valid |
-| `createDiagram(document)` | Validates, copies, and compiles into a `Diagram`; invalid documents throw `DiagramValidationError` |
-| `renderSvg(document, timeMs = 0, options?)` | Compiles once and exports a static SVG string |
-| `diagram.totalDuration` | Total timeline duration; `0` for a static document |
-| `diagram.evaluateAt(timeMs, options?)` | Returns `DiagramFrameState` |
-| `diagram.renderSvg(timeMs = 0, options?)` | Exports SVG from the same evaluation result |
-| `diagram.hitTest(timeMs, point, options?)` | Returns `{ id, type: "node" \| "edge" }` or `null`, using document coordinates |
-| `wrapText(label, maxWidth, typography?)` | Wraps text with fixed width estimates and returns an array of lines |
-
-`EvaluateOptions`: `{ theme?: "light" | "dark"; reducedMotion?: boolean }`. Times clamp to `[0, totalDuration]`; non-finite values become zero. Hit testing skips hidden/zero-opacity objects, then checks ordinary nodes, edges, and group backgrounds in that order.
-
-`DiagramFrameState` includes time, scene/beat IDs, progress, evaluated nodes/edges, camera, caption, and warnings. Coordinates are absolute. Static documents have `null` scene/beat IDs; beat IDs use `${scene.id}:${beatIndex}` with zero-based indexes. Active edges expose `flow` direction, progress, point, and optional text. Markers are absent after the beat, on hidden edges, or with reduced motion.
-
-Types and member JSDoc are included: `DiagramDocument`, `DiagramNode`, `DiagramEdge`, `Scene`, `Beat`, `Action`, `Diagram`, `DiagramFrameState`, `EvaluateOptions`, `ValidationIssue`, and `LayoutWarning`.
-
-### Player API
-
-Import `createPlayer(host, document, options?)` from `flowsvg/browser`. `PlayerOptions` extends core visual options with `controls?: boolean`, `gifExport?: boolean` and `hoverFill?: boolean`.
-
-| Method or property | Behavior |
-| --- | --- |
-| `element` | The original host element and event target |
-| `play()` / `pause()` | Starts playback or pauses on the current frame; static diagrams and the timeline end cannot start playback |
-| `seek(timeMs)` | Clamps to the timeline and retains playback state; reaching the end pauses |
-| `step(1)` / `step(-1)` | Pauses and jumps to the adjacent beat start; stepping backward inside a beat goes to its start, and backward at a beat start goes to the previous beat |
-| `setSpeed(speed)` | Sets a finite positive multiplier; ignores invalid values |
-| `load(document)` | Pauses at zero on success; validation failure emits error and retains the document, time, and playback state |
-| `getState()` | Returns `PlayerState`: `timeMs`, `totalDuration`, `playing`, `speed`, and `frame` |
-| `destroy()` | Idempotently cleans up DOM, listeners, and scheduling; stops events, while state remains readable |
-
-Players start paused at zero with controls enabled. Page hiding pauses playback; returning leaves it paused. Playback stops at the end; static diagrams disable timeline controls. Framework handles expose these methods except `element` and `destroy`.
-
-Hover highlights node borders, including groups. Set `hoverFill: true` to include backgrounds and content paint. Leaving clears hover while retaining flow and explicit highlights. Pointer cancellation, document replacement and destruction also clear hover. `PlayerState.frame` and static SVG exclude hover.
+Vue/React `FlowPlayerProps` also accept required `document: DiagramDocument`, `speed?: number` (default `1`), `initialTimeMs?: number` (applied once), `className`, and `style`. Both entries export `FlowPlayerHandle` and `FlowPlayerProps`. Native players start through `play()` and change speed through `setSpeed()`.
 
 ### Events
 
-Native players dispatch `CustomEvent` on the host element:
+Native events are `CustomEvent`s on `player.element`; read `event.detail`. Vue handlers and React callbacks receive the detail directly.
 
-| Event | `detail` |
-| --- | --- |
-| `timeupdate` | Current `PlayerState`, sent after the frame updates |
-| `stepchange` | Current `PlayerState`, sent when the scene or beat changes, before that update's timeupdate |
-| `playstatechange` | Current `PlayerState`, sent when playing/paused state changes |
-| `error` | `PlayerErrorDetail`: retained player state and `error` |
-| `hover` / `click` | `PlayerInteractionDetail` or `null`; aliases are `objecthover` / `objectclick` |
+| Native / Vue event | React callback | Detail |
+| --- | --- | --- |
+| `stepchange` | `onStepChange` | `PlayerState`; scene/beat selection changed. |
+| `timeupdate` | `onTimeUpdate` | `PlayerState`; frame updated. |
+| `playstatechange` | `onPlayStateChange` | `PlayerState`; playing state changed. |
+| `loopchange` | `onLoopChange` | `PlayerState`; loop setting changed. |
+| `error` | `onError` | `PlayerErrorDetail`: player state plus `error: Error`. |
+| `hover`, `click` | — | Browser/Web Component: `{ id, type, point, timeMs, sceneId, beatId }`, or `null` for no hit. Aliases: `objecthover`, `objectclick`. |
 
-Interaction detail contains `id`, `type`, `point` (document coordinates), `timeMs`, `sceneId`, and `beatId`; misses return `null`. Adapters forward the four playback/error events. Web Component errors before mount may lack player state.
+Interaction `point` uses diagram coordinates; `type` is `"node"` or `"edge"`. A frame update emits `stepchange`, when needed, before `timeupdate`. Web Component errors before mounting may omit player-state fields.
 
-`hover` also updates when a frame change moves another object under a stationary pointer. Pointer leave/cancel emits `null`.
-
-```ts
-import type { PlayerEventMap } from "flowsvg/browser";
-
-function handleTimeUpdate(event: Event): void {
-  const { detail } = event as PlayerEventMap["timeupdate"];
-  console.log(detail.timeMs, detail.frame.caption);
-}
-
-player.element.addEventListener("timeupdate", handleTimeUpdate);
-```
-
-This example reuses `player` from the native integration. Remove any listeners your application adds when disposing of the host.
-
-## Player controls
-
-### Default setup
-
-The player provides Play/Pause, previous/next beat, progress, scene and speed controls by default. You do not need to create buttons or menus. Import the default CSS once in your application entry for the complete control layout, colors and interaction feedback:
+## Export
 
 ```ts
-import { createPlayer } from "flowsvg/browser";
-import "flowsvg/styles.css";
-import { diagramDocument } from "./diagram.js";
-
-const host = document.querySelector<HTMLElement>("#diagram");
-if (!host) throw new Error("Diagram host is missing");
-
-const player = createPlayer(host, diagramDocument);
-```
-
-This example reuses the [native browser](#native-browser) container and starts paused at zero. Call `player.destroy()` before disposing of the page. Vue, React and Web Component integrations also provide controls by default; import the same CSS in your chosen integration. Set `controls: false` to hide controls. GIF downloads are optional and require enabling `gifExport` separately.
-
-### Control colors
-
-Keep the default CSS and set the existing five variables on the host or an ancestor to customize control colors:
-
-```css
-#diagram {
-  --flowsvg-control-background: #101828;
-  --flowsvg-control-color: #f4f7fb;
-  --flowsvg-control-border: #64748b;
-  --flowsvg-control-accent: #60a5fa;
-  --flowsvg-control-focus: #fbbf24;
-}
-```
-
-These variables control the background, text, border, accent and keyboard-focus colors, respectively. No extra host class is required. Control colors do not change the diagram or its exported colors; core themes and document styles determine diagram colors. See [Themes and accessibility](#themes-and-accessibility).
-
-### Control sizes
-
-Standard sizing is the default: buttons and choice triggers have a minimum height of `2.75rem` (44 pixels with a 16-pixel root font). Add `flowsvg-compact` to a host or ancestor for a compact height of `2rem` (32 pixels with the same root font):
-
-```html
-<div id="diagram" class="flowsvg-compact" style="width: 100%; height: 360px;"></div>
-```
-
-Vue, React and Web Component players can also sit inside a container with `flowsvg-compact`. Remove the class to restore standard sizing. Both sizes retain rounded neutral controls, an accent-tinted Play/Pause button and visible hover, pressed, disabled and keyboard-focus states. The progress slider takes a full row on narrow screens. Control transitions respect the system reduced-motion preference; control sizes do not change diagram geometry.
-
-### Optional advanced use: reuse a choice menu
-
-Use this interface only when building host settings; normal player setup and styling do not require it. `flowsvg/browser` retains the public `SelectControl` and `SelectChoice` exports for hosts that need the player's menu styling and keyboard interaction.
-
-Create `new SelectControl(document, "Theme", onChange)`, append its `element`, then call `render([{ value: "light", label: "Light" }, { value: "dark", label: "Dark" }], "light")`. `SelectChoice` contains string `value` and `label` fields; choice values must be unique within a control. The callback receives a requested value; the caller owns committed state and must call `render` to reflect it. The optional third `render` argument is a disabled flag, defaulting to `false`; an empty choice list also disables the trigger. Call `destroy()` before removing the host to release outside-dismissal listeners and remove the menu element. The menu reuses the imported `flowsvg/styles.css`, color variables and size class above.
-
-## Themes and accessibility
-
-Theme: explicit option → document theme → light. The core ignores system preferences. Browser motion follows `prefers-reduced-motion` unless overridden; the core defaults to full motion. Reduced motion completes transitions immediately and hides transfer markers, preserving duration.
-
-Both themes use neutral borders and blue highlights. Document styles override ordinary colors; timeline and hover highlights overlay those styles. Explicit content colors and tag fills remain unchanged. Diagram text uses system fonts with Chinese fallbacks.
-
-With canvas focus, Space toggles playback and arrow keys step through beats. The progress slider keeps native keys. Scene and speed use custom select-only comboboxes: arrows open and navigate; Home/End move to the first/last option; Enter/Space commit; Escape cancels; Tab closes without trapping focus. Typing a character highlights a matching option. Outside presses dismiss the menu. Captions use a polite live region; SVGs have accessible names.
-
-## Validation and errors
-
-Validation rejects unknown fields, bad references, cyclic groups, duplicate beat assignments, invalid colors, and invalid dimensions/durations. Text is escaped. For external JSON, call `validateDocument` and inspect each issue’s `path` and `message`.
-
-`createDiagram` and initial `createPlayer` calls throw `DiagramValidationError` for invalid documents. Its `issues` contain field paths. Later `load` failures emit `error` and retain the old state. Text overflow is nonblocking; inspect `frame.warnings`.
-
-## Built-in GIF downloads
-
-All four hosts accept `gifExport: true`; Web Component markup uses `gif-export` and the element property is `gifExport`. The host integration examples enable it; the default setup example leaves it off. The default is `false`, and `controls: false` hides GIF controls too. The browser exporter loads on the first export click, while normal import and playback do not load it.
-
-Click **Export GIF** to download the complete timeline at 1× with the task's resolved theme and default export settings. The controls show progress, **Cancel export**, completion and a readable failure message. Downloads use a sanitized document title or `FlowSVG.gif`. Playback, speed and seeking remain independent; hover and controls never enter the GIF.
-
-Each player owns at most one task. A successful document load retains the old task's captured document/theme. Later input-object mutations cannot change that snapshot. Destroying the player, unmounting a component, or rebuilding an adapter for option changes cancels its task and prevents late downloads. Cancellation or failure permits retry. For custom settings and programmatic error handling, use the separate `exportGif` function below.
-
-## Browser GIF export
-
-Import the separate browser entry when exporting:
-
-```ts
+import { createDiagram } from "flowsvg";
 import { exportGif } from "flowsvg/export";
-import { diagramDocument } from "./diagram.js";
-const controller = new AbortController();
-const bytes = await exportGif(diagramDocument, {
-  theme: "dark",
-  includeCaptions: true,
-  signal: controller.signal,
-  onProgress: ({ phase, completed, total }) => console.log(phase, completed, total)
-});
-// Save or download bytes in your application. To cancel a pending task, call controller.abort().
+import { diagram } from "./diagram.js";
+
+const compiled = createDiagram(diagram);
+const frame = compiled.evaluateAt(1200);
+const svg = compiled.renderSvg(1200, { theme: "dark" });
+const gif = await exportGif(diagram, { width: 640, fps: 15 });
 ```
 
-`exportGif` returns `Promise<Uint8Array>` and snapshots the document/options at invocation. It leaves playback and downloads to your application. Output is opaque; text uses locally installed system fonts. A worker performs palette quantization and encoding.
+SVG returns a string; GIF returns `Uint8Array`. Browser GIF export supports `signal` and `onProgress`. Use `gifExport: true` for built-in download controls. Node 20+ also provides `renderHtml` and `exportGif` through `flowsvg/node`; Node GIF requires prepared Chromium.
 
-Progress phases are `preparing`, `sampling`, `encoding` and `complete`. Import `GifExportError` from the same entry to inspect `code`: `options`, `limit`, `document`, `caption-overflow`, `environment`, `rasterization`, `encoding` or `cancelled`. Error messages describe corrective actions.
+## Core API — `flowsvg`
 
-Limits: 120 effective animation seconds, 1800 samples, 1801 encoded frames including long-hold splits, and a 1920px final long edge including captions. Reduce duration, fps or dimensions when the corresponding limit is exceeded.
+All times are milliseconds; positions and dimensions use diagram units. `options?: EvaluateOptions` accepts `theme?: "light" | "dark"` and `reducedMotion?: boolean` (default `false`).
 
-### GIF options
-
-| GIF option | Contract |
+| Function | Result / behavior |
 | --- | --- |
-| `startMs`, `endMs` | Source milliseconds, default full timeline. Require `0 <= startMs < endMs <= duration`; static documents accept only zero. The range inherits earlier scene state. Ordinary samples exclude the end; intermediate holds show end-left and the global end shows completion. |
-| `speed`, `fps` | Positive finite speed, default 1; integer fps from 1 to 30, default 15. Effective animation duration is range / speed. GIF delays use cumulative centisecond rounding. |
-| `width` | Positive diagram width, rounded to pixels; default `min(viewport.width, 1280)` without upscaling. Height preserves the viewport ratio; captions add height below. |
-| `includeCaptions`, `captionHeight` | Captions default on with height 80px. Nonnegative height is rounded to pixels. The 16px system font uses 22px lines, 16px horizontal padding and 12px vertical padding. Wrapping preserves explicit newlines. Every effective caption is measured before sampling; overflow reports its scene/beat and requires more space, shorter text or disabled captions. |
-| `loopCount` | Default 0 loops forever; integers 1–65,536 specify total plays. One plays once. Larger values fail explicitly. |
-| `finalHoldMs` | Finite nonnegative extra delay, default 1000ms; zero adds no delay. Global completion still appears with zero delay. Static output lasts at least 10ms. Long holds split into 16-bit GIF delays and count toward the 1801 encoded-frame limit. |
-| `theme`, `reducedMotion` | Theme selects explicit / document / light. Motion defaults to full animation regardless of system preferences. Explicit `reducedMotion: true` completes transitions and hides flow markers while preserving duration. |
-| `signal`, `onProgress` | AbortSignal cancels task-owned work and releases resources. The callback receives phase, completed and total counts; a cancelled task never reports complete. |
+| `createDiagram(document: DiagramDocument): Diagram` | Validate, copy, freeze and compile the document for repeated queries. |
+| `renderSvg(document: DiagramDocument, timeMs = 0, options?): string` | Compile and render one static SVG. |
+| `validateDocument(input: unknown): ValidationIssue[]` | Check fields and references; return `{ path, message }` issues. An empty array means these checks passed; compilation can still reject non-finite derived flow timing. |
+| `measureNodeContent({ kind, width, content }): NodeContentMeasurement` | Return `{ height, diagnostics }`. `kind`: `rect`, `roundedRect`, or `cylinder`; `content`: one `NodeContent` or a nonempty array of versions. Return the largest required height across versions. |
+| `wrapText(label: string, maxWidth: number, typography?): string[]` | Estimate wrapping without the DOM. Optional typography supplies all three numeric fields: `fontSize`, `lineHeight`, `charWidth`; omitted uses node typography. |
 
-Invalid runtime values, empty/out-of-range segments and computable resource limits fail before canvas allocation or sampling. Caption overflow uses `GifExportError.code === "caption-overflow"`; it never silently clips text or shrinks the font. GIF palette quantization and local system fonts can change pixels between environments.
+| Compiled `Diagram` | Result / behavior |
+| --- | --- |
+| `totalDuration: number` | Readonly effective duration; `0` for static documents. |
+| `beats: readonly DiagramBeat[]` | Compiled `{ sceneId, beatId, beatIndex, startMs, endMs, caption? }` intervals. |
+| `evaluateAt(timeMs: number, options?): DiagramFrameState` | Return `{ timeMs, sceneId, beatId, beatProgress, nodes, edges, camera, caption?, warnings }`. |
+| `renderSvg(timeMs = 0, options?): string` | Render without recompiling. |
+| `hitTest(timeMs: number, point: DiagramPoint, options?): HitObject \| null` | Hit-test `{ x, y }` in diagram coordinates; return `{ id, type }` or `null`. |
 
-## Node GIF export (Node 20+)
+Query times clamp to `[0, totalDuration]`; non-finite values become zero. `DiagramValidationError.issues` contains validation paths and messages. Measurement diagnostics contain `{ versionIndex, path, dimension, message }`; increasing height does not fix width overflow or overflow inside a fixed-height graph block.
 
-The Node entry runs the same exporter in an isolated Chromium context. Prepare Chromium, system libraries and fonts before going offline. Package installation and export do not download a browser. To use an existing Chromium, set `executablePath` as below. Alternatively, install a matching browser explicitly:
+### Document and actions
 
-```sh
-npm install playwright-core@1.58.2
-npx --no-install playwright-core install chromium
-```
+| Type | Core fields |
+| --- | --- |
+| `Viewport` | Required finite positive `width` and `height`; optional `fitHeight: { padding }` with finite nonnegative bottom padding. |
+| `DiagramDocument` | `version: 1`, `viewport`, `nodes`, `edges`, `scenes`; optional `title`, `theme`. Empty `scenes` makes a static diagram. |
+| `DiagramNode` | `id`, `kind`, `x`, `y`, `width`, `height`; optional `label` or `content` (mutually exclusive), `parentId`, `visible`, `style`. Kinds: `rect`, `roundedRect`, `ellipse`, `cylinder`, `group`. |
+| `DiagramEdge` | `id`, `from`, `to`; optional `route` (default `straight`), `fromPort`, `toPort`, `label`, `visible`, `style`. Ports: `top`, `right`, `bottom`, `left`. |
+| `Scene` / `Beat` | Scene: `{ id, label, beats }`. Beat: `{ durationMs, actions, transitionMs?, caption? }`. `durationMs` must be positive. `transitionMs` must be in `[0, durationMs]`, defaults to `min(250, durationMs)`, and is capped at effective beat length. |
+| `Action` | `{ type, target }`; `updateNode` / `updateEdge` also require `value`. `flow` requires `direction` (`forward` / `reverse`), with optional `text` and `highlightParticipants` (default `true`). `focus` targets a node/group ID or `null` for full view. |
 
-On supported Linux systems, add `--with-deps` to the install command to prepare system libraries. Install fonts separately.
+`updateNode.value` supports `x`, `y`, `width`, `height`, `label`, `content` (`null` clears it), `fill`, `stroke`, and `opacity`. `updateEdge.value` supports `label`, `stroke`, `strokeWidth`, and `opacity`. Node/edge IDs are globally unique; child positions are relative to their parent group. `NodeContent` and its block types are exported from `flowsvg`.
 
-```js
-import { exportGif } from "flowsvg/node";
-import { diagramDocument } from "./diagram.js";
-import { writeFile } from "node:fs/promises";
-const bytes = await exportGif(diagramDocument, {
-  executablePath: "/path/to/installed/chromium",
-  theme: "dark", fps: 15, loopCount: 1,
-  onProgress: ({ phase, completed, total }) => console.log(phase, completed, total)
-});
-await writeFile("diagram.gif", bytes);
-```
+## Export API
 
-All browser export options, progress phases, error codes and `AbortSignal` cancellation apply. Use `browser` to supply an already launched or connected Playwright `Browser`, including one obtained with `chromium.connectOverCDP`. Choose `browser` or `executablePath`; passing both is an options error. The function closes its own context/pages and any browser it launches, including on failure or cancellation. It keeps a supplied browser and the caller's pages open. Functions return bytes and do not write files.
+| Entry / function | Return / requirements |
+| --- | --- |
+| `flowsvg/export` → `exportGif(document, options?: GifExportOptions)` | `Promise<Uint8Array>`; browser canvas and worker support. |
+| `flowsvg/node` → `renderHtml(document, options?: HtmlRenderOptions)` | `Promise<string>`; standalone offline player HTML. Node 20+, no browser required. |
+| `flowsvg/node` → `exportGif(document, options?: NodeGifExportOptions)` | `Promise<Uint8Array>`; Node 20+ and prepared Chromium. Set `executablePath` or supply a Playwright `browser`, never both. A supplied browser remains caller-owned. |
 
-The CLI reads a `DiagramDocument` JSON file, not TypeScript source:
+| `GifExportOptions` | Default / meaning |
+| --- | --- |
+| `theme`, `reducedMotion` | Document theme then `light`; reduced motion defaults to `false`. |
+| `startMs`, `endMs`, `speed` | Full timeline at `1×`; range start is inclusive and end exclusive, except the global end includes the completed state. |
+| `width`, `fps` | `min(viewport.width, 1280)` pixels; `15` samples/second (`1`–`30`, integer). |
+| `includeCaptions`, `captionHeight` | `true`; fixed caption region of `80` pixels. |
+| `loopCount`, `finalHoldMs` | `0` means infinite GIF looping; `1`–`65536` means total plays. Add `1000` ms of final hold by default. Independent of live player looping. |
+| `signal`, `onProgress` | `AbortSignal`; callback receives `{ phase, completed, total }`. Phases: `preparing`, `sampling`, `encoding`, `complete`. |
 
-```sh
-npx --no-install flowsvg diagram.json --output diagram.gif --format gif --executable-path /path/to/chromium --width 640 --fps 15 --loop-count 1
-```
+GIF limits: 120 effective seconds, 1800 samples, 1801 encoded frames, final long edge ≤1920 pixels including captions. `GifExportError.code` is `options`, `limit`, `document`, `caption-overflow`, `environment`, `rasterization`, `encoding`, or `cancelled`. Both export entries expose `GifExportError` and their option/progress types.
 
-GIF CLI flags match the [GIF options](#gif-options): `--theme`, `--start-ms`, `--end-ms`, `--speed`, `--width`, `--fps`, `--no-captions`, `--caption-height`, `--loop-count`, `--final-hold-ms`, `--reduced-motion` and `--executable-path`. Run `npx --no-install flowsvg --help` for usage. Progress goes to stderr. Both output formats preserve existing files unless `--overwrite` is set. Failure, SIGINT or SIGTERM exits nonzero without publishing a partial file.
+`HtmlRenderOptions`: `theme`, `autoplay` (default `false`), `loop` (`false`), `controls` (`true`), `gifExport` (`false`). Built-in GIF downloads export the full timeline at `1×`, using the current theme.
 
-## Offline HTML (Node 20+)
+## Other browser APIs
 
-Generate a single file with the player, styles and document embedded. Opening the HTML through `file://` requires no network. Generation requires no browser or additional runtime dependencies.
+- `flowsvg/web-component` (alias `flowsvg/element`): call `defineFlowPlayer(tagName = "flowsvg-player")` in the browser; returns the registered constructor, or `undefined` without a custom-element registry. Set `element.document` to an object, use the `document` JSON attribute, or load a URL through `src`. Playback options use attributes such as `loop`, `gif-export`, and `reduced-motion`; `autoplay` defaults to `false`, `speed` to `1`. Use playback methods except `load()`; assign `.document` to reload. `getState()` can return `undefined` before mounting or after destruction. Events bubble and cross shadow boundaries.
+- `flowsvg/browser`: `new SelectControl(owner: Document, label: string, onChange: (value: string) => void)`. Append `.element`, synchronize with `render(choices: readonly SelectChoice[], value: string, disabled = false)`, and call `destroy()` on disposal. Each choice is `{ value, label }`; the caller owns the committed value.
 
-```js
-import { renderHtml } from "flowsvg/node";
-import { diagramDocument } from "./diagram.js";
-import { writeFile } from "node:fs/promises";
-await writeFile("diagram.html", await renderHtml(diagramDocument, { theme: "dark" }));
-```
+## Authoring rules
 
-```sh
-npx --no-install flowsvg diagram.json --output diagram.html --format html
-```
+- `show`, `hide`, `highlight`, `unhighlight`, `updateNode`, `updateEdge`, and `focus` persist across beats. `flow` lasts for its beat only.
+- A single flow moves at a reference 180 diagram units/second (minimum 400 ms), then uses a 500 ms arrival interval including highlight fades. This replaces authored `durationMs`. Multiple flows and no-flow beats retain authored timing. Read effective boundaries from `compiled.beats`; use separate no-flow beats for reading time.
+- Structured `content` supports titles, paragraphs, lists, tags, and entity graphs in rectangles, rounded rectangles, and cylinders. Use `measureNodeContent({ kind, width, content })` before authoring fixed dimensions; inspect its `diagnostics`. It does not resize nodes during playback.
+- `viewport.fitHeight: { padding: 24 }` fits current full-view height. GIF keeps the authored viewport dimensions and scale.
+- Invalid documents throw `DiagramValidationError` with field paths. Text overflow appears in `frame.warnings`. `validateDocument(input)` checks external JSON before use.
 
-`renderHtml(document, options)` returns `Promise<string>`. All options are optional: `theme: "light" | "dark"`, `autoplay: boolean`, `controls: boolean` and `gifExport: boolean`. Defaults use the document/light theme, pause at zero and show playback controls and captions. The CLI reads document JSON and accepts `--theme`, `--autoplay`, `--no-controls`, `--gif-export` and `--overwrite`.
+ESM with TypeScript declarations. Core runs without DOM on Node 18+; Node tools require Node 20+. Vue 3.5+ / React 18+.
 
-GIF export defaults off, so basic HTML excludes the encoder. Set `gifExport: true` or pass `--gif-export` to embed the same-version GIF exporter and its worker. Recipients can download GIFs with progress and cancellation through offline `file://`, without sidecar scripts, remote fonts or network access. Required system fonts must already be installed. Exports use the full timeline at 1× and include captions. `controls: false` hides playback and GIF controls.
-
-## Structured node content
-
-### Fixed-size node content
-
-`rect`, `roundedRect`, and `cylinder` support `content`; ellipses and groups support labels only. `content` and `label` are mutually exclusive, even with an empty label. `content.blocks` contains ordered `title`, `paragraph`, `list`, or `graph` blocks. Paragraph roles are `body` (default) and `auxiliary`. An empty block array displays only the shape.
-
-```ts
-import type { DiagramNode } from "flowsvg";
-
-const service = {
-  id: "service", kind: "rect", x: 24, y: 24, width: 260, height: 312,
-  content: {
-    style: { padding: 16, blockGap: 14 },
-    blocks: [
-      { type: "title", text: "Order service" },
-      { type: "paragraph", role: "auxiliary", text: "Core responsibilities" },
-      { type: "paragraph", text: "Validate and persist incoming orders." },
-      { type: "paragraph", text: "Return the order number.", style: { color: "#2563eb", align: "right" } }
-    ]
-  }
-} satisfies DiagramNode;
-```
-
-The `service` node rendered with the light theme:
-
-![Fixed-size Order service node with title, auxiliary text, body and a blue right-aligned paragraph](./docs/images/node-content.png)
-
-Text fields accept strings or `ContentTextSpan[]`: `{ text, style?: { fontSize, fontWeight, color } }`. Spans inherit block styles; alignment belongs to the block. Estimated-width wrapping preserves newlines and Unicode graphemes, prefers spaces, and breaks long words or URLs as needed.
-
-Text styles: positive finite `fontSize`, integer `fontWeight` from 100–900, hexadecimal `color`, and `align` (`left`, `center`, `right`). Content `padding` and `blockGap` are finite and nonnegative. Defaults in diagram units: title 20/700, body 14/400, auxiliary 12/400, padding 16, block gap 14.
-
-Lists accept `marker` (`none` by default, `bullet`, or `number`), `items`, and `style`. Items support `tags`, `status`, `body`, `auxiliary`, `style`, `auxiliaryStyle`, and `statusStyle`. List style sets body typography and nonnegative finite `itemGap` (default 12); item styles override it. Auxiliary text defaults to muted 12-unit text. Continuation and auxiliary lines align with the body. Omitted parts take no space; explicit blank text preserves a line.
-
-```ts
-import type { ContentBlock } from "flowsvg";
-
-const steps: ContentBlock = { type: "list", marker: "number", style: { itemGap: 16 }, items: [
-  { body: "Validate the request.", auxiliary: "Input checks" },
-  { body: [{ text: "Save", style: { fontWeight: 700 } }, { text: " the order." }] }
-] };
-```
-
-The `steps` block rendered in a 300 × 180 rectangle with `content: { blocks: [steps] }`:
-
-![Two numbered steps with auxiliary text and bold Save text](./docs/images/numbered-list.png)
-
-Tags accept `{ text, style?: { fontSize, fontWeight, color, fill, shape } }`, with font size 11 by default. `shape` is `rounded` by default; set `shape: "pill"` for capsule corners based on the final tag height. Shape does not change text layout or theme colors. List `tagGap` defaults to 6 and must be finite and nonnegative. Status is right-aligned 12-unit accent text; `statusStyle` accepts `fontSize`, `fontWeight`, and `color`. When space is insufficient, tags wrap and status moves below. Body and auxiliary text follow.
-
-```ts
-import type { ContentBlock } from "flowsvg";
-
-const records: ContentBlock = { type: "list", items: [{
-  tags: [{ text: "world" }, { text: "experience", style: { fill: "#eadfff", color: "#57319b" } }],
-  status: "new", body: "Alice joined Google", auxiliary: "Mar 2026"
-}] };
-```
-
-The `records` block rendered in a 300 × 180 rectangle with `content: { blocks: [records] }`:
-
-![Record with world and experience tags, new status, body and date](./docs/images/record-tags.png)
-
-Content keeps authored node dimensions and clips to a shape-specific safe area. Overflow emits `text-overflow` with the node ID, `nodes[index].content` path and direction. Increase node dimensions or shorten text; fonts do not shrink automatically. Content has one node-level interaction target, with no internal links, buttons, images or HTML. Clipped text adds no hit area.
-
-`EvaluatedNode.contentLayout` exposes absolute layout geometry and overflow flags. Browser rendering and SVG export share this layout; content does not change ports or routes.
-
-### Entity graphs inside nodes
-
-A `graph` block draws an undirected entity graph with authored local coordinates:
-
-```ts
-import type { ContentGraphBlock } from "flowsvg";
-
-const entities: ContentGraphBlock = {
-  type: "graph", height: 130,
-  nodes: [
-    { id: "alice", label: "Alice", x: 120, y: 30, highlighted: true },
-    { id: "google", label: "Google", x: 50, y: 110, highlighted: true },
-    { id: "ml", label: "ML project", x: 190, y: 110 }
-  ],
-  edges: [{ from: "alice", to: "google" }, { from: "alice", to: "ml" }]
-};
-```
-
-The `entities` block rendered in a 280 × 180 rectangle with `content: { blocks: [entities] }`:
-
-![Entity graph with highlighted Alice and Google, and an unselected ML project](./docs/images/entity-graph.png)
-
-`height` reserves a positive fixed section. Entity centers use nonnegative finite `x`/`y` offsets from its top-left. IDs are local to each block; edges reference those IDs. Highlighted entities use accent dots and bold labels; edges use accent paint when both endpoints are highlighted. Overflow reports a warning and clips at the parent node; interactions target that node.
-
-Replace `content` to change entity selections at a beat start. Evaluated primitives are available through `contentLayout.graphs`.
-
-### Author a complete Facts timeline
-
-Choose fixed dimensions and ordered blocks. Use unmarked lists for records, bullets for capabilities, and numbers for steps. This document works with all four integrations:
-
-```ts
-import { createDiagram, type DiagramDocument, type NodeContent } from "flowsvg";
-
-const facts: NodeContent = { blocks: [
-  { type: "title", text: "Facts" },
-  { type: "paragraph", role: "auxiliary", text: "Confirmed records" },
-  { type: "list", marker: "none", items: [{
-    tags: [{ text: "world" }, { text: "orders", style: { fill: "#eadfff", color: "#57319b" } }],
-    status: "new",
-    body: [{ text: "Order saved", style: { fontWeight: 700 } }, { text: " 2026-10-17", style: { fontSize: 11 } }],
-    auxiliary: "Ready for payment."
-  }] }
-] };
-const updated: NodeContent = { blocks: [
-  { type: "title", text: "Facts" },
-  { type: "list", items: [{ tags: [{ text: "verified" }], status: "done", body: "Payment confirmed", auxiliary: "2026-10-18" }] }
-] };
-const document: DiagramDocument = {
-  version: 1, viewport: { width: 300, height: 480 },
-  nodes: [{ id: "facts", kind: "cylinder", x: 24, y: 20, width: 240, height: 440, content: facts }], edges: [],
-  scenes: [{ id: "records", label: "Records", beats: [
-    { durationMs: 1000, actions: [] },
-    { durationMs: 1000, actions: [{ type: "updateNode", target: "facts", value: { content: updated } }] },
-    { durationMs: 1000, actions: [{ type: "updateNode", target: "facts", value: { label: "Archived" } }] },
-    { durationMs: 1000, actions: [{ type: "updateNode", target: "facts", value: { content: facts } }] },
-    { durationMs: 1000, actions: [{ type: "updateNode", target: "facts", value: { content: null } }] }
-  ] }]
-};
-const diagram = createDiagram(document);
-console.log(diagram.evaluateAt(1000).warnings);
-const svg = diagram.renderSvg(1000, { theme: "dark", reducedMotion: true });
-```
-
-The initial light-theme frame at 0 ms and the updated dark-theme frame at 1000 ms:
-
-![Facts timeline before and after record replacement, shown in light and dark themes](./docs/images/facts-timeline.png)
-
-Check `frame.warnings` before sharing. Prefer default content colors for contrast across themes and highlights.
-
-## License
-
-[MIT](https://cdn.jsdelivr.net/npm/flowsvg/LICENSE). Use, modify, and distribute with the license and copyright notice retained.
-
-Repository maintainers can run `pnpm --filter flowsvg test:browser` after preparing Chromium. SDK build, tests and release verification use SDK-owned inputs and require no example builds. 
+[Full SDK guide](https://github.com/yokingma/FlowSVG/blob/main/docs/SDK-GUIDE.md) · [Changelog](https://cdn.jsdelivr.net/npm/flowsvg@0.2.0/CHANGELOG.md) · [MIT](https://cdn.jsdelivr.net/npm/flowsvg@0.2.0/LICENSE)

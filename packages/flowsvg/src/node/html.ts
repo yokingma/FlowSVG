@@ -8,6 +8,8 @@ import type { DiagramDocument, ThemeName } from "../core/model.js";
 export interface HtmlRenderOptions {
   theme?: ThemeName;
   autoplay?: boolean;
+  /** Defaults to false. Loop live playback; GIF loopCount remains an independent export option. */
+  loop?: boolean;
   controls?: boolean;
   /** Embed offline GIF export assets and show GIF controls when controls are visible. Defaults to false. */
   gifExport?: boolean;
@@ -56,7 +58,7 @@ function validateOptions(options: HtmlRenderOptions): void {
   if (options.theme !== undefined && options.theme !== "light" && options.theme !== "dark") {
     throw new Error("HTML theme must be light or dark.");
   }
-  for (const key of ["autoplay", "controls", "gifExport"] as const) {
+  for (const key of ["autoplay", "controls", "gifExport", "loop"] as const) {
     if (options[key] !== undefined && typeof options[key] !== "boolean") {
       throw new Error(`HTML ${key} must be a boolean.`);
     }

@@ -85,7 +85,7 @@ describe("node content shape safe areas", () => {
     expect(frame.camera).toEqual(withoutContent.camera);
     expect(frame.edges[0]?.path).toMatch(/^M 280 210 /);
     expect(frame.edges[0]?.path).toMatch(/500 210$/);
-    expect(frame.edges[0]?.flow?.point).toEqual({ x: 390, y: 210 });
+    expect(frame.edges[0]?.flow?.point).toEqual({ x: 370, y: 210 });
     expect(diagram.hitTest(500, { x: 56, y: 124 })).toEqual({ id: "service", type: "node" });
   });
 

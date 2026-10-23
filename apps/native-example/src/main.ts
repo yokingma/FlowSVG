@@ -115,8 +115,8 @@ function onPopState(): void {
 function captureSnapshot(): { snapshot?: PlaybackSnapshot; error?: unknown } {
   if (!player) return {};
   try {
-    const { timeMs, speed } = player.getState();
-    return { snapshot: { timeMs, speed } };
+    const { timeMs, speed, loop } = player.getState();
+    return { snapshot: { timeMs, speed, loop } };
   } catch (error) {
     return { error };
   }
@@ -134,7 +134,7 @@ function mountSession(): void {
   for (const button of navigation.querySelectorAll("button")) button.setAttribute("aria-current", String(button.dataset.example === definition.id));
   renderIntroduction(definition);
   try {
-    const mounted = createPlayer(playerHost, definition.document, { theme: session.settings.theme, reducedMotion: session.settings.reducedMotion, controls: true, gifExport: true });
+    const mounted = createPlayer(playerHost, definition.document, { theme: session.settings.theme, reducedMotion: session.settings.reducedMotion, loop: session.loop, controls: true, gifExport: true });
     player = mounted;
     activeVersion = version;
     const onError = (event: Event): void => {

@@ -233,26 +233,47 @@ function contentSafeArea(bounds: ContentSafeArea, padding: number, kind: NodeKin
 
 /** Lay out current content from the top left, without DOM font measurement or authored-size changes. */
 export function layoutNodeContent(content: NodeContent, bounds: ContentSafeArea, palette: ThemePalette, kind: NodeKind): NodeContentLayout {
+  return layoutNodeContentWithMetrics(content, bounds, palette, kind).layout;
+}
+
+/**
+ * Internal layout shared by fixed-size evaluation and author-time measurement.
+ * contentHeight includes complete line boxes, padded tags, graph block heights and all authored gaps.
+ * overflows retain only width limits and graph-internal height limits; outer node height remains adjustable.
+ */
+export function layoutNodeContentWithMetrics(content: NodeContent, bounds: ContentSafeArea, palette: ThemePalette, kind: NodeKind): {
+  layout: NodeContentLayout;
+  contentHeight: number;
+  overflows: { blockIndex: number; dimension: "width" | "height" }[];
+} {
   const safeArea = contentSafeArea(bounds, content.style?.padding ?? DEFAULT_PADDING, kind);
   let cursorY = safeArea.y;
   let widthOverflow = false;
   let heightOverflow = false;
   const tags: ContentTagBackground[] = [];
   const graphs: ContentGraphLayout[] = [];
+  const overflows: { blockIndex: number; dimension: "width" | "height" }[] = [];
   const lines = content.blocks.flatMap((block, blockIndex) => {
     const result = block.type === "graph"
       ? layoutContentGraph(block, safeArea, cursorY, palette, blockIndex, graphs)
       : block.type === "list"
       ? layoutContentList(block, safeArea, cursorY, palette, blockIndex)
       : layoutTextPart(block.text, block.type === "title" ? "title" : block.role ?? "body", block.style, safeArea, cursorY, palette, blockIndex);
-    widthOverflow ||= result.widthOverflow;
+    const blockWidthOverflow = result.widthOverflow || result.lines.some((line) => contentLineExceedsWidth(line, safeArea));
+    if (blockWidthOverflow) overflows.push({ blockIndex, dimension: "width" });
+    if (result.heightOverflow) overflows.push({ blockIndex, dimension: "height" });
+    widthOverflow ||= blockWidthOverflow;
     heightOverflow ||= result.heightOverflow ?? false;
     tags.push(...result.tags);
     cursorY = result.bottom + (blockIndex < content.blocks.length - 1 ? content.style?.blockGap ?? DEFAULT_BLOCK_GAP : 0);
     return result.lines;
   });
-  return { safeArea, lines, tags, ...(graphs.length ? { graphs } : {}), widthOverflow: widthOverflow || lines.some((line) => contentLineExceedsWidth(line, safeArea)),
-    heightOverflow: heightOverflow || cursorY > safeArea.y + safeArea.height };
+  return { contentHeight: cursorY - safeArea.y, overflows, layout: {
+    safeArea, lines, tags, ...(graphs.length ? { graphs } : {}),
+    widthOverflow,
+    // Authored positions change accumulation rounding; use the same geometric tolerance as width checks.
+    heightOverflow: heightOverflow || cursorY > safeArea.y + safeArea.height + OVERFLOW_TOLERANCE
+  } };
 }
 
 /** Graph labels reuse text metrics; authored graph geometry is clipped instead of resized. */
@@ -275,7 +296,9 @@ function layoutContentGraph(block: ContentGraphBlock, area: ContentSafeArea, top
   graphs.push({ blockIndex, nodes, edges });
   return { lines: parts.flatMap((part) => part.lines), tags: [],
     bottom: top + block.height,
-    heightOverflow: parts.some((part) => part.lines.some((line) => line.y - line.fontSize < top) || part.bottom > top + block.height)
+    // Recovering a label top from its absolute baseline can round across the block boundary.
+    heightOverflow: parts.some((part) => part.lines.some((line) => line.y - line.fontSize < top - OVERFLOW_TOLERANCE)
+      || part.bottom > top + block.height)
       || block.nodes.some((node) => node.y - GRAPH_NODE_RADIUS < 0 || node.y + GRAPH_NODE_RADIUS > block.height),
     widthOverflow: parts.some((part) => part.widthOverflow) || block.nodes.some((node) => node.x < GRAPH_NODE_RADIUS
       || node.x + GRAPH_NODE_RADIUS > area.width) };

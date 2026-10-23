@@ -1,6 +1,7 @@
 /** Verify copied artifacts through separate static origins, including lazy SDK resources. */
 import { CATEGORY_STORIES, FORMAL_CATEGORIES, FORMAL_NAMES, inspectCategoryStory } from "./showcase-category-stories.js";
 import { chooseOption } from "./showcase-choice.js";
+import { loadStoryDiagram, beatTime } from "./showcase-timing.js";
 import { execFileSync } from "node:child_process";
 import { cp, mkdtemp, readFile, rm } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
@@ -320,6 +321,7 @@ async function inspectEmptyArtifact(
 
 /** Compare the architecture document and representative states through the copied site's own base. */
 async function inspectArchitectureArtifact(page: Page, address: string) {
+  const diagram = await loadStoryDiagram(page, address, "project-architecture");
   await page.getByRole("navigation", { name: "Examples" }).getByRole("button", { name: "FlowSVG：图解如何运行", exact: true }).click();
   expect(await page.locator("#introduction h2").textContent()).toBe("FlowSVG：图解如何运行");
   expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe("0");
@@ -333,24 +335,25 @@ async function inspectArchitectureArtifact(page: Page, address: string) {
   expect(JSON.parse(await readFile((await (await download).path())!, "utf8"))).toEqual(document);
   const svgs: string[] = [];
   for (const state of [
-    { time: 4500, theme: "light", reduced: "0", text: "SVG" },
-    { time: 19_000, theme: "dark", reduced: "0", text: "同一浏览器导出器" },
-    { time: 23_000, theme: "light", reduced: "1", text: "SDK 不依赖展示工程" }
+    { time: beatTime(diagram, 1), theme: "light", reduced: "0", text: "SVG" },
+    { time: beatTime(diagram, 8), theme: "dark", reduced: "0", text: "同一浏览器导出器" },
+    { time: beatTime(diagram, 10), theme: "light", reduced: "1", text: "SDK 不依赖展示工程" }
   ]) {
     await page.goto(`${address}?example=project-architecture&time=${state.time}&theme=${state.theme}&reduced=${state.reduced}`);
     const canvas = page.locator(".flowsvg-canvas > svg");
     await expect.poll(() => canvas.count()).toBe(1);
-    expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe(String(state.time));
+    expect(Number(await page.getByRole("slider", { name: "Progress" }).inputValue())).toBeCloseTo(state.time, 6);
     expect(await page.locator(".flowsvg-caption").textContent()).toContain(state.text);
     svgs.push(await canvas.evaluate((element) => element.outerHTML));
   }
   await page.reload();
-  expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe("23000");
+  expect(Number(await page.getByRole("slider", { name: "Progress" }).inputValue())).toBeCloseTo(beatTime(diagram, 10), 6);
   return { document, svgs };
 }
 
 /** Compare the layered vllm-metal document and representative states through the copied site's own base. */
 async function inspectVllmMetalArtifact(page: Page, address: string) {
+  const diagram = await loadStoryDiagram(page, address, "vllm-metal-stack");
   await page.getByRole("navigation", { name: "Examples" }).getByRole("button", { name: "vllm-metal：分层推理架构", exact: true }).click();
   expect(await page.locator("#introduction h2").textContent()).toBe("vllm-metal：分层推理架构");
   expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe("0");
@@ -364,19 +367,19 @@ async function inspectVllmMetalArtifact(page: Page, address: string) {
   expect(JSON.parse(await readFile((await (await download).path())!, "utf8"))).toEqual(document);
   const svgs: string[] = [];
   for (const state of [
-    { time: 5000, theme: "light", reduced: "0", text: "KV block IDs" },
-    { time: 14_500, theme: "dark", reduced: "0", text: "并非每次请求" },
-    { time: 22_500, theme: "light", reduced: "1", text: "参考图" }
+    { time: beatTime(diagram, 1), theme: "light", reduced: "0", text: "KV block IDs" },
+    { time: beatTime(diagram, 4), theme: "dark", reduced: "0", text: "并非每次请求" },
+    { time: beatTime(diagram, 7), theme: "light", reduced: "1", text: "参考图" }
   ]) {
     await page.goto(`${address}?example=vllm-metal-stack&time=${state.time}&theme=${state.theme}&reduced=${state.reduced}`);
     const canvas = page.locator(".flowsvg-canvas > svg");
     await expect.poll(() => canvas.count()).toBe(1);
-    expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe(String(state.time));
+    expect(Number(await page.getByRole("slider", { name: "Progress" }).inputValue())).toBeCloseTo(state.time, 6);
     expect(await page.locator(".flowsvg-caption").textContent()).toContain(state.text);
     svgs.push(await canvas.evaluate((element) => element.outerHTML));
   }
   await page.reload();
-  expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe("22500");
+  expect(Number(await page.getByRole("slider", { name: "Progress" }).inputValue())).toBeCloseTo(beatTime(diagram, 7), 6);
   return { document, svgs };
 }
 
@@ -417,25 +420,26 @@ async function inspectFormalArtifact(page: Page, address: string) {
   const ragResponse = await page.request.get(`${address}json/rag-workflow.json`);
   expect(ragResponse.status()).toBe(200);
   const ragDocument: unknown = await ragResponse.json();
+  const ragDiagram = await loadStoryDiagram(page, address, "rag-workflow");
   expect(ragDocument).toMatchObject({ version: 1, title: "RAG：从资料到答案" });
   expect(ragDocument).not.toHaveProperty("defaults");
   const download = page.waitForEvent("download");
   await page.getByRole("link", { name: "Download diagram JSON" }).click();
   expect(JSON.parse(await readFile((await (await download).path())!, "utf8"))).toEqual(ragDocument);
   for (const state of [
-    { time: 10_500, theme: "light", reduced: "0", text: "C3 年假余额" },
-    { time: 12_500, theme: "dark", reduced: "0", text: "申请流程 · §4.1" },
-    { time: 19_500, theme: "light", reduced: "1", text: "直属负责人审批" }
+    { time: beatTime(ragDiagram, 6), theme: "light", reduced: "0", text: "C3 年假余额" },
+    { time: beatTime(ragDiagram, 7), theme: "dark", reduced: "0", text: "申请流程 · §4.1" },
+    { time: beatTime(ragDiagram, 10), theme: "light", reduced: "1", text: "直属负责人审批" }
   ]) {
     await page.goto(`${address}?example=rag-workflow&time=${state.time}&theme=${state.theme}&reduced=${state.reduced}`);
     const canvas = page.locator(".flowsvg-canvas > svg");
     await expect.poll(() => canvas.count()).toBe(1);
-    expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe(String(state.time));
+    expect(Number(await page.getByRole("slider", { name: "Progress" }).inputValue())).toBeCloseTo(state.time, 6);
     expect(await canvas.textContent()).toContain(state.text);
     svgs.push(await canvas.evaluate((element) => element.outerHTML));
   }
   await page.reload();
-  expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe("19500");
+  expect(Number(await page.getByRole("slider", { name: "Progress" }).inputValue())).toBeCloseTo(beatTime(ragDiagram, 10), 6);
   expect(probe.badResources).toEqual([]);
   const architecture = await inspectArchitectureArtifact(page, address);
   expect(probe.badResources).toEqual([]);

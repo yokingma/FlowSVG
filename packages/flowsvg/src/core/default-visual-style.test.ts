@@ -40,11 +40,12 @@ describe("default visual style", () => {
     { theme: "dark", fill: "#233b60", stroke: "#8ab4f8", ink: "#101828", normalFill: "#1d2939" }
   ] as const)("uses distinct highlight fill and stroke with readable flow text in $theme", ({ theme, fill, stroke, ink, normalFill }) => {
     const diagram = createDiagram(document);
+    const settledTime = diagram.beats[2]!.endMs - 300;
     for (const reducedMotion of [false, true]) {
-      const frame = diagram.evaluateAt(2500, { theme, reducedMotion });
+      const frame = diagram.evaluateAt(settledTime, { theme, reducedMotion });
       for (const node of frame.nodes) expect(node.style).toMatchObject({ fill, stroke, strokeWidth: 1.2 });
       expect(frame.edges[0]!.style.stroke).toBe(stroke);
-      const svg = new DOMParser().parseFromString(diagram.renderSvg(2500, { theme, reducedMotion }), "image/svg+xml");
+      const svg = new DOMParser().parseFromString(diagram.renderSvg(settledTime, { theme, reducedMotion }), "image/svg+xml");
       const marker = svg.querySelector('[data-flow-id="request"]');
       if (reducedMotion) expect(marker).toBeNull();
       else {
@@ -56,6 +57,6 @@ describe("default visual style", () => {
     expect(middle.fill).not.toBe(normalFill);
     expect(middle.fill).not.toBe(fill);
     expect(middle.fill).not.toBe(middle.stroke);
-    expect(diagram.evaluateAt(3000, { theme }).nodes[0]!.style.fill).toBe(normalFill);
+    expect(diagram.evaluateAt(diagram.beats[3]!.startMs, { theme }).nodes[0]!.style.fill).toBe(normalFill);
   });
 });

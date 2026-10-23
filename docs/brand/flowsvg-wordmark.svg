@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="312" height="128" viewBox="0 0 312 128" font-family="system-ui, -apple-system, &quot;PingFang SC&quot;, &quot;Microsoft YaHei&quot;, &quot;Noto Sans CJK SC&quot;, sans-serif" role="img" aria-labelledby="title desc">
+  <title id="title">FlowSVG</title>
+  <desc id="desc">FlowSVG wordmark inside a compact rounded frame. The solid signal and open loop marker share the upper-right corner.</desc>
+  <path d="M288 20Q280 12 264 12H48Q16 12 16 44V84Q16 116 48 116H264Q296 116 296 84V44Q296 28 288 20Z" fill="none" stroke="#2a63c8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+  <circle cx="288" cy="20" r="7" fill="#fff" stroke="#2a63c8" stroke-width="3"/>
+  <circle cx="288" cy="20" r="5" fill="#e77752"/>
+  <text x="156" y="72" fill="#101828" font-size="60" font-weight="700" text-anchor="middle" transform="translate(12.03125 14.5)"><tspan x="18" y="72" fill="#101828" font-size="60" font-weight="700" text-anchor="start">FlowSVG</tspan></text>
+</svg>

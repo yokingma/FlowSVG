@@ -5,6 +5,7 @@
  */
 import type { Action, DiagramDocument, NodeContent } from "flowsvg";
 import type { ShowcaseAuthorDefinition } from "../model.js";
+import { measureExampleNode } from "./example-content.js";
 
 const MODULE_TITLE_SIZE = 18;
 const MODULE_PADDING = 6;
@@ -26,53 +27,53 @@ function setHighlights(enabled: boolean, ...targets: string[]): Action[] {
 const document: DiagramDocument = {
   version: 1,
   title: "vllm-metal：分层推理架构",
-  // Fit module and group heights to their content; retain 50-unit layer gaps and parent-relative children.
+  // Measure module content with authored minimum heights; keep fixed groups, layer gaps and parent-relative children.
   viewport: { width: 1280, height: 920 },
   nodes: [
-    { id: "clients", kind: "roundedRect", x: 40, y: 20, width: 1200, height: 96,
+    measureExampleNode({ id: "clients", kind: "roundedRect", x: 40, y: 20, width: 1200, height: 96,
       content: { style: { padding: 12, blockGap: 6 }, blocks: [
         { type: "title", text: "Client apps", style: { fontSize: 20 } },
         { type: "list", items: [{ tags: ["Coding agents", "Chat UIs", "OpenAI SDKs", "curl"]
           .map((text) => ({ text, style: { shape: "pill", fontSize: 12 } })) }] }
-      ] } },
+      ] } }),
     { id: "upstream", kind: "group", x: 40, y: 166, width: 1200, height: 156,
       label: "Upstream vLLM V1 · 原样复用" },
-    { id: "api-server", kind: "roundedRect", parentId: "upstream", x: 20, y: 44, width: 275, height: 100,
-      content: createModuleContent("OpenAI API server", "兼容接口", "streaming · tool calls") },
-    { id: "scheduler", kind: "roundedRect", parentId: "upstream", x: 315, y: 44, width: 275, height: 100,
-      content: createModuleContent("V1 scheduler", "请求调度", "admission · preemption") },
-    { id: "block-manager", kind: "roundedRect", parentId: "upstream", x: 610, y: 44, width: 275, height: 100,
-      content: createModuleContent("Paged block manager", "KV block 管理", "prefix caching") },
-    { id: "chunked-prefill", kind: "roundedRect", parentId: "upstream", x: 905, y: 44, width: 275, height: 100,
-      content: createModuleContent("Chunked prefill", "分块预填充", "continuous batching") },
+    measureExampleNode({ id: "api-server", kind: "roundedRect", parentId: "upstream", x: 20, y: 44, width: 275, height: 100,
+      content: createModuleContent("OpenAI API server", "兼容接口", "streaming · tool calls") }),
+    measureExampleNode({ id: "scheduler", kind: "roundedRect", parentId: "upstream", x: 315, y: 44, width: 275, height: 100,
+      content: createModuleContent("V1 scheduler", "请求调度", "admission · preemption") }),
+    measureExampleNode({ id: "block-manager", kind: "roundedRect", parentId: "upstream", x: 610, y: 44, width: 275, height: 100,
+      content: createModuleContent("Paged block manager", "KV block 管理", "prefix caching") }),
+    measureExampleNode({ id: "chunked-prefill", kind: "roundedRect", parentId: "upstream", x: 905, y: 44, width: 275, height: 100,
+      content: createModuleContent("Chunked prefill", "分块预填充", "continuous batching") }),
     { id: "runner", kind: "group", x: 40, y: 372, width: 1200, height: 322,
       label: "vllm-metal model runner · 打包 token IDs，构建 cu_seqlens" },
     { id: "mlx-primitives", kind: "group", parentId: "runner", x: 20, y: 44, width: 610, height: 266,
       label: "基于 mlx_lm · token-wise，无请求边界" },
     { id: "metal-owned", kind: "group", parentId: "runner", x: 650, y: 44, width: 530, height: 266,
       label: "vllm-metal 自有 · 消费 cu_seqlens" },
-    { id: "model-definitions", kind: "roundedRect", parentId: "mlx-primitives", x: 16, y: 44, width: 280, height: 100,
-      content: createModuleContent("Model definitions", "mlx_lm", "模型定义 · token-wise") },
-    { id: "weight-loading", kind: "roundedRect", parentId: "mlx-primitives", x: 314, y: 44, width: 280, height: 100,
-      content: createModuleContent("Weight loading", "mlx_lm", "权重加载") },
-    { id: "norm-linear", kind: "roundedRect", parentId: "mlx-primitives", x: 16, y: 154, width: 280, height: 100,
-      content: createModuleContent("RMSNorm · linear", "mlx_lm", "逐 token 运算") },
-    { id: "mlp-moe", kind: "roundedRect", parentId: "mlx-primitives", x: 314, y: 154, width: 280, height: 100,
-      content: createModuleContent("MLP · MoE", "mlx_lm", "逐 token 运算") },
-    { id: "paged-attention", kind: "roundedRect", parentId: "metal-owned", x: 16, y: 44, width: 498, height: 100,
-      content: createModuleContent("Paged varlen attention", "Metal kernel", "q [total_q, H, D] · cu_seqlens") },
-    { id: "nax-prefill", kind: "roundedRect", parentId: "metal-owned", x: 16, y: 154, width: 241, height: 100,
-      content: createModuleContent("M5 NAX prefill", "Metal kernel", "仅 M5 · cu_seqlens") },
-    { id: "mtp", kind: "roundedRect", parentId: "metal-owned", x: 273, y: 154, width: 241, height: 100,
-      content: createModuleContent("MTP draft + verify", "运行时编排", "消费 cu_seqlens") },
+    measureExampleNode({ id: "model-definitions", kind: "roundedRect", parentId: "mlx-primitives", x: 16, y: 44, width: 280, height: 100,
+      content: createModuleContent("Model definitions", "mlx_lm", "模型定义 · token-wise") }),
+    measureExampleNode({ id: "weight-loading", kind: "roundedRect", parentId: "mlx-primitives", x: 314, y: 44, width: 280, height: 100,
+      content: createModuleContent("Weight loading", "mlx_lm", "权重加载") }),
+    measureExampleNode({ id: "norm-linear", kind: "roundedRect", parentId: "mlx-primitives", x: 16, y: 154, width: 280, height: 100,
+      content: createModuleContent("RMSNorm · linear", "mlx_lm", "逐 token 运算") }),
+    measureExampleNode({ id: "mlp-moe", kind: "roundedRect", parentId: "mlx-primitives", x: 314, y: 154, width: 280, height: 100,
+      content: createModuleContent("MLP · MoE", "mlx_lm", "逐 token 运算") }),
+    measureExampleNode({ id: "paged-attention", kind: "roundedRect", parentId: "metal-owned", x: 16, y: 44, width: 498, height: 100,
+      content: createModuleContent("Paged varlen attention", "Metal kernel", "q [total_q, H, D] · cu_seqlens") }),
+    measureExampleNode({ id: "nax-prefill", kind: "roundedRect", parentId: "metal-owned", x: 16, y: 154, width: 241, height: 100,
+      content: createModuleContent("M5 NAX prefill", "Metal kernel", "仅 M5 · cu_seqlens") }),
+    measureExampleNode({ id: "mtp", kind: "roundedRect", parentId: "metal-owned", x: 273, y: 154, width: 241, height: 100,
+      content: createModuleContent("MTP draft + verify", "运行时编排", "消费 cu_seqlens") }),
     { id: "runtime", kind: "group", x: 40, y: 744, width: 1200, height: 156,
       label: "MLX · Metal · Apple Silicon" },
-    { id: "mlx-runtime", kind: "roundedRect", parentId: "runtime", x: 20, y: 44, width: 370, height: 100,
-      content: createModuleContent("MLX runtime", "运行时", "lazy graph · GEMMs") },
-    { id: "apple-gpu", kind: "roundedRect", parentId: "runtime", x: 415, y: 44, width: 370, height: 100,
-      content: createModuleContent("Apple Silicon GPU", "硬件", "M5 增加 NAX units") },
-    { id: "unified-memory", kind: "roundedRect", parentId: "runtime", x: 810, y: 44, width: 370, height: 100,
-      content: createModuleContent("Unified memory", "统一内存", "weights + paged KV") }
+    measureExampleNode({ id: "mlx-runtime", kind: "roundedRect", parentId: "runtime", x: 20, y: 44, width: 370, height: 100,
+      content: createModuleContent("MLX runtime", "运行时", "lazy graph · GEMMs") }),
+    measureExampleNode({ id: "apple-gpu", kind: "roundedRect", parentId: "runtime", x: 415, y: 44, width: 370, height: 100,
+      content: createModuleContent("Apple Silicon GPU", "硬件", "M5 增加 NAX units") }),
+    measureExampleNode({ id: "unified-memory", kind: "roundedRect", parentId: "runtime", x: 810, y: 44, width: 370, height: 100,
+      content: createModuleContent("Unified memory", "统一内存", "weights + paged KV") })
   ],
   // Group-boundary endpoints preserve the reference's layer relationships without crossing the module cards.
   edges: [

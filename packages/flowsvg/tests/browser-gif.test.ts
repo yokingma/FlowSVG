@@ -37,6 +37,35 @@ async function exportBytes(document: DiagramDocument = input, options = {}) {
   }, { document, options }));
 }
 
+it("preflights caption ranges at effective single-flow boundaries", async () => {
+  const story: DiagramDocument = {
+    version: 1, viewport: { width: 500, height: 120 },
+    nodes: [
+      { id: "a", kind: "rect", x: 20, y: 20, width: 40, height: 40 },
+      { id: "b", kind: "rect", x: 420, y: 20, width: 40, height: 40 }
+    ],
+    edges: [{ id: "transfer", from: "a", to: "b", route: "straight" }],
+    scenes: [{ id: "transfer", label: "Transfer", beats: [
+      { durationMs: 100, caption: "Moving", actions: [{ type: "flow", target: "transfer", direction: "forward" }] },
+      { durationMs: 300, caption: "Overflow\n".repeat(20), actions: [] }
+    ] }]
+  };
+  const result = await page.evaluate(async (documentInput) => {
+    const api = (globalThis as unknown as { FlowSVGExport: { exportGif(document: unknown, options: unknown): Promise<Uint8Array> } }).FlowSVGExport;
+    const results: (number | string)[] = [];
+    for (const startMs of [200, 2400, 2500]) {
+      try {
+        const bytes = await api.exportGif(documentInput, { startMs, endMs: startMs + 100, captionHeight: 50, finalHoldMs: 0, fps: 2 });
+        results.push(bytes.length);
+      } catch (error) { results.push((error as { code: string }).code); }
+    }
+    return results;
+  }, story);
+  expect(result[0]).toBeTypeOf("number");
+  expect(result[1]).toBeTypeOf("number");
+  expect(result[2]).toBe("caption-overflow");
+});
+
 it("exports an offline decodable full timeline with caption, accurate timing and completed final state", async () => {
   const bytes = await exportBytes();
   const parsed = parseGIF(bytes.buffer);
@@ -229,4 +258,28 @@ it("rejects invalid documents and computable limits before preparing browser res
     return results;
   }, input);
   for (const result of results) { expect(result.code).toBe(result.expected); expect(result.phases).toEqual([]); }
+});
+
+it("keeps authored GIF dimensions and scale across fitted stages without mutating the source", async () => {
+  const fitted: DiagramDocument = {
+    version: 1, viewport: { width: 240, height: 160, fitHeight: { padding: 8 } },
+    nodes: [{ id: "card", kind: "rect", x: 20, y: 20, width: 60, height: 30, style: { fill: "#ff0000" } }], edges: [],
+    scenes: [{ id: "grow", label: "Grow", beats: [
+      { durationMs: 500, transitionMs: 0, actions: [] },
+      { durationMs: 500, transitionMs: 0, actions: [{ type: "updateNode", target: "card", value: { height: 100 } }] }
+    ] }]
+  };
+  const before = JSON.stringify(fitted);
+  const fixed: DiagramDocument = { ...fitted, viewport: { width: 240, height: 160 } };
+  const options = { fps: 2, includeCaptions: false, finalHoldMs: 0 };
+  const actual = await exportBytes(fitted, options);
+  expect(actual).toEqual(await exportBytes(fixed, options));
+  expect(JSON.stringify(fitted)).toBe(before);
+  const parsed = parseGIF(actual.buffer);
+  expect(parsed.lsd).toMatchObject({ width: 240, height: 160 });
+  const frames = decompressFrames(parsed, true);
+  const pixel = (frame: typeof frames[number], x: number, y: number) => Array.from(frame.patch.slice((y * 240 + x) * 4, (y * 240 + x) * 4 + 4));
+  expect(pixel(frames[0]!, 40, 45)).toEqual([255, 0, 0, 255]);
+  expect(pixel(frames[0]!, 40, 80)).toEqual([255, 255, 255, 255]);
+  expect(pixel(frames[1]!, 40, 80)).toEqual([255, 0, 0, 255]);
 });

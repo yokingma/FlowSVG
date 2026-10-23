@@ -1,59 +1,50 @@
 /** Project architecture story. Arrows describe data/calls, while captions distinguish runtime and build-time paths. */
-import type { DiagramDocument, NodeContent } from "flowsvg";
+import type { DiagramDocument } from "flowsvg";
 import type { ShowcaseAuthorDefinition } from "../model.js";
-
-// Local author formatting keeps every node on the SDK's semantic typography and theme palette.
-function createContent(title: string, tag: string, body: string, detail: string): NodeContent {
-  return { style: { padding: 12, blockGap: 6 }, blocks: [
-    { type: "title", text: title },
-    { type: "list", items: [{ tags: [{ text: tag, style: { shape: "pill", fontSize: 12 } }] }] },
-    { type: "paragraph", text: body },
-    { type: "paragraph", role: "auxiliary", text: detail }
-  ] };
-}
+import { createExampleContent, measureExampleNode } from "./example-content.js";
 
 const document: DiagramDocument = {
   version: 1,
   title: "FlowSVG：图解如何运行",
-  // Fit content heights before placing rows; 50-unit gaps leave room for layer calls and transfer capsules.
+  // Retain authored minimum heights; 50-unit row gaps leave room for calls and transfer capsules.
   viewport: { width: 980, height: 604 },
   nodes: [
-    { id: "document", kind: "roundedRect", x: 24, y: 24, width: 290, height: 144,
-      content: createContent("图解文档", "可序列化", "节点 · 连线 · 场景 · 节拍", "同一 DiagramDocument 供播放和导出") },
-    { id: "core", kind: "roundedRect", x: 364, y: 24, width: 270, height: 144,
-      content: createContent("平台无关核心", "纯 TypeScript", "校验 · 时间求值 · 几何 · SVG", "无 DOM、网络或浏览器时钟") },
-    { id: "svg", kind: "roundedRect", x: 684, y: 24, width: 270, height: 144,
-      content: createContent("静态 SVG", "任意时刻", "renderSvg(t)", "核心输出；无需 DOM") },
-    { id: "adapters", kind: "roundedRect", x: 24, y: 218, width: 290, height: 144,
-      content: createContent("接入适配器", "可选接入", "React · Vue · Web Component", "复用浏览器播放器；管理组件生命周期") },
-    { id: "browser", kind: "roundedRect", x: 364, y: 218, width: 270, height: 144,
-      content: createContent("浏览器播放器", "DOM + 时钟", "播放 · 控件 · 交互", "创建、更新、销毁挂载资源") },
-    { id: "gif", kind: "roundedRect", x: 684, y: 218, width: 270, height: 144,
-      content: createContent("GIF 导出", "按需 · Worker", "SVG → 栅格化 → 编码", "在浏览器执行，不录制实时播放") },
-    { id: "showcase", kind: "roundedRect", x: 24, y: 436, width: 290, height: 144,
-      content: createContent("展示工程", "私有消费方", "作者与会话 · 三端页面", "@flowsvg/showcase；不被 SDK 依赖") },
-    { id: "node-tools", kind: "roundedRect", x: 644, y: 412, width: 310, height: 168,
+    measureExampleNode({ id: "document", kind: "roundedRect", x: 24, y: 24, width: 290, height: 144,
+      content: createExampleContent("图解文档", "可序列化", "节点 · 连线 · 场景 · 节拍", "同一 DiagramDocument 供播放和导出") }),
+    measureExampleNode({ id: "core", kind: "roundedRect", x: 364, y: 24, width: 270, height: 144,
+      content: createExampleContent("平台无关核心", "纯 TypeScript", "校验 · 时间求值 · 几何 · SVG", "无 DOM、网络或浏览器时钟") }),
+    measureExampleNode({ id: "svg", kind: "roundedRect", x: 684, y: 24, width: 270, height: 144,
+      content: createExampleContent("静态 SVG", "任意时刻", "renderSvg(t)", "核心输出；无需 DOM") }),
+    measureExampleNode({ id: "adapters", kind: "roundedRect", x: 24, y: 218, width: 290, height: 144,
+      content: createExampleContent("接入适配器", "可选接入", "React · Vue · Web Component", "复用浏览器播放器；管理组件生命周期") }),
+    measureExampleNode({ id: "browser", kind: "roundedRect", x: 364, y: 218, width: 270, height: 144,
+      content: createExampleContent("浏览器播放器", "DOM + 时钟", "播放 · 控件 · 交互", "创建、更新、销毁挂载资源") }),
+    measureExampleNode({ id: "gif", kind: "roundedRect", x: 684, y: 218, width: 270, height: 144,
+      content: createExampleContent("GIF 导出", "按需 · Worker", "SVG → 栅格化 → 编码", "在浏览器执行，不录制实时播放") }),
+    measureExampleNode({ id: "showcase", kind: "roundedRect", x: 24, y: 436, width: 290, height: 144,
+      content: createExampleContent("展示工程", "私有消费方", "作者与会话 · 三端页面", "@flowsvg/showcase；不被 SDK 依赖") }),
+    measureExampleNode({ id: "node-tools", kind: "roundedRect", x: 644, y: 412, width: 310, height: 168,
       content: { style: { padding: 12, blockGap: 6 }, blocks: [
         { type: "title", text: "Node 工具" },
         { type: "list", items: [{ tags: [{ text: "Node 20+", style: { shape: "pill", fontSize: 12 } }] }] },
         { type: "paragraph", text: "HTML：内嵌文档、播放器和样式" },
         { type: "paragraph", text: "GIF：Chromium 调用浏览器导出器" },
         { type: "paragraph", role: "auxiliary", text: "仅 GIF 需要 Chromium" }
-      ] } }
+      ] } })
   ],
   edges: [
-    { id: "document-core", from: "document", to: "core", route: "curved", fromPort: "right", toPort: "left" },
-    { id: "core-svg", from: "core", to: "svg", route: "curved", fromPort: "right", toPort: "left" },
-    // The SDK separates opposite-direction curves so time requests and frame results remain readable.
-    { id: "core-browser", from: "core", to: "browser", route: "curved", fromPort: "bottom", toPort: "top" },
-    { id: "browser-core", from: "browser", to: "core", route: "curved", fromPort: "top", toPort: "bottom" },
-    { id: "adapters-browser", from: "adapters", to: "browser", route: "curved", fromPort: "right", toPort: "left" },
-    { id: "svg-gif", from: "svg", to: "gif", route: "curved", fromPort: "bottom", toPort: "top" },
+    { id: "document-core", from: "document", to: "core", route: "orthogonal", fromPort: "right", toPort: "left" },
+    { id: "core-svg", from: "core", to: "svg", route: "orthogonal", fromPort: "right", toPort: "left" },
+    // Keep reciprocal calls so each beat can show frame results or time requests in its actual direction.
+    { id: "core-browser", from: "core", to: "browser", route: "orthogonal", fromPort: "bottom", toPort: "top" },
+    { id: "browser-core", from: "browser", to: "core", route: "orthogonal", fromPort: "top", toPort: "bottom" },
+    { id: "adapters-browser", from: "adapters", to: "browser", route: "orthogonal", fromPort: "right", toPort: "left" },
+    { id: "svg-gif", from: "svg", to: "gif", route: "orthogonal", fromPort: "bottom", toPort: "top" },
     // HTML embeds built player assets; this arrow does not mean a running browser is needed to assemble HTML.
-    { id: "browser-node", from: "browser", to: "node-tools", route: "curved", fromPort: "bottom", toPort: "left" },
-    { id: "node-gif", from: "node-tools", to: "gif", route: "curved", fromPort: "top", toPort: "bottom" },
-    { id: "showcase-adapters", from: "showcase", to: "adapters", route: "curved", fromPort: "top", toPort: "bottom" },
-    { id: "showcase-browser", from: "showcase", to: "browser", route: "curved", fromPort: "right", toPort: "bottom" }
+    { id: "browser-node", from: "browser", to: "node-tools", route: "orthogonal", fromPort: "bottom", toPort: "left" },
+    { id: "node-gif", from: "node-tools", to: "gif", route: "orthogonal", fromPort: "top", toPort: "bottom" },
+    { id: "showcase-adapters", from: "showcase", to: "adapters", route: "orthogonal", fromPort: "top", toPort: "bottom" },
+    { id: "showcase-browser", from: "showcase", to: "browser", route: "orthogonal", fromPort: "right", toPort: "bottom" }
   ],
   scenes: [
     { id: "define", label: "定义图解", beats: [{ durationMs: 3000,
@@ -102,7 +93,7 @@ export const projectArchitectureExample: ShowcaseAuthorDefinition = {
   id: "project-architecture",
   category: "architecture",
   name: "FlowSVG：图解如何运行",
-  introduction: "24 秒了解 FlowSVG 自身架构：同一份图解文档经过平台无关核心求值，由浏览器播放器及适配器展示，并导出 SVG、GIF 或离线 HTML。区分可选导出、Node 运行条件与私有展示工程边界；箭头表示数据或调用。",
+  introduction: "了解 FlowSVG 自身架构：同一份图解文档经过平台无关核心求值，由浏览器播放器及适配器展示，并导出 SVG、GIF 或离线 HTML。区分可选导出、Node 运行条件与私有展示工程边界；箭头表示数据或调用。",
   document,
   defaults: { speed: 1, theme: "light", reducedMotion: false }
 };

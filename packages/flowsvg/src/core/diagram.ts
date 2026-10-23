@@ -4,17 +4,17 @@
  */
 import { layoutNodeContent, type NodeContentLayout } from "./node-content.js";
 import { paintContentHighlight } from "./node-content-paint.js";
-import { CompiledTimeline, type TimelineObject } from "./timeline.js";
+import { CompiledTimeline, type TimelineObject, type CompiledFlow } from "./timeline.js";
 import { mixColor } from "./color.js";
 import { DEFAULT_NODE_STROKE_WIDTH, DIAGRAM_FONT_FAMILY, NODE_CORNER_RADIUS, resolveThemePalette, type ThemePalette } from "./theme.js";
 import { DiagramValidationError, validateDocument } from "./validation.js";
-import type { Viewport, DiagramNode, DiagramEdge, DiagramDocument, Beat, EvaluateOptions, TextLine, EvaluatedNode, EvaluatedEdge, EdgeFlowMarker, LayoutWarning, CameraState, HitObject, DiagramPoint, DiagramFrameState } from "./model.js";
+import type { Viewport, DiagramNode, DiagramEdge, DiagramDocument, DiagramBeat, Beat, EvaluateOptions, TextLine, EvaluatedNode, EvaluatedEdge, EdgeFlowMarker, LayoutWarning, CameraState, HitObject, DiagramPoint, DiagramFrameState } from "./model.js";
 import { ARROW_MARKER_SIZE, emptyPathGeometry, isPointNearPath, routedTargetOffsets, pathLabelAnchor, routeEdge, type PathGeometry } from "./edge-geometry.js";
 import { formatNumber } from "./svg-number.js";
 
 /**
  * Validate and copy a document, then compile its timeline; later input mutations cannot affect evaluation.
- * @throws {DiagramValidationError} If document structure, values or references are invalid.
+ * @throws {DiagramValidationError} If document structure, values or references are invalid, or derived flow timing is non-finite.
  */
 export function createDiagram(input: DiagramDocument): Diagram {
   const issues = validateDocument(input);
@@ -31,6 +31,8 @@ export function renderSvg(document: DiagramDocument, timeMs = 0, options?: Evalu
 export interface Diagram {
   /** Global timeline duration in milliseconds; zero for static diagrams. */
   readonly totalDuration: number;
+  /** Frozen compiled intervals, including single-flow movement and arrival hold; use these for navigation and export scheduling. */
+  readonly beats: readonly DiagramBeat[];
   /**
    * Evaluate a frame; finite times clamp to [0, totalDuration], and non-finite times become zero.
    * Beat intervals include their start and exclude their end; totalDuration returns the completed final beat.
@@ -54,28 +56,50 @@ export interface Diagram {
  */
 class CompiledDiagram implements Diagram {
   readonly totalDuration: number;
+  readonly beats: readonly DiagramBeat[];
   private readonly timeline: CompiledTimeline;
   private readonly document: DiagramDocument;
   private readonly nodesById: ReadonlyMap<string, DiagramNode>;
   constructor(document: DiagramDocument) {
     this.document = deepFreeze(document);
-    this.timeline = new CompiledTimeline(document);
-    this.totalDuration = this.timeline.totalDuration;
     this.nodesById = new Map(document.nodes.map((node) => [node.id, node]));
+    // Resolve reference lengths from target snapshots using the same routing as ordinary frame evaluation.
+    // The second compilation changes timing only; authored transitions are capped at each effective beat duration.
+    const authoredTimeline = new CompiledTimeline(document);
+    const movementDurations = new Map<string, number>();
+    let startMs = 0;
+    for (const [sceneIndex, scene] of document.scenes.entries()) {
+      scene.beats.forEach((beat, index) => {
+        const flows = beat.actions.filter((action) => action.type === "flow");
+        if (flows.length === 1) {
+          const geometry = this.evaluateFrame(startMs, { reducedMotion: true }, authoredTimeline).edgeGeometries.get(flows[0]!.target)!;
+          // Invalid finite-input arithmetic can produce NaN points even when geometry's zero-length fallback is finite.
+          if (!Number.isFinite(geometry.length) || geometry.points.some((point) => !Number.isFinite(point.x) || !Number.isFinite(point.y))) {
+            throw new DiagramValidationError([{ path: `scenes[${sceneIndex}].beats[${index}].durationMs`, message: "effective beat timing must be finite" }]);
+          }
+          movementDurations.set(`${scene.id}:${index}`, Math.max(MIN_FLOW_MOVEMENT_MS, geometry.length / FLOW_UNITS_PER_SECOND * MILLISECONDS_PER_SECOND));
+        }
+        startMs += beat.durationMs;
+      });
+    }
+    this.timeline = new CompiledTimeline(document, movementDurations);
+    this.totalDuration = this.timeline.totalDuration;
+    this.beats = this.timeline.schedule;
   }
   evaluateAt(timeMs: number, options: EvaluateOptions = {}): DiagramFrameState {
     return this.evaluateFrame(timeMs, options).frame;
   }
-  private evaluateFrame(timeMs: number, options: EvaluateOptions = {}): {
+  private evaluateFrame(timeMs: number, options: EvaluateOptions = {}, compiledTimeline = this.timeline): {
     frame: DiagramFrameState;
     edgeGeometries: ReadonlyMap<string, PathGeometry>;
   } {
     const palette = resolvePalette(this.document, options);
-    const timeline = this.timeline.evaluateAt(timeMs, options, palette);
+    const timeline = compiledTimeline.evaluateAt(timeMs, options, palette);
     const currentNodes = new Map(this.document.nodes.map((node) => {
       const values = timeline.objects.get(node.id)!.values;
       return [node.id, { ...node, x: values.x ?? node.x, y: values.y ?? node.y, width: values.width ?? node.width, height: values.height ?? node.height, label: values.label, content: values.content ?? undefined }];
     }));
+    const flowHighlights = resolveFlowHighlights(timeline.flows, this.document.edges, timeline.flowArrivalProgress, timeline.flowDepartureProgress);
     const warnings: LayoutWarning[] = [];
     const nodes = [...currentNodes.values()].map((node, index) => {
       const position = this.resolvePosition(node.id, currentNodes);
@@ -85,27 +109,24 @@ class CompiledDiagram implements Diagram {
       if (node.label && labelLines.length * NODE_TYPOGRAPHY.lineHeight > Math.max(0, node.height - TEXT_PADDING * 2)) warnings.push({ path: `nodes[${index}].label`, objectId: node.id, code: "text-overflow", message: `label for node \"${node.id}\" exceeds its height` });
       const visual = this.resolveVisibility(node.id, timeline.objects);
       const own = timeline.objects.get(node.id)!;
-      const flowHighlighted = timeline.flows.some((flow) => {
-        const edge = this.document.edges.find((candidate) => candidate.id === flow.target);
-        return edge?.from === node.id || edge?.to === node.id;
-      });
+      const highlight = Math.max(own.highlight, flowHighlights.get(node.id) ?? 0);
       const style = {
         strokeWidth: DEFAULT_NODE_STROKE_WIDTH,
         textColor: palette.text,
         ...node.style,
-        fill: mixColor(own.values.fill ?? palette.fill, palette.highlightFill, Math.max(own.highlight, Number(flowHighlighted))),
-        stroke: mixColor(own.values.stroke ?? palette.stroke, palette.highlight, Math.max(own.highlight, Number(flowHighlighted)))
+        fill: mixColor(own.values.fill ?? palette.fill, palette.highlightFill, highlight),
+        stroke: mixColor(own.values.stroke ?? palette.stroke, palette.highlight, highlight)
       };
       const contentLayout = node.content ? paintContentHighlight(
         layoutNodeContent(node.content, { ...position, width: node.width, height: node.height }, palette, node.kind),
-        Math.max(own.highlight, Number(flowHighlighted)), style.fill
+        highlight, style.fill
       ) : undefined;
       if (contentLayout) {
         for (const direction of ["width", "height"] as const) {
           if (contentLayout[direction === "width" ? "widthOverflow" : "heightOverflow"]) warnings.push({ path: `nodes[${index}].content`, objectId: node.id, code: "text-overflow", message: `content for node "${node.id}" exceeds its ${direction}` });
         }
       }
-      return { ...node, contentLayout, ...visual, highlighted: own.highlighted || flowHighlighted, style, x: position.x, y: position.y, labelLines, labelBoxes };
+      return { ...node, contentLayout, ...visual, highlighted: own.highlighted || flowHighlights.has(node.id), style, x: position.x, y: position.y, labelLines, labelBoxes };
     });
     const nodeById = new Map(nodes.map((node) => [node.id, node]));
     const targetOffsets = routedTargetOffsets(this.document.edges, nodeById);
@@ -123,7 +144,7 @@ class CompiledDiagram implements Diagram {
         ...edge.style,
         strokeWidth: own.values.strokeWidth ?? edge.style?.strokeWidth ?? 2,
         dashed: edge.style?.dashed ?? false,
-        stroke: mixColor(own.values.stroke ?? palette.edge, palette.highlight, Math.max(own.highlight, Number(activeFlow !== undefined)))
+        stroke: mixColor(own.values.stroke ?? palette.edge, palette.highlight, Math.max(own.highlight, Number(activeFlow !== undefined) * (1 - timeline.flowDepartureProgress)))
       };
       const hasReverseCurve = edge.route === "curved" && this.document.edges.some((candidate) => candidate.id !== edge.id && candidate.route === "curved" && candidate.from === edge.to && candidate.to === edge.from);
       // Both directions use the same lane magnitude; the perpendicular vector reverses with the edge,
@@ -135,8 +156,8 @@ class CompiledDiagram implements Diagram {
       const midpoint = pathLabelAnchor(geometry);
       const flow = activeFlow && visible && opacity > 0 && !options.reducedMotion ? {
         direction: activeFlow.direction,
-        progress: timeline.beatProgress,
-        point: geometry.pointAt(activeFlow.direction === "forward" ? timeline.beatProgress : 1 - timeline.beatProgress),
+        progress: timeline.flowProgress,
+        point: geometry.pointAt(activeFlow.direction === "forward" ? timeline.flowProgress : 1 - timeline.flowProgress),
         ...(activeFlow.text !== undefined ? { text: activeFlow.text } : {})
       } : undefined;
       return { ...edge, visible, opacity, highlighted: own.highlighted || activeFlow !== undefined, style, path: geometry.path, labelLines, labelBoxes: makeLabelBoxes(labelLines, midpoint.x, midpoint.y, EDGE_TYPOGRAPHY), ...(flow ? { flow } : {}) };
@@ -196,6 +217,9 @@ const FLOW_TYPOGRAPHY = { fontSize: 12, lineHeight: 16, charWidth: 7.2 } as cons
 const FLOW_CAPSULE_HEIGHT = 24;
 const FLOW_TEXT_PADDING = 10;
 const FLOW_DOT_RADIUS = 5;
+const FLOW_UNITS_PER_SECOND = 180;
+const MIN_FLOW_MOVEMENT_MS = 400;
+const MILLISECONDS_PER_SECOND = 1000;
 interface Typography {
   fontSize: number;
   lineHeight: number;
@@ -227,6 +251,24 @@ export function wrapText(label: string, maxWidth: number, typography: Typography
   }
   return lines;
 }
+
+/** Paint senders immediately and receivers after arrival, then remove single-flow paint before beat cleanup. */
+function resolveFlowHighlights(flows: readonly CompiledFlow[], edges: readonly DiagramEdge[], arrivalProgress: number, departureProgress: number): ReadonlyMap<string, number> {
+  const highlights = new Map<string, number>();
+  const amount = 1 - departureProgress;
+  for (const flow of flows) {
+    if (!flow.highlightParticipants) continue;
+    const edge = edges.find((candidate) => candidate.id === flow.target);
+    if (!edge) continue;
+    const sender = flow.direction === "forward" ? edge.from : edge.to;
+    const receiver = flow.direction === "forward" ? edge.to : edge.from;
+    highlights.set(sender, amount);
+    // Keep membership at zero paint so arrival does not change logical participant state.
+    highlights.set(receiver, Math.max(highlights.get(receiver) ?? 0, arrivalProgress * amount));
+  }
+  return highlights;
+}
+
 function makeLabelBoxes(lines: string[], centerX: number, centerY: number, typography: Typography): TextLine[] {
   const startY = centerY - ((lines.length - 1) * typography.lineHeight) / 2 + typography.fontSize * 0.35;
   return lines.map((text, index) => ({ text, x: centerX, y: startY + index * typography.lineHeight }));
@@ -322,11 +364,13 @@ interface Rect {
 }
 
 const FOCUS_PADDING = 24;
+const MIN_FITTED_HEIGHT = 1;
+const EDGE_LABEL_HALO_RADIUS = 3;
 const HIT_TOLERANCE = 6;
 
 /** Resolve both focus targets against current geometry, then interpolate cameras with the timeline's eased progress. */
 function resolveCamera(viewport: Viewport, beforeTarget: string | null, afterTarget: string | null, progress: number, nodes: readonly EvaluatedNode[], edges: readonly EvaluatedEdge[], edgeGeometries: ReadonlyMap<string, PathGeometry>): CameraState {
-  const full = { x: 0, y: 0, width: viewport.width, height: viewport.height };
+  const full = { x: 0, y: 0, width: viewport.width, height: fittedHeight(viewport, nodes, edges, edgeGeometries) };
   const before = focusCamera(viewport, beforeTarget, nodes, edges, edgeGeometries) ?? full;
   const after = focusCamera(viewport, afterTarget, nodes, edges, edgeGeometries) ?? full;
   if (progress <= 0) return before;
@@ -337,6 +381,47 @@ function resolveCamera(viewport: Viewport, beforeTarget: string | null, afterTar
     width: before.width + (after.width - before.width) * progress,
     height: before.height + (after.height - before.height) * progress
   };
+}
+
+/** Full-view fitting keeps authored width and origin; include paint without changing node geometry. */
+function fittedHeight(viewport: Viewport, nodes: readonly EvaluatedNode[], edges: readonly EvaluatedEdge[], geometries: ReadonlyMap<string, PathGeometry>): number {
+  if (!viewport.fitHeight) return viewport.height;
+  const bottoms: number[] = [];
+  for (const node of nodes) {
+    if (node.opacity <= 0) continue;
+    bottoms.push(node.y + node.height + (node.style?.strokeWidth ?? DEFAULT_NODE_STROKE_WIDTH) / 2);
+    for (const bottom of labelBottoms(node.labelBoxes, NODE_TYPOGRAPHY)) bottoms.push(bottom);
+  }
+  for (const edge of edges) {
+    if (edge.opacity <= 0) continue;
+    const geometry = geometries.get(edge.id);
+    if (geometry) {
+      const strokeWidth = edge.style?.strokeWidth ?? 2;
+      bottoms.push(geometry.paintedBottom + strokeWidth / 2, arrowBottom(geometry, strokeWidth));
+    }
+    for (const bottom of labelBottoms(edge.labelBoxes, EDGE_TYPOGRAPHY, EDGE_LABEL_HALO_RADIUS)) bottoms.push(bottom);
+    if (edge.flow) bottoms.push(edge.flow.point.y + (edge.flow.text === undefined ? FLOW_DOT_RADIUS : FLOW_CAPSULE_HEIGHT / 2));
+  }
+  if (bottoms.length === 0) return viewport.height;
+  const bottom = bottoms.reduce((maximum, value) => Math.max(maximum, value), 0);
+  const height = Math.max(MIN_FITTED_HEIGHT, Math.ceil(bottom + viewport.fitHeight.padding));
+  if (!Number.isFinite(height)) throw new DiagramValidationError([{ path: "viewport.fitHeight", message: "current painted geometry and padding must produce a finite height" }]);
+  return height;
+}
+
+/** Match the three SVG marker vertices around refX=9, refY=5 in its ten-unit viewBox. */
+function arrowBottom(geometry: PathGeometry, strokeWidth: number): number {
+  const end = geometry.points.at(-1);
+  if (!end) return 0;
+  const direction = geometry.terminalDirection;
+  const markerScale = ARROW_MARKER_SIZE * strokeWidth;
+  const vertexOffset = Math.max(0.1 * direction.y, -0.9 * direction.y + 0.5 * Math.abs(direction.x));
+  return end.y + markerScale * vertexOffset;
+}
+
+/** Use the same deterministic text descent as node hit bounds; edge labels also paint a three-unit halo. */
+function labelBottoms(boxes: readonly TextLine[], typography: Typography, halo = 0): number[] {
+  return boxes.filter((line) => line.text.length > 0).map((line) => line.y + typography.fontSize * TEXT_DESCENT_RATIO + halo);
 }
 
 /** Pad bounds of the target, descendants and visible incident edges, preserving aspect ratio within the initial viewport. */

@@ -40,6 +40,44 @@ it("generates self-contained HTML through the Node public entry without a browse
   expect(await readFile(join(temporaryDirectory, "diagram.html"), "utf8")).toBe(html);
 });
 
+it("uses effective flow timing in a disconnected portable player without changing authored data", async () => {
+  const { renderHtml } = await import(NODE_ENTRY);
+  const story = {
+    version: 1, viewport: { width: 500, height: 120 },
+    nodes: [
+      { id: "a", kind: "rect", x: 20, y: 20, width: 40, height: 40 },
+      { id: "b", kind: "rect", x: 420, y: 20, width: 40, height: 40 }
+    ],
+    edges: [{ id: "transfer", from: "a", to: "b", route: "straight" }],
+    scenes: [
+      { id: "send", label: "Send", beats: [
+        { durationMs: 100, caption: "Moving", actions: [{ type: "flow", target: "transfer", direction: "forward" }] },
+        { durationMs: 300, caption: "Received", actions: [] }
+      ] },
+      { id: "done", label: "Done", beats: [{ durationMs: 200, caption: "Done", actions: [] }] }
+    ]
+  };
+  const before = JSON.stringify(story);
+  const file = join(temporaryDirectory, "effective-timing.html");
+  await writeFile(file, await renderHtml(story));
+  expect(JSON.stringify(story)).toBe(before);
+  const browser = await chromium.launch({ executablePath: process.env.FLOWSVG_CHROMIUM_PATH });
+  try {
+    const context = await browser.newContext({ offline: true });
+    const page = await context.newPage();
+    await page.goto(pathToFileURL(file).href);
+    const progress = page.getByRole("slider", { name: "Progress" });
+    expect(await progress.getAttribute("max")).toBe("3000");
+    await page.getByRole("button", { name: "Next step" }).click();
+    expect(await progress.inputValue()).toBe("2500");
+    expect(await page.locator(".flowsvg-caption").textContent()).toBe("Received");
+    await page.getByRole("combobox", { name: "Scene", exact: true }).click();
+    await page.getByRole("option", { name: "Done", exact: true }).click();
+    expect(await progress.inputValue()).toBe("2800");
+    expect(await page.locator(".flowsvg-caption").textContent()).toBe("Done");
+  } finally { await browser.close(); }
+});
+
 it("CLI preserves existing output and rejects invalid input without partial output", async () => {
   const source = join(temporaryDirectory, "source.json");
   const output = join(temporaryDirectory, "cli.html");
@@ -244,5 +282,46 @@ it.each(["light", "dark"] as const)("offline %s HTML downloads real GIF, reports
     expect(downloads).toHaveLength(1);
     expect(requests.filter((url) => !url.startsWith("blob:") && url !== pathToFileURL(output).href)).toEqual([]);
     expect(errors).toEqual([]);
+  } finally { await browser.close(); }
+}, 30_000);
+
+
+it("validates the offline live-loop option independently of GIF loop counts", async () => {
+  const { renderHtml } = await import(NODE_ENTRY);
+  await expect(renderHtml(document, { loop: "true" })).rejects.toThrow(/loop.*boolean/);
+});
+
+it("offline HTML uses live loop playback and preserves the elapsed remainder", async () => {
+  const { renderHtml } = await import(NODE_ENTRY);
+  const output = join(temporaryDirectory, "live-loop.html");
+  await writeFile(output, await renderHtml(document, { loop: true, autoplay: true }));
+  const browser = await chromium.launch({ executablePath: process.env.FLOWSVG_CHROMIUM_PATH });
+  try {
+    const context = await browser.newContext({ offline: true });
+    const page = await context.newPage();
+    await page.addInitScript(() => {
+      const callbacks = new Map<number, FrameRequestCallback>();
+      let nextId = 0;
+      window.requestAnimationFrame = (callback) => { callbacks.set(++nextId, callback); return nextId; };
+      window.cancelAnimationFrame = (id) => { callbacks.delete(id); };
+      Object.assign(globalThis, {
+        advanceFlowClock: (timestamp: number) => {
+          for (const [id, callback] of [...callbacks]) if (callbacks.delete(id)) callback(timestamp);
+        }
+      });
+    });
+    await page.goto(pathToFileURL(output).href);
+    expect(await page.getByRole("button", { name: "Loop", exact: true }).getAttribute("aria-pressed")).toBe("true");
+    await page.evaluate(() => {
+      const clock = globalThis as unknown as { advanceFlowClock(timestamp: number): void };
+      clock.advanceFlowClock(0);
+      clock.advanceFlowClock(2250);
+    });
+    expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe("250");
+    expect(await page.getByRole("button", { name: "Pause", exact: true }).count()).toBe(1);
+    await page.getByRole("button", { name: "Loop", exact: true }).click();
+    await page.evaluate(() => (globalThis as unknown as { advanceFlowClock(timestamp: number): void }).advanceFlowClock(3250));
+    expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe("1000");
+    expect(await page.getByRole("button", { name: "Play", exact: true }).isDisabled()).toBe(true);
   } finally { await browser.close(); }
 }, 30_000);

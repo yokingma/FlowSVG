@@ -122,13 +122,18 @@ describe("updated geometry and routing", () => {
     const diagram = createDiagram(document);
     expect(diagram.evaluateAt(0).edges[0]?.path).toBe("M 120 130 L 290 130");
     expect(diagram.evaluateAt(200).nodes[3]).toMatchObject({ x: 350, y: 150, width: 80, height: 45, labelLines: ["Servic", "e name"] });
-    expect(diagram.evaluateAt(200).edges[0]?.path).toBe("M 120 130 L 235 130 L 235 172.5 L 350 172.5");
+    const middlePath = diagram.evaluateAt(200).edges[0]!.path;
+    expect(middlePath).toMatch(/^M 120 130 L /);
+    expect(middlePath.match(/ Q /g)).toHaveLength(2);
+    expect(middlePath).toContain("Q 235 130");
+    expect(middlePath).toMatch(/ L 350 172\.5$/);
     const final = diagram.evaluateAt(400);
     expect(final.nodes[3]).toMatchObject({ x: 410, y: 200, width: 60, height: 30 });
-    expect(final.edges[0]?.path).toBe("M 120 130 L 265 130 L 265 215 L 410 215");
+    expect(final.edges[0]?.path).toContain("Q 265 130");
+    expect(final.edges[0]?.path).toMatch(/ L 410 215$/);
     expect(final.warnings).toContainEqual(expect.objectContaining({ code: "text-overflow", objectId: "service" }));
     expect(diagram.evaluateAt(1000).nodes).toEqual(final.nodes);
-    expect(diagram.renderSvg(200)).toContain('d="M 120 130 L 235 130 L 235 172.5 L 350 172.5"');
+    expect(diagram.renderSvg(200)).toContain(`d="${middlePath}"`);
   });
 
   it("includes revealed obstacles at zero opacity and removes them only after a hide transition", () => {
@@ -145,7 +150,9 @@ describe("updated geometry and routing", () => {
       ] }]
     };
     const diagram = createDiagram(document);
-    const detour = "M 120 130 L 172 130 L 172 82 L 316 82 L 316 130 L 340 130";
+    const detour = diagram.evaluateAt(0).edges[0]!.path;
+    expect(detour).toContain(" Q ");
+    expect(diagram.hitTest(0, { x: 220, y: 82 })).toEqual({ type: "edge", id: "flow" });
     expect(diagram.evaluateAt(0).nodes[1]?.opacity).toBe(0);
     expect(diagram.evaluateAt(0).edges[0]?.path).toBe(detour);
     expect(diagram.evaluateAt(200).edges[0]?.path).toBe(detour);
@@ -248,15 +255,15 @@ describe("edge flow markers", () => {
     scenes: [{ id: "request", label: "Request", beats: [{ durationMs: 1000, actions: [action] }] }]
   });
 
-  it("validates a directional flow action and evaluates a linear marker across the full beat", () => {
+  it("validates a directional flow action and evaluates a reference-speed marker across the extended beat", () => {
     const input = document({ type: "flow", target: "request", direction: "forward" });
     expect(validateDocument(input)).toEqual([]);
     const diagram = createDiagram(input as Parameters<typeof createDiagram>[0]);
     const start = diagram.evaluateAt(0).edges[0]!;
     const middle = diagram.evaluateAt(500).edges[0]!;
-    const end = diagram.evaluateAt(1000).edges[0]!;
+    const end = diagram.evaluateAt(diagram.totalDuration).edges[0]!;
     expect(start.flow).toMatchObject({ direction: "forward", progress: 0, point: { x: 100, y: 100 } });
-    expect(middle.flow).toMatchObject({ direction: "forward", progress: 0.5, point: { x: 250, y: 100 } });
+    expect(middle.flow).toMatchObject({ direction: "forward", progress: 0.3, point: { x: 190, y: 100 } });
     expect(end.flow).toBeUndefined();
     expect(start.highlighted).toBe(true);
   });
@@ -265,7 +272,7 @@ describe("edge flow markers", () => {
     const input = document({ type: "flow", target: "request", direction: "reverse", text: "ok" });
     const diagram = createDiagram(input as Parameters<typeof createDiagram>[0]);
     const frame = diagram.evaluateAt(250);
-    expect(frame.edges[0]?.flow).toMatchObject({ direction: "reverse", progress: 0.25, point: { x: 325, y: 100 } });
+    expect(frame.edges[0]?.flow).toMatchObject({ direction: "reverse", progress: 0.15, point: { x: 355, y: 100 } });
     const svg = diagram.renderSvg(250);
     expect(svg).toContain('marker-end="url(#diagram-arrow)"');
     expect(svg).toContain('data-flow-id="request"');
@@ -280,16 +287,16 @@ describe("edge flow markers", () => {
     const diagram = createDiagram(input as Parameters<typeof createDiagram>[0]);
 
     expect(diagram.evaluateAt(500).edges[0]?.flow?.text).toBe("请求");
-    expect(diagram.evaluateAt(1500).edges[0]?.flow?.text).toBe("Response");
+    expect(diagram.evaluateAt(diagram.beats[1]!.startMs + 500).edges[0]?.flow?.text).toBe("Response");
     expect(diagram.evaluateAt(500).edges[0]?.labelLines).toEqual(["API"]);
     const requestSvg = diagram.renderSvg(500);
-    const responseSvg = diagram.renderSvg(1500);
+    const responseSvg = diagram.renderSvg(diagram.beats[1]!.startMs + 500);
     expect(requestSvg).toMatch(/<g[^>]*data-flow-id="request"[^>]*><rect[^>]*rx="12"/);
     expect(requestSvg).toContain(">请求</text>");
     expect(responseSvg).toContain(">Response</text>");
     expect(requestSvg).not.toMatch(/rotate|textPath|tabindex/);
     expect(requestSvg).toContain('pointer-events="none"');
-    expect(diagram.renderSvg(2000)).not.toContain("data-flow-id");
+    expect(diagram.renderSvg(diagram.totalDuration)).not.toContain("data-flow-id");
     expect(diagram.renderSvg(500, { reducedMotion: true })).not.toContain("data-flow-id");
   });
 
@@ -342,10 +349,10 @@ describe("edge flow markers", () => {
     expect(reduced.edges[0]?.flow).toBeUndefined();
     expect(reduced.edges[0]?.highlighted).toBe(true);
     expect(reduced.nodes[0]?.highlighted).toBe(true);
-    expect(diagram.evaluateAt(1000).edges[0]?.flow).toBeUndefined();
-    expect(diagram.evaluateAt(1000).nodes[0]?.highlighted).toBe(true);
-    expect(diagram.evaluateAt(1500).nodes[0]?.style?.fill).toBe("#eaf1ff");
-    expect(diagram.evaluateAt(2500).nodes[0]?.style?.fill).toBe("#00ff00");
+    expect(diagram.evaluateAt(diagram.beats[1]!.startMs).edges[0]?.flow).toBeUndefined();
+    expect(diagram.evaluateAt(diagram.beats[1]!.startMs).nodes[0]?.highlighted).toBe(true);
+    expect(diagram.evaluateAt(diagram.beats[1]!.startMs + 500).nodes[0]?.style?.fill).toBe("#eaf1ff");
+    expect(diagram.evaluateAt(diagram.beats[2]!.startMs + 500).nodes[0]?.style?.fill).toBe("#00ff00");
     expect(diagram.renderSvg(500, { reducedMotion: true })).not.toContain("data-flow-id");
   });
 

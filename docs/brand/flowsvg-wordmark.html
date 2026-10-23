@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FlowSVG wordmark motion</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, -apple-system, sans-serif; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f5f6f8; color: #1d2939; }
+    main { width: min(312px, calc(100vw - 48px)); }
+    #wordmark { display: grid; place-items: center; background: #fff; border-radius: 20px; }
+    #wordmark svg { width: 100%; height: auto; display: block; }
+    p { margin: 20px 4px 0; color: #5a6473; font-size: 14px; }
+    code { color: #1d4fa8; }
+  </style>
+</head>
+<body>
+  <main>
+    <div id="wordmark" aria-label="FlowSVG animated wordmark"></div>
+    <p>FlowSVG renders the wordmark; a solid signal loops around the rounded frame from and back to the open marker on the upper-right corner.</p>
+  </main>
+  <script type="module">
+    import { createDiagram } from "../../packages/flowsvg/dist/index.js";
+
+    const wordmark = {
+      version: 1,
+      viewport: { width: 312, height: 128 },
+      nodes: [
+        { id: "word", kind: "rect", x: 16, y: 12, width: 280, height: 104,
+          content: { style: { padding: 0, blockGap: 0 }, blocks: [{ type: "title", text: "FlowSVG", style: { fontSize: 60, fontWeight: 700, color: "#101828", align: "center" } }] },
+          style: { fill: "#ffffff00", stroke: "#ffffff00" } }
+      ],
+      edges: [],
+      scenes: []
+    };
+
+    const diagram = createDiagram(wordmark);
+    const host = document.querySelector("#wordmark");
+    const frame = diagram.renderSvg(0, { theme: "light" });
+    // Split the upper-right quadratic at its midpoint so the loop starts and ends on the open marker.
+    const LOOP_PATH = "M288 20Q280 12 264 12H48Q16 12 16 44V84Q16 116 48 116H264Q296 116 296 84V44Q296 28 288 20Z";
+    const decoration = `
+      <path d="${LOOP_PATH}"
+        fill="none" stroke="#2a63c8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="288" cy="20" r="7" fill="#ffffff" stroke="#2a63c8" stroke-width="3"/>
+      <circle cx="0" cy="0" r="5" fill="#e77752">
+        <animateMotion dur="4.8s" repeatCount="indefinite" path="${LOOP_PATH}"/>
+      </circle>`;
+    host.innerHTML = frame.replace("</svg>", `${decoration}</svg>`);
+    // Center the rendered glyph bounds, because SDK layout uses deterministic width estimates.
+    await document.fonts.ready;
+    const label = host.querySelector("text");
+    const bounds = label.getBBox();
+    const centerX = wordmark.viewport.width / 2;
+    const centerY = wordmark.viewport.height / 2;
+    label.setAttribute("transform", `translate(${centerX - bounds.x - bounds.width / 2} ${centerY - bounds.y - bounds.height / 2})`);
+  </script>
+</body>
+</html>

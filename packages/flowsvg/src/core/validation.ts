@@ -2,7 +2,7 @@
 import { supportsNodeContent, validateNodeContent } from "./node-content.js";
 import type { NodeKind, PortDirection, ValidationIssue } from "./model.js";
 
-/** Compilation error for invalid documents; issues contains all field problems found by validation. */
+/** Validation error for invalid documents or author-time measurement inputs; issues retains all affected field paths. */
 export class DiagramValidationError extends Error {
   readonly issues: readonly ValidationIssue[];
   constructor(issues: ValidationIssue[]) {
@@ -29,9 +29,16 @@ export function validateDocument(input: unknown): ValidationIssue[] {
   if (!isRecord(viewport)) {
     issues.push({ path: "viewport", message: "must be an object" });
   } else {
-    validateUnknownFields(viewport, ["width", "height"], "viewport", issues);
+    validateUnknownFields(viewport, ["width", "height", "fitHeight"], "viewport", issues);
     validatePositiveFinite(viewport.width, "viewport.width", issues);
     validatePositiveFinite(viewport.height, "viewport.height", issues);
+    if (viewport.fitHeight !== undefined) {
+      if (!isRecord(viewport.fitHeight)) issues.push({ path: "viewport.fitHeight", message: "must be an object" });
+      else {
+        validateUnknownFields(viewport.fitHeight, ["padding"], "viewport.fitHeight", issues);
+        validateNonNegativeFinite(viewport.fitHeight.padding, "viewport.fitHeight.padding", issues);
+      }
+    }
   }
   if (!Array.isArray(input.nodes)) issues.push({ path: "nodes", message: "must be an array" });
   if (!Array.isArray(input.edges)) issues.push({ path: "edges", message: "must be an array" });
@@ -254,7 +261,7 @@ function validateAction(action: unknown, path: string, allIds: Set<string>, node
   const allowedByType: Record<string, readonly string[]> = {
     show: ["type", "target"], hide: ["type", "target"], highlight: ["type", "target"], unhighlight: ["type", "target"],
     updateNode: ["type", "target", "value"], updateEdge: ["type", "target", "value"], focus: ["type", "target"],
-    flow: ["type", "target", "direction", "text"]
+    flow: ["type", "target", "direction", "text", "highlightParticipants"]
   };
   const allowed = Object.hasOwn(allowedByType, type) ? allowedByType[type] : undefined;
   if (!allowed) {
@@ -281,6 +288,7 @@ function validateAction(action: unknown, path: string, allIds: Set<string>, node
     else if (!edgeById.has(action.target)) issues.push({ path: `${path}.target`, message: "must reference an existing edge" });
     if (action.direction !== "forward" && action.direction !== "reverse") issues.push({ path: `${path}.direction`, message: "must be forward or reverse" });
     if (action.text !== undefined && typeof action.text !== "string") issues.push({ path: `${path}.text`, message: "must be a string" });
+    if (action.highlightParticipants !== undefined && typeof action.highlightParticipants !== "boolean") issues.push({ path: `${path}.highlightParticipants`, message: "must be a boolean" });
     // Reserve the edge independently of other field errors so invalid directions cannot hide duplicate transfers.
     if (isNonEmptyString(action.target) && edgeById.has(action.target)) addAssignment(`flow:${action.target}`, `${path}.target`, assignments, issues);
     return;

@@ -2,8 +2,9 @@
  * Deterministic global timeline: compile actions/snapshots and evaluate base styles, visibility, highlights and focus.
  * Spatial layout and SVG output belong to the core; theme defaults are supplied only during evaluation.
  */
-import type { DiagramDocument, EvaluateOptions, FlowDirection, NodeVisualState, EdgeVisualState } from "./model.js";
+import type { DiagramBeat, DiagramDocument, EvaluateOptions, FlowDirection, NodeVisualState, EdgeVisualState } from "./model.js";
 import { mixColor } from "./color.js";
+import { DiagramValidationError } from "./validation.js";
 
 type VisualValues = NodeVisualState & EdgeVisualState;
 /** Snapshot layers keep base visual values separate from visibility and highlighting. */
@@ -22,13 +23,9 @@ export interface TimelinePalette {
 }
 
 /** Global millisecond interval and before/after snapshots; caption and focus retain inherited values. */
-interface CompiledBeat {
-  startMs: number;
-  endMs: number;
+interface CompiledBeat extends DiagramBeat {
   transitionMs: number;
-  sceneId: string;
-  beatId: string;
-  caption?: string;
+  movementMs: number;
   focusBefore: string | null;
   focusAfter: string | null;
   before: ReadonlyMap<string, ObjectState>;
@@ -36,11 +33,12 @@ interface CompiledBeat {
   flows: readonly CompiledFlow[];
 }
 
-/** One transfer in a synchronized beat-local group; no transfer persists in inherited snapshots. */
+/** One beat-local transfer; single-flow movement may finish before its beat, and no flow persists in snapshots. */
 export interface CompiledFlow {
   target: string;
   direction: FlowDirection;
   text?: string;
+  highlightParticipants: boolean;
 }
 
 /** Object transition result; highlight is the overlay weight, while highlighted is the target logical state. */
@@ -58,6 +56,12 @@ export interface TimelineFrame {
   sceneId: string | null;
   beatId: string | null;
   beatProgress: number;
+  /** Linear movement completion, clamped at arrival while the beat retains temporary highlights. */
+  flowProgress: number;
+  /** Single-flow receiver paint after arrival; independent of logical highlights and opening transitions. */
+  flowArrivalProgress: number;
+  /** Single-flow automatic paint removal during the last 200 ms; logical flags and marker lifetime are unchanged. */
+  flowDepartureProgress: number;
   transitionProgress: number;
   focusBefore: string | null;
   focusAfter: string | null;
@@ -66,6 +70,10 @@ export interface TimelineFrame {
   flows: readonly CompiledFlow[];
 }
 const DEFAULT_TRANSITION_MS = 250;
+const FLOW_ARRIVAL_TRANSITION_MS = 200;
+const FLOW_FULL_HIGHLIGHT_HOLD_MS = 100;
+const FLOW_DEPARTURE_TRANSITION_MS = 200;
+const FLOW_ARRIVAL_HOLD_MS = FLOW_ARRIVAL_TRANSITION_MS + FLOW_FULL_HIGHLIGHT_HOLD_MS + FLOW_DEPARTURE_TRANSITION_MS;
 const NUMERIC_VISUAL_FIELDS = ["x", "y", "width", "height", "opacity", "strokeWidth"] as const;
 const DEFAULT_STROKE_WIDTH = 2;
 
@@ -76,11 +84,12 @@ const DEFAULT_STROKE_WIDTH = 2;
  */
 export class CompiledTimeline {
   readonly totalDuration: number;
+  readonly schedule: readonly DiagramBeat[];
   private readonly beats: readonly CompiledBeat[];
   private readonly initial: ReadonlyMap<string, ObjectState>;
   private readonly title?: string;
 
-  constructor(document: DiagramDocument) {
+  constructor(document: DiagramDocument, movementDurations: ReadonlyMap<string, number> = new Map()) {
     this.initial = new Map<string, ObjectState>([
       ...document.nodes.map((node) => [node.id, {
         visible: node.visible !== false, highlighted: false, kind: "node", values: {
@@ -99,7 +108,7 @@ export class CompiledTimeline {
     let focus: string | null = null;
     let startMs = 0;
     let caption = document.title;
-    for (const scene of document.scenes) {
+    for (const [sceneIndex, scene] of document.scenes.entries()) {
       scene.beats.forEach((beat, index) => {
         // Copy the index, then replace changed objects/values so earlier beat snapshots retain their original state.
         const after = new Map(state);
@@ -107,7 +116,8 @@ export class CompiledTimeline {
         const flows: CompiledFlow[] = [];
         for (const action of beat.actions) {
           if (action.type === "flow") {
-            flows.push({ target: action.target, direction: action.direction, ...(action.text !== undefined ? { text: action.text } : {}) });
+            flows.push({ target: action.target, direction: action.direction, highlightParticipants: action.highlightParticipants ?? true,
+              ...(action.text !== undefined ? { text: action.text } : {}) });
             continue;
           }
           if (action.type === "focus") {
@@ -130,13 +140,25 @@ export class CompiledTimeline {
           }
         }
         caption = beat.caption ?? caption;
-        const endMs = startMs + beat.durationMs;
-        beats.push({ startMs, endMs, transitionMs: beat.transitionMs ?? Math.min(DEFAULT_TRANSITION_MS, beat.durationMs), sceneId: scene.id, beatId: `${scene.id}:${index}`, caption, focusBefore, focusAfter: focus, before: state, after, flows });
+        const beatId = `${scene.id}:${index}`;
+        const movementMs = movementDurations.get(beatId) ?? beat.durationMs;
+        // Reference compilation keeps authored timing; effective single-flow beats own a fixed arrival hold.
+        const durationMs = movementDurations.has(beatId) ? movementMs + FLOW_ARRIVAL_HOLD_MS : beat.durationMs;
+        const endMs = startMs + durationMs;
+        // A shortened beat must finish its opening transition before the next snapshot takes over.
+        const transitionMs = Math.min(durationMs, beat.transitionMs ?? Math.min(DEFAULT_TRANSITION_MS, beat.durationMs));
+        if (!Number.isFinite(movementMs) || !Number.isFinite(endMs)) {
+          throw new DiagramValidationError([{ path: `scenes[${sceneIndex}].beats[${index}].durationMs`, message: "effective beat timing must be finite" }]);
+        }
+        beats.push({ startMs, endMs, movementMs, transitionMs, sceneId: scene.id, beatId, beatIndex: index, caption, focusBefore, focusAfter: focus, before: state, after, flows });
         state = after;
         startMs = endMs;
       });
     }
     this.beats = beats;
+    this.schedule = Object.freeze(beats.map(({ sceneId, beatId, beatIndex, startMs, endMs, caption }) => Object.freeze({
+      sceneId, beatId, beatIndex, startMs, endMs, ...(caption !== undefined ? { caption } : {})
+    })));
     this.totalDuration = startMs;
   }
 
@@ -165,6 +187,11 @@ export class CompiledTimeline {
       sceneId: beat?.sceneId ?? null,
       beatId: beat?.beatId ?? null,
       beatProgress: beat ? (time - beat.startMs) / (beat.endMs - beat.startMs) : 0,
+      flowProgress: beat ? Math.min(1, (time - beat.startMs) / beat.movementMs) : 0,
+      flowArrivalProgress: !beat || options.reducedMotion || beat.flows.length !== 1 ? 1
+        : easeInOutCubic(Math.max(0, Math.min(1, (time - beat.startMs - beat.movementMs) / FLOW_ARRIVAL_TRANSITION_MS))),
+      flowDepartureProgress: !beat || options.reducedMotion || beat.flows.length !== 1 ? 0
+        : easeInOutCubic(Math.max(0, Math.min(1, (time - beat.endMs + FLOW_DEPARTURE_TRANSITION_MS) / FLOW_DEPARTURE_TRANSITION_MS))),
       transitionProgress: progress,
       focusBefore: beat?.focusBefore ?? null,
       focusAfter: beat?.focusAfter ?? null,

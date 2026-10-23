@@ -28,6 +28,11 @@ interface Rect {
 const ROUTING_GAP = 8;
 const PORT_SPACING = 24;
 const MIN_ARROW_APPROACH = 24;
+const ORTHOGONAL_BEND_RADIUS = 12;
+const BEND_SAMPLE_COUNT = 16;
+const BEND_CLEARANCE_EPSILON = 0.002;
+const BEND_RADIUS_SEARCH_STEPS = 16;
+const BEND_RADIUS_PRECISION = 1000;
 const CYLINDER_CAP_RADIUS = 14;
 /** SVG marker size in stroke-width units; routing uses the same footprint as serialization. */
 export const ARROW_MARKER_SIZE = 7;
@@ -39,6 +44,10 @@ export interface PathGeometry {
   readonly path: string;
   readonly points: readonly Point[];
   readonly length: number;
+  /** Exact final tangent for SVG marker bounds; sampled chords can differ on curves. */
+  readonly terminalDirection: Point;
+  /** Exact vertical paint extent for full-view fitting; independent of distance-sampling resolution. */
+  readonly paintedBottom: number;
   readonly bounds: Rect;
   pointAt(progress: number): Point;
 }
@@ -47,7 +56,7 @@ export function emptyPathGeometry(): PathGeometry {
   return createPathGeometry([]);
 }
 
-function createPathGeometry(points: readonly Point[], serializedPath?: string): PathGeometry {
+function createPathGeometry(points: readonly Point[], serializedPath?: string, terminalControl?: Point, paintedBottom?: number): PathGeometry {
   const compact = simplifyPoints(points);
   const path = serializedPath ?? pointsToPath(compact);
   const segments = compact.slice(1).map((end, index) => ({ start: compact[index]!, end, length: Math.hypot(end.x - compact[index]!.x, end.y - compact[index]!.y) }));
@@ -61,6 +70,8 @@ function createPathGeometry(points: readonly Point[], serializedPath?: string): 
     path,
     points: compact,
     length: length || 1,
+    terminalDirection: terminalDirection(compact, terminalControl),
+    paintedBottom: paintedBottom ?? bounds.bottom,
     bounds,
     pointAt(progress: number): Point {
       if (compact.length === 0) return { x: 0, y: 0 };
@@ -82,6 +93,86 @@ function createPathGeometry(points: readonly Point[], serializedPath?: string): 
   };
 }
 
+/** Use the exact final cubic control, or the final straight run, for the SVG marker orientation. */
+function terminalDirection(points: readonly Point[], control?: Point): Point {
+  const end = points.at(-1);
+  const previous = control ?? points.at(-2);
+  if (!end || !previous) return { x: 1, y: 0 };
+  const dx = end.x - previous.x;
+  const dy = end.y - previous.y;
+  const length = Math.hypot(dx, dy);
+  return length > 0 ? { x: dx / length, y: dy / length } : { x: 1, y: 0 };
+}
+
+/**
+ * Trim orthogonal corners into quadratic bends. Adjacent trims cannot overlap,
+ * and the final run retains the marker approach. SVG and distance consumers
+ * share the same controls; conservative hull checks protect stroked node bounds.
+ */
+function createRoundedGeometry(points: readonly Point[], obstacles: readonly Rect[], strokeWidth: number): PathGeometry {
+  const route = simplifyPoints(points);
+  if (route.length < 3) return createPathGeometry(route);
+  const samples: Point[] = [route[0]!];
+  const commands = [`M ${formatNumber(route[0]!.x)} ${formatNumber(route[0]!.y)}`];
+  const approach = Math.max(MIN_ARROW_APPROACH, strokeWidth * ARROW_MARKER_SIZE + ROUTING_GAP);
+  for (let index = 1; index < route.length - 1; index += 1) {
+    const previous = route[index - 1]!;
+    const corner = route[index]!;
+    const next = route[index + 1]!;
+    const incoming = Math.hypot(corner.x - previous.x, corner.y - previous.y);
+    const outgoing = Math.hypot(next.x - corner.x, next.y - corner.y);
+    const turns = (corner.x - previous.x) * (next.x - corner.x) + (corner.y - previous.y) * (next.y - corner.y) === 0;
+    const maximum = turns ? Math.max(0, Math.min(ORTHOGONAL_BEND_RADIUS, incoming / 2, outgoing / 2,
+      index === route.length - 2 ? outgoing - Math.min(approach, outgoing) : ORTHOGONAL_BEND_RADIUS)) : 0;
+    const radius = clearBendRadius(corner, previous, next, maximum, obstacles, strokeWidth / 2);
+    const entry = moveToward(corner, previous, radius);
+    const exit = moveToward(corner, next, radius);
+    commands.push(`L ${formatNumber(entry.x)} ${formatNumber(entry.y)}`);
+    samples.push(entry);
+    if (radius === 0) continue;
+    commands.push(`Q ${formatNumber(corner.x)} ${formatNumber(corner.y)} ${formatNumber(exit.x)} ${formatNumber(exit.y)}`);
+    for (let sample = 1; sample <= BEND_SAMPLE_COUNT; sample += 1) {
+      const progress = sample / BEND_SAMPLE_COUNT;
+      const inverse = 1 - progress;
+      samples.push({ x: inverse ** 2 * entry.x + 2 * inverse * progress * corner.x + progress ** 2 * exit.x,
+        y: inverse ** 2 * entry.y + 2 * inverse * progress * corner.y + progress ** 2 * exit.y });
+    }
+  }
+  const end = route.at(-1)!;
+  commands.push(`L ${formatNumber(end.x)} ${formatNumber(end.y)}`);
+  samples.push(end);
+  return createPathGeometry(samples, commands.join(" "));
+}
+
+function moveToward(origin: Point, target: Point, distance: number): Point {
+  const length = Math.hypot(target.x - origin.x, target.y - origin.y);
+  return { x: origin.x + (target.x - origin.x) / length * distance,
+    y: origin.y + (target.y - origin.y) / length * distance };
+}
+
+/** Shrinking the control hull cannot create a new collision. Retain a rounding margin for SVG serialization. */
+function clearBendRadius(corner: Point, previous: Point, next: Point, maximum: number, obstacles: readonly Rect[], strokeRadius: number): number {
+  const clear = (radius: number): boolean => {
+    const entry = moveToward(corner, previous, radius);
+    const exit = moveToward(corner, next, radius);
+    const margin = strokeRadius + BEND_CLEARANCE_EPSILON;
+    return !obstacles.some((bounds) => Math.min(entry.x, corner.x, exit.x) < bounds.right + margin
+      && Math.max(entry.x, corner.x, exit.x) > bounds.left - margin
+      && Math.min(entry.y, corner.y, exit.y) < bounds.bottom + margin
+      && Math.max(entry.y, corner.y, exit.y) > bounds.top - margin);
+  };
+  if (maximum === 0 || !clear(0)) return 0;
+  if (clear(maximum)) return maximum;
+  let lower = 0;
+  let upper = maximum;
+  for (let iteration = 0; iteration < BEND_RADIUS_SEARCH_STEPS; iteration += 1) {
+    const candidate = (lower + upper) / 2;
+    if (clear(candidate)) lower = candidate;
+    else upper = candidate;
+  }
+  return Math.floor(lower * BEND_RADIUS_PRECISION) / BEND_RADIUS_PRECISION;
+}
+
 /** Build sampled geometry for a cubic curve while retaining the exact cubic command for SVG output. */
 function createCurveGeometry(start: Point, controlStart: Point, controlEnd: Point, end: Point): PathGeometry {
   const samples: Point[] = [];
@@ -95,7 +186,30 @@ function createCurveGeometry(start: Point, controlStart: Point, controlEnd: Poin
     });
   }
   const path = `M ${formatNumber(start.x)} ${formatNumber(start.y)} C ${formatNumber(controlStart.x)} ${formatNumber(controlStart.y)} ${formatNumber(controlEnd.x)} ${formatNumber(controlEnd.y)} ${formatNumber(end.x)} ${formatNumber(end.y)}`;
-  return createPathGeometry(samples, path);
+  return createPathGeometry(samples, path, controlEnd, cubicBottom(start, controlStart, controlEnd, end));
+}
+
+/** Solve the cubic's vertical derivative; sampled flow points can miss the painted lower extremum. */
+function cubicBottom(start: Point, first: Point, second: Point, end: Point): number {
+  const scale = Math.max(Math.abs(start.y), Math.abs(first.y), Math.abs(second.y), Math.abs(end.y), 1);
+  const a = start.y / scale;
+  const b = first.y / scale;
+  const c = second.y / scale;
+  const d = end.y / scale;
+  const quadratic = -a + 3 * b - 3 * c + d;
+  const linear = 2 * (a - 2 * b + c);
+  const constant = b - a;
+  const discriminant = linear * linear - 4 * quadratic * constant;
+  const roots = quadratic === 0 ? linear === 0 ? [] : [-constant / linear]
+    : discriminant < 0 ? [] : [(-linear - Math.sqrt(discriminant)) / (2 * quadratic), (-linear + Math.sqrt(discriminant)) / (2 * quadratic)];
+  let bottom = Math.max(start.y, end.y);
+  for (const progress of roots) {
+    if (progress <= 0 || progress >= 1) continue;
+    const inverse = 1 - progress;
+    const value = inverse ** 3 * start.y + 3 * inverse ** 2 * progress * first.y + 3 * inverse * progress ** 2 * second.y + progress ** 3 * end.y;
+    bottom = Math.max(bottom, value);
+  }
+  return bottom;
 }
 
 /** Build a two-segment cubic route used for opposite relationships; endpoint tangents remain exact port normals. */
@@ -115,7 +229,10 @@ function createSeparatedCurveGeometry(start: Point, controlStart: Point, midpoin
   sampleSegment(start, controlStart, controlMidStart, midpoint);
   sampleSegment(midpoint, controlMidEnd, controlEnd, end);
   const path = `M ${formatNumber(start.x)} ${formatNumber(start.y)} C ${formatNumber(controlStart.x)} ${formatNumber(controlStart.y)} ${formatNumber(controlMidStart.x)} ${formatNumber(controlMidStart.y)} ${formatNumber(midpoint.x)} ${formatNumber(midpoint.y)} C ${formatNumber(controlMidEnd.x)} ${formatNumber(controlMidEnd.y)} ${formatNumber(controlEnd.x)} ${formatNumber(controlEnd.y)} ${formatNumber(end.x)} ${formatNumber(end.y)}`;
-  return createPathGeometry(samples, path);
+  return createPathGeometry(samples, path, controlEnd, Math.max(
+    cubicBottom(start, controlStart, controlMidStart, midpoint),
+    cubicBottom(midpoint, controlMidEnd, controlEnd, end)
+  ));
 }
 
 export function isPointNearPath(point: DiagramPoint, geometry: PathGeometry, tolerance: number): boolean {
@@ -132,7 +249,8 @@ function distanceToSegment(point: DiagramPoint, start: Point, end: Point): numbe
 
 /**
  * Orthogonal routes prefer centered bridges and single outside channels before obstacle search.
- * They reserve outward endpoint segments; separate ancestor frames set outside clearance but are not obstacles.
+ * They reserve outward endpoint segments and the final bend before the straight marker approach.
+ * Separate ancestor frames set outside clearance but are not obstacles.
  * Curved and orthogonal input slots follow source position with document-order ties, independently of timeline visibility.
  * Routing uses visible separately from paint opacity: reveals block immediately, and hides block until completion.
  */
@@ -154,7 +272,8 @@ export function routeEdge(edge: DiagramEdge, from: EvaluatedNode, to: EvaluatedN
   const obstacles = nodes
     .filter((node) => node.visible && node.kind !== "group" && node.id !== from.id && node.id !== to.id)
     .map(nodeBounds);
-  return createPathGeometry(orthogonalPortPath(edge, from, to, obstacles, routing.targetOffset, nodes));
+  return createRoundedGeometry(orthogonalPortPath(edge, from, to, obstacles, routing.targetOffset, nodes),
+    [...obstacles, nodeBounds(from), nodeBounds(to)], edge.style?.strokeWidth ?? 2);
 }
 
 /** Order inputs across each side by source position; retain hidden edges so reveals cannot move other arrow tips. */
@@ -194,7 +313,7 @@ function routingBounds(bounds: Rect, side?: PortDirection, approach = ROUTING_GA
   };
 }
 
-/** Extend the target obstacle through the arrow approach so grid search cannot fold back into the reserved segment. */
+/** Extend the target obstacle through the final bend and arrow approach so grid search cannot fold back into either reservation. */
 function orthogonalPortPath(edge: DiagramEdge, from: EvaluatedNode, to: EvaluatedNode, obstacles: readonly Rect[], targetOffset: number, nodes: readonly EvaluatedNode[]): Point[] {
   const automatic = automaticPorts(from, to);
   const fromDirection = edge.fromPort ?? automatic.from;
@@ -205,7 +324,8 @@ function orthogonalPortPath(edge: DiagramEdge, from: EvaluatedNode, to: Evaluate
   const fromOutline = nodeBounds(from);
   const toOutline = nodeBounds(to);
   const fromRun = availablePortRun(portStub(start, fromDirection, fromOutline), fromDirection, ROUTING_GAP, [...obstacles, toOutline]);
-  const toRun = availablePortRun(portStub(end, toDirection, toOutline), toDirection, approach, [...obstacles, fromOutline]);
+  // Tight gaps clamp the preferred bridge lane to these stubs before the bend radius is reduced.
+  const toRun = availablePortRun(portStub(end, toDirection, toOutline), toDirection, approach + ORTHOGONAL_BEND_RADIUS, [...obstacles, fromOutline]);
   const fromBounds = routingBounds(fromOutline, fromDirection, fromRun);
   const toBounds = routingBounds(toOutline, toDirection, toRun);
   const startStub = portStub(start, fromDirection, fromBounds);
@@ -230,7 +350,10 @@ function preferredPortPath(start: Point, end: Point, from: PortDirection, to: Po
   if (from === to) {
     const boundary = vertical ? (sign < 0 ? "top" : "bottom") : (sign < 0 ? "left" : "right");
     const extents = outlines.map((bounds) => bounds[boundary]);
-    lane = (sign < 0 ? Math.min(...extents) : Math.max(...extents)) + sign * clearance;
+    const naturalLane = (sign < 0 ? Math.min(...extents) : Math.max(...extents)) + sign * clearance;
+    // Ancestor clearance and endpoint reservations have separate responsibilities:
+    // move outward only when a reserved endpoint stub extends beyond the natural lane.
+    lane = sign < 0 ? Math.min(naturalLane, start[axis], end[axis]) : Math.max(naturalLane, start[axis], end[axis]);
   } else {
     // Stubs bound the legal turning interval, including the target's arrow footprint.
     if ((end[axis] - start[axis]) * sign < 0) return undefined;

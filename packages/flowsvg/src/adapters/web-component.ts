@@ -31,6 +31,8 @@ const HTMLElementBase = (typeof HTMLElement === "undefined"
 /** Declarative options; autoplay defaults to false, speed to 1 and controls to true. */
 export interface FlowPlayerElementOptions extends EvaluateOptions {
   autoplay?: boolean;
+  /** Defaults to false; loop is a live playback preference, independent of GIF loopCount. */
+  loop?: boolean;
   controls?: boolean;
   /** Defaults to false. Enable GIF download controls; ignored when controls is false. */
   gifExport?: boolean;
@@ -45,7 +47,7 @@ export type FlowPlayerElementErrorDetail = Partial<PlayerErrorDetail> & {
 };
 
 /**
- * Custom-element adapter for attribute conversion, URL requests and the four playback/error events.
+ * Custom-element adapter for attribute conversion, URL requests and playback/error events.
  * The document property may be assigned before connection; disconnect releases the player/requests but retains the document.
  * Rendering/timeline behavior delegates to createPlayer; registration requires an explicit defineFlowPlayer call.
  */
@@ -59,7 +61,8 @@ export class FlowPlayerElement extends HTMLElementBase {
     "theme",
     "reduced-motion",
     "hover-fill",
-    "gif-export"
+    "gif-export",
+    "loop"
   ] as const;
 
   private player: FlowPlayer | undefined;
@@ -105,6 +108,14 @@ export class FlowPlayerElement extends HTMLElementBase {
   set autoplay(value: boolean) {
     setBooleanAttribute(this, "autoplay", value);
     this.applyAutoplay();
+  }
+
+  /** Live loop mode, reflected by the loop attribute; changes retain time and play state. */
+  get loop(): boolean {
+    return readBooleanAttribute(this, "loop", false);
+  }
+  set loop(value: boolean) {
+    setBooleanAttribute(this, "loop", value);
   }
 
   /** Controls default on; an explicit false is retained in HTML as controls="false". */
@@ -210,6 +221,9 @@ export class FlowPlayerElement extends HTMLElementBase {
       case "gif-export":
         this.rebuildForOptions();
         break;
+      case "loop":
+        this.player?.setLoop(this.loop);
+        break;
       case "speed":
         this.player?.setSpeed(this.speed);
         break;
@@ -240,6 +254,10 @@ export class FlowPlayerElement extends HTMLElementBase {
   /** Set the speed property, retaining it for future mounts; ignore non-finite or non-positive values. */
   setSpeed(value: number): void {
     this.speed = value;
+  }
+  /** Set loop mode and retain it for future mounts. */
+  setLoop(value: boolean): void {
+    this.loop = value;
   }
   /** Return undefined before mounting or after destruction. */
   getState(): PlayerState | undefined {
@@ -342,9 +360,12 @@ export class FlowPlayerElement extends HTMLElementBase {
 
   private forwardPlayerEvents(host: HTMLElement): void {
     this.removeForwardedEvents();
-    for (const name of ["stepchange", "timeupdate", "playstatechange", "error"] as const) {
+    for (const name of ["stepchange", "timeupdate", "playstatechange", "loopchange", "error"] as const) {
       const listener: EventListener = (event) => {
         const source = event as CustomEvent<PlayerEventMap[typeof name]["detail"]>;
+        if (name === "loopchange") {
+          setBooleanAttribute(this, "loop", (source.detail as PlayerState).loop);
+        }
         this.dispatchEvent(new CustomEvent(name, {
           detail: source.detail,
           bubbles: true,
@@ -368,6 +389,7 @@ export class FlowPlayerElement extends HTMLElementBase {
   private playerOptions(): PlayerOptions {
     return {
       controls: this.controls,
+      loop: this.loop,
       gifExport: this.gifExport,
       hoverFill: this.hoverFill,
       ...(this.theme ? { theme: this.theme } : {}),

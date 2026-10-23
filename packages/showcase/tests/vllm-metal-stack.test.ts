@@ -2,6 +2,7 @@ import { expect, it } from "vitest";
 import { createDiagram } from "flowsvg";
 import { compileCatalog } from "../src/build.js";
 import { catalogSource } from "../src/formal.js";
+import { beatMiddle, sceneStart } from "./story-timing.js";
 
 function getMetalStack() {
   const compiled = compileCatalog(catalogSource);
@@ -17,7 +18,7 @@ it("offers the layered stack as a fourth standalone example with the original de
   ]);
   expect(catalog.defaultId).toBe("request-response");
   expect(example.name).toBe("vllm-metal：分层推理架构");
-  expect(example.durationMs).toBe(24_000);
+  expect(example.durationMs).toBe(createDiagram(example.document).totalDuration);
   expect(example.defaults).toEqual({ speed: 1, theme: "light", reducedMotion: false });
   expect(JSON.parse(json.get(example.jsonPath)!)).toEqual(example.document);
   expect(example.introduction).toContain("参考");
@@ -49,7 +50,7 @@ it("keeps 50-unit layer gaps and two real nested ownership panels inside the run
 
 it("preserves the reference responsibilities and states optional execution conditions", () => {
   const { diagram } = getMetalStack();
-  const frame = diagram.evaluateAt(13_500);
+  const frame = diagram.evaluateAt(beatMiddle(diagram, 3));
   const textFor = (id: string) => frame.nodes.find((node) => node.id === id)!
     .contentLayout!.lines.map(({ text }) => text).join("");
   expect(textFor("api-server")).toContain("OpenAI API server");
@@ -60,18 +61,18 @@ it("preserves the reference responsibilities and states optional execution condi
   expect(textFor("nax-prefill")).toContain("Metal kernel");
   expect(textFor("mtp")).toContain("运行时编排");
   expect(textFor("unified-memory")).toContain("paged KV");
-  expect(diagram.evaluateAt(5000).caption).toContain("KV block IDs");
-  expect(diagram.evaluateAt(9000).caption).toContain("构建 cu_seqlens");
-  expect(diagram.evaluateAt(14_500).caption).toContain("M5");
-  expect(diagram.evaluateAt(14_500).caption).toContain("配置");
-  expect(diagram.evaluateAt(14_500).caption).toContain("并非每次请求");
-  expect(diagram.evaluateAt(22_500).caption).toContain("参考图");
+  expect(diagram.evaluateAt(beatMiddle(diagram, 1)).caption).toContain("KV block IDs");
+  expect(diagram.evaluateAt(beatMiddle(diagram, 2)).caption).toContain("构建 cu_seqlens");
+  expect(diagram.evaluateAt(beatMiddle(diagram, 4)).caption).toContain("M5");
+  expect(diagram.evaluateAt(beatMiddle(diagram, 4)).caption).toContain("配置");
+  expect(diagram.evaluateAt(beatMiddle(diagram, 4)).caption).toContain("并非每次请求");
+  expect(diagram.evaluateAt(beatMiddle(diagram, 7)).caption).toContain("参考图");
 });
 
 it("connects evaluated layer boundaries with correctly directed curved transfers", () => {
   const { diagram } = getMetalStack();
-  for (const [time, from, to] of [[1500, "clients", "upstream"], [5000, "upstream", "runner"], [17_500, "runner", "runtime"]] as const) {
-    const frame = diagram.evaluateAt(time);
+  for (const [index, from, to] of [[0, "clients", "upstream"], [1, "upstream", "runner"], [5, "runner", "runtime"]] as const) {
+    const frame = diagram.evaluateAt(diagram.beats[index]!.startMs + 200);
     const transfers = frame.edges.filter(({ flow }) => flow);
     expect(transfers).toHaveLength(1);
     const edge = transfers[0]!;
@@ -91,8 +92,9 @@ it("keeps all six scenes readable and themed with reduced-motion meaning intact"
   const { diagram, example } = getMetalStack();
   expect(example.document.nodes.every(({ style }) => style === undefined)).toBe(true);
   expect(example.document.edges.every(({ route, style }) => route === "curved" && style === undefined)).toBe(true);
-  const stages = [[0, "request"], [3000, "schedule"], [7000, "runner"], [11_000, "attention"], [16_000, "runtime"], [21_000, "overview"]] as const;
-  for (const [time, sceneId] of stages) {
+  const stages = ["request", "schedule", "runner", "attention", "runtime", "overview"];
+  for (const sceneId of stages) {
+    const time = sceneStart(diagram, sceneId);
     expect(diagram.evaluateAt(time).sceneId).toBe(sceneId);
     if (time > 0) expect(diagram.evaluateAt(time - 1).sceneId).not.toBe(sceneId);
     for (const theme of ["light", "dark"] as const) {
@@ -113,7 +115,7 @@ it("keeps all six scenes readable and themed with reduced-motion meaning intact"
       }
     }
   }
-  expect(diagram.evaluateAt(24_000).nodes.every(({ highlighted }) => !highlighted)).toBe(true);
+  expect(diagram.evaluateAt(diagram.totalDuration).nodes.every(({ highlighted }) => !highlighted)).toBe(true);
 });
 
 it("keeps layer transfers inside the viewport and outside every module interior", () => {

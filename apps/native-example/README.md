@@ -1,16 +1,18 @@
 # Native showcase
 
-The Vite single-page site consumes `@flowsvg/showcase/author` through the public `flowsvg/browser` player. It displays example navigation, the current diagram and its introduction. The formal catalog opens **请求与响应** (`request-response`) with SDK default styling and uniformly curved edges. Its second entry, **RAG：从资料到答案** (`rag-workflow`), is a 21-second fictional ingestion/question-answering story with question-aware reranking (5 candidates → 2 selected chunks) and cited answers, using a compact three-row layout, curved routes and capsule tags. The third entry, **FlowSVG：图解如何运行** (`project-architecture`), explains the project architecture in 24 seconds: document/core evaluation, player/adapters, SVG/GIF/offline HTML and the private showcase boundary. The fourth entry, **vllm-metal：分层推理架构** (`vllm-metal-stack`), adapts the upstream figure into a 24-second four-layer stack with nested ownership panels and conditional-path explanations. All eight examples use the same shared author source and existing playback, sharing and JSON download controls. The isolated acceptance catalog is not formal content.
+The Vite single-page site consumes `@flowsvg/showcase/author` through the public `flowsvg/browser` player. It displays example navigation, the current diagram and its introduction. The formal catalog opens **请求与响应** (`request-response`) with SDK default styling and uniformly curved edges. Its second entry, **RAG：从资料到答案** (`rag-workflow`), is a fictional ingestion/question-answering story with question-aware reranking (5 candidates → 2 selected chunks) and cited answers, using a compact three-row layout, rounded orthogonal routes and capsule tags. The third entry, **FlowSVG：图解如何运行** (`project-architecture`), explains the project architecture: document/core evaluation, player/adapters, SVG/GIF/offline HTML and the private showcase boundary. The fourth entry, **vllm-metal：分层推理架构** (`vllm-metal-stack`), adapts the upstream figure into a four-layer stack with nested ownership panels and conditional-path explanations. All eight examples use the same shared author source and existing playback, sharing and JSON download controls. The isolated acceptance catalog is not formal content.
 
-The additional stories are **后台任务生命周期** (`job-lifecycle`, 18 s), **订单事件：从采集到指标** (`order-event-pipeline`, 21 s), **Web 服务：双副本部署** (`web-service-deployment`, 20 s), and **缓存未命中：查询与回填** (`cache-aside-sequence`, 19 s). They demonstrate a single current task state, conserved event counts and amounts, nested deployment boundaries, and seven ordered message rows. All eight use SDK default styling. The sequence story uses straight messages; task states, order data flow and deployment use orthogonal routes; the four earlier stories use curved edges. All data is self-contained teaching data.
+The additional stories are **后台任务生命周期** (`job-lifecycle`), **订单事件：从采集到指标** (`order-event-pipeline`), **Web 服务：双副本部署** (`web-service-deployment`), and **缓存未命中：查询与回填** (`cache-aside-sequence`). They demonstrate a single current task state, conserved event counts and amounts, nested deployment boundaries, and seven ordered message rows. All eight use SDK default styling. The sequence story uses straight messages; RAG, project architecture, task states, order data flow and deployment use orthogonal routes with SDK-rounded bends; request-response and vllm-metal use curved edges. All data is self-contained teaching data.
 
-Formal examples use compact fixed node sizes based on their fullest content state, with tighter row/column spacing. Playback preserves node geometry.
+Formal examples use compact node geometry. RAG measures each current content version and updates card heights and row positions together at content changes, retaining 50-unit row gaps. Its optional SDK `viewport.fitHeight` setting also shrinks the live canvas and standalone SVG to current content while retaining width and scale; GIF keeps the authored viewport dimensions. Other examples retain fixed playback geometry.
 
 Example navigation now shows six populated categories in order: **业务流程**, **系统架构**, **状态转换**, **数据流**, **部署拓扑** and **交互时序**. The first two retain their two examples each; the remaining categories each have one new story. Classification is showcase metadata and does not enter diagram JSON.
 
 Presentation selectors and download/share actions use the same rounded, neutral control style across all three hosts. The SDK toolbar supplies compact playback controls, an accent-tinted Play/Pause action, keyboard focus and a separate progress row on narrow screens.
 
 The site enables `flowsvg-compact` for 32-pixel playback controls and uses smaller download/share actions. Theme, scene and speed use the SDK's custom `SelectControl` menu with matching option styling, keyboard navigation, confirmation/cancellation and outside dismissal.
+
+The SDK Loop button starts off. Its choice survives example, theme, reduced-motion, retry, Back/Forward and persisted page-cache replacements in the current page session. The host captures loop with time and speed only at operations; the SDK owns the playback clock. Fresh entry or refresh starts with looping off. Loop is absent from share URLs and downloaded diagram JSON, and does not configure GIF repetition.
 
 ## Development
 
@@ -25,6 +27,8 @@ pnpm --filter flowsvg-native-example dev
 `pnpm build` prepares the SDK. Native `dev` and `build` compile and generate the selected shared author source before starting Vite. Without `SHOWCASE_SOURCE`, both commands explicitly regenerate the formal catalog; a previous acceptance build cannot leak into a normal build. Rebuild the SDK after SDK source changes. Restart `dev`, or rebuild the shared package then reload, after author changes. Vite watches app code; these commands do not start an SDK/shared-package watch process.
 
 ## Static build and acceptance input
+
+The root [GitHub Pages workflow](../../.github/workflows/pages.yml) publishes this host with formal input and the repository deployment base. Initial publication is pending repository eligibility. See [Pages setup and verification](../../docs/GITHUB-PAGES.md).
 
 ```sh
 pnpm --filter flowsvg-native-example build
@@ -81,3 +85,7 @@ The built-site suite exercises query normalization, direct entry/refresh, actual
 ## Cross-host delivery
 
 From the repository root, `pnpm build:examples` prepares SDK, shared author output and all three sites in order. `pnpm test:examples` runs shared contracts, each host suite and copied-artifact root/subpath delivery. `pnpm test:all` explicitly adds SDK type/test/tarball verification. See [showcase verification](../../docs/SHOWCASE-VERIFICATION.md) for independent hosting, narrower commands and resource checks.
+
+The SDK owns effective playback timing. One flow targets 180 diagram units/second (minimum movement 400 ms); each single-flow beat lasts for movement plus a fixed 500 ms post-arrival interval, replacing its authored duration. Use separate no-flow beats for longer reading time. Multiple flows stay synchronized. The shared catalog derives its duration from SDK compilation, and scene controls use the compiled schedule.
+
+Single-flow receivers fade fill and stroke in for 200 ms after arrival. Automatic node and edge highlights then hold for 100 ms and fade out for 200 ms. Explicit highlights and participant opt-out retain authored behavior. See [SDK transfer semantics](../../docs/SDK-GUIDE.md#beats-and-actions) for direction, reduced motion and export behavior.

@@ -1,0 +1,3221 @@
+{
+  "version": 1,
+  "title": "后台任务生命周期",
+  "viewport": {
+    "width": 868,
+    "height": 416
+  },
+  "nodes": [
+    {
+      "id": "queued",
+      "kind": "roundedRect",
+      "x": 24,
+      "y": 60,
+      "width": 220,
+      "height": 141,
+      "content": {
+        "style": {
+          "padding": 12,
+          "blockGap": 6
+        },
+        "blocks": [
+          {
+            "type": "title",
+            "text": "待执行"
+          },
+          {
+            "type": "list",
+            "items": [
+              {
+                "tags": [
+                  {
+                    "text": "可达状态",
+                    "style": {
+                      "shape": "pill",
+                      "fontSize": 12
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "text": "事件触发迁移"
+          },
+          {
+            "type": "paragraph",
+            "role": "auxiliary",
+            "text": "等待调度 · 可取消"
+          }
+        ]
+      }
+    },
+    {
+      "id": "running",
+      "kind": "roundedRect",
+      "x": 324,
+      "y": 60,
+      "width": 220,
+      "height": 141,
+      "content": {
+        "style": {
+          "padding": 12,
+          "blockGap": 6
+        },
+        "blocks": [
+          {
+            "type": "title",
+            "text": "执行中"
+          },
+          {
+            "type": "list",
+            "items": [
+              {
+                "tags": [
+                  {
+                    "text": "可达状态",
+                    "style": {
+                      "shape": "pill",
+                      "fontSize": 12
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "text": "事件触发迁移"
+          },
+          {
+            "type": "paragraph",
+            "role": "auxiliary",
+            "text": "执行任务 · 等待结果"
+          }
+        ]
+      }
+    },
+    {
+      "id": "retry",
+      "kind": "roundedRect",
+      "x": 624,
+      "y": 60,
+      "width": 220,
+      "height": 141,
+      "content": {
+        "style": {
+          "padding": 12,
+          "blockGap": 6
+        },
+        "blocks": [
+          {
+            "type": "title",
+            "text": "等待重试"
+          },
+          {
+            "type": "list",
+            "items": [
+              {
+                "tags": [
+                  {
+                    "text": "可达状态",
+                    "style": {
+                      "shape": "pill",
+                      "fontSize": 12
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "text": "事件触发迁移"
+          },
+          {
+            "type": "paragraph",
+            "role": "auxiliary",
+            "text": "暂时错误 · 定时重试"
+          }
+        ]
+      }
+    },
+    {
+      "id": "completed",
+      "kind": "roundedRect",
+      "x": 324,
+      "y": 251,
+      "width": 220,
+      "height": 141,
+      "content": {
+        "style": {
+          "padding": 12,
+          "blockGap": 6
+        },
+        "blocks": [
+          {
+            "type": "title",
+            "text": "已完成"
+          },
+          {
+            "type": "list",
+            "items": [
+              {
+                "tags": [
+                  {
+                    "text": "可达状态",
+                    "style": {
+                      "shape": "pill",
+                      "fontSize": 12
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "text": "事件触发迁移"
+          },
+          {
+            "type": "paragraph",
+            "role": "auxiliary",
+            "text": "终态 · 不再迁移"
+          }
+        ]
+      }
+    },
+    {
+      "id": "failed",
+      "kind": "roundedRect",
+      "x": 624,
+      "y": 251,
+      "width": 220,
+      "height": 141,
+      "content": {
+        "style": {
+          "padding": 12,
+          "blockGap": 6
+        },
+        "blocks": [
+          {
+            "type": "title",
+            "text": "已失败"
+          },
+          {
+            "type": "list",
+            "items": [
+              {
+                "tags": [
+                  {
+                    "text": "可达状态",
+                    "style": {
+                      "shape": "pill",
+                      "fontSize": 12
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "text": "事件触发迁移"
+          },
+          {
+            "type": "paragraph",
+            "role": "auxiliary",
+            "text": "终态 · 不再迁移"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cancelled",
+      "kind": "roundedRect",
+      "x": 24,
+      "y": 251,
+      "width": 220,
+      "height": 141,
+      "content": {
+        "style": {
+          "padding": 12,
+          "blockGap": 6
+        },
+        "blocks": [
+          {
+            "type": "title",
+            "text": "已取消"
+          },
+          {
+            "type": "list",
+            "items": [
+              {
+                "tags": [
+                  {
+                    "text": "可达状态",
+                    "style": {
+                      "shape": "pill",
+                      "fontSize": 12
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "paragraph",
+            "text": "事件触发迁移"
+          },
+          {
+            "type": "paragraph",
+            "role": "auxiliary",
+            "text": "终态 · 不再迁移"
+          }
+        ]
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "schedule",
+      "from": "queued",
+      "to": "running",
+      "route": "orthogonal",
+      "fromPort": "right",
+      "toPort": "left",
+      "label": "调度"
+    },
+    {
+      "id": "temporary-error",
+      "from": "running",
+      "to": "retry",
+      "route": "orthogonal",
+      "fromPort": "right",
+      "toPort": "left",
+      "label": "暂时错误"
+    },
+    {
+      "id": "retry-timer",
+      "from": "retry",
+      "to": "running",
+      "route": "orthogonal",
+      "fromPort": "top",
+      "toPort": "top",
+      "label": "定时重试"
+    },
+    {
+      "id": "success",
+      "from": "running",
+      "to": "completed",
+      "route": "orthogonal",
+      "fromPort": "bottom",
+      "toPort": "top",
+      "label": "成功"
+    },
+    {
+      "id": "exhausted",
+      "from": "running",
+      "to": "failed",
+      "route": "orthogonal",
+      "fromPort": "bottom",
+      "toPort": "top",
+      "label": "达到上限"
+    },
+    {
+      "id": "cancel",
+      "from": "queued",
+      "to": "cancelled",
+      "route": "orthogonal",
+      "fromPort": "bottom",
+      "toPort": "top",
+      "label": "取消"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "submit",
+      "label": "提交任务 A",
+      "beats": [
+        {
+          "durationMs": 2000,
+          "transitionMs": 0,
+          "caption": "任务 A 已提交，当前为待执行。蓝色节点与“当前”标签共同标记唯一状态；箭头文字表示迁移事件。",
+          "actions": [
+            {
+              "type": "highlight",
+              "target": "queued"
+            },
+            {
+              "type": "updateNode",
+              "target": "queued",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "待执行"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "当前 · 任务 A",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "重试 0 / 2"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "等待调度 · 可取消"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "running"
+            },
+            {
+              "type": "updateNode",
+              "target": "running",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "执行中"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "执行任务 · 等待结果"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "retry"
+            },
+            {
+              "type": "updateNode",
+              "target": "retry",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "等待重试"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "暂时错误 · 定时重试"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "completed"
+            },
+            {
+              "type": "updateNode",
+              "target": "completed",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已完成"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "failed"
+            },
+            {
+              "type": "updateNode",
+              "target": "failed",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已失败"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "cancelled"
+            },
+            {
+              "type": "updateNode",
+              "target": "cancelled",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已取消"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "schedule"
+            },
+            {
+              "type": "unhighlight",
+              "target": "temporary-error"
+            },
+            {
+              "type": "unhighlight",
+              "target": "retry-timer"
+            },
+            {
+              "type": "unhighlight",
+              "target": "success"
+            },
+            {
+              "type": "unhighlight",
+              "target": "exhausted"
+            },
+            {
+              "type": "unhighlight",
+              "target": "cancel"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "execute",
+      "label": "执行与暂时错误",
+      "beats": [
+        {
+          "durationMs": 2000,
+          "transitionMs": 0,
+          "caption": "任务 A 被调度，进入执行中。示例允许最多重试 2 次，这不是推荐配置。",
+          "actions": [
+            {
+              "type": "unhighlight",
+              "target": "queued"
+            },
+            {
+              "type": "updateNode",
+              "target": "queued",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "待执行"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "等待调度 · 可取消"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "highlight",
+              "target": "running"
+            },
+            {
+              "type": "updateNode",
+              "target": "running",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "执行中"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "当前 · 任务 A",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "重试 0 / 2"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "执行任务 · 等待结果"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "retry"
+            },
+            {
+              "type": "updateNode",
+              "target": "retry",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "等待重试"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "暂时错误 · 定时重试"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "completed"
+            },
+            {
+              "type": "updateNode",
+              "target": "completed",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已完成"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "failed"
+            },
+            {
+              "type": "updateNode",
+              "target": "failed",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已失败"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "cancelled"
+            },
+            {
+              "type": "updateNode",
+              "target": "cancelled",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已取消"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "highlight",
+              "target": "schedule"
+            },
+            {
+              "type": "unhighlight",
+              "target": "temporary-error"
+            },
+            {
+              "type": "unhighlight",
+              "target": "retry-timer"
+            },
+            {
+              "type": "unhighlight",
+              "target": "success"
+            },
+            {
+              "type": "unhighlight",
+              "target": "exhausted"
+            },
+            {
+              "type": "unhighlight",
+              "target": "cancel"
+            },
+            {
+              "type": "flow",
+              "target": "schedule",
+              "direction": "forward",
+              "highlightParticipants": false
+            }
+          ]
+        },
+        {
+          "durationMs": 2000,
+          "transitionMs": 0,
+          "caption": "任务 A 遇到暂时错误，进入等待重试；任务没有同时处于执行中。",
+          "actions": [
+            {
+              "type": "unhighlight",
+              "target": "queued"
+            },
+            {
+              "type": "updateNode",
+              "target": "queued",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "待执行"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "等待调度 · 可取消"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "running"
+            },
+            {
+              "type": "updateNode",
+              "target": "running",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "执行中"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "执行任务 · 等待结果"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "highlight",
+              "target": "retry"
+            },
+            {
+              "type": "updateNode",
+              "target": "retry",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "等待重试"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "当前 · 任务 A",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "重试 0 / 2"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "暂时错误 · 定时重试"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "completed"
+            },
+            {
+              "type": "updateNode",
+              "target": "completed",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已完成"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "failed"
+            },
+            {
+              "type": "updateNode",
+              "target": "failed",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已失败"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "cancelled"
+            },
+            {
+              "type": "updateNode",
+              "target": "cancelled",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已取消"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "schedule"
+            },
+            {
+              "type": "highlight",
+              "target": "temporary-error"
+            },
+            {
+              "type": "unhighlight",
+              "target": "retry-timer"
+            },
+            {
+              "type": "unhighlight",
+              "target": "success"
+            },
+            {
+              "type": "unhighlight",
+              "target": "exhausted"
+            },
+            {
+              "type": "unhighlight",
+              "target": "cancel"
+            },
+            {
+              "type": "flow",
+              "target": "temporary-error",
+              "direction": "forward",
+              "highlightParticipants": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "recover",
+      "label": "重试后完成",
+      "beats": [
+        {
+          "durationMs": 2000,
+          "transitionMs": 0,
+          "caption": "任务 A 的重试定时器触发，开始第 1 次重试，重新进入执行中。",
+          "actions": [
+            {
+              "type": "unhighlight",
+              "target": "queued"
+            },
+            {
+              "type": "updateNode",
+              "target": "queued",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "待执行"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "等待调度 · 可取消"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "highlight",
+              "target": "running"
+            },
+            {
+              "type": "updateNode",
+              "target": "running",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "执行中"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "当前 · 任务 A",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "重试 1 / 2"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "执行任务 · 等待结果"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "retry"
+            },
+            {
+              "type": "updateNode",
+              "target": "retry",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "等待重试"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "暂时错误 · 定时重试"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "completed"
+            },
+            {
+              "type": "updateNode",
+              "target": "completed",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已完成"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "failed"
+            },
+            {
+              "type": "updateNode",
+              "target": "failed",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已失败"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "cancelled"
+            },
+            {
+              "type": "updateNode",
+              "target": "cancelled",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已取消"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "schedule"
+            },
+            {
+              "type": "unhighlight",
+              "target": "temporary-error"
+            },
+            {
+              "type": "highlight",
+              "target": "retry-timer"
+            },
+            {
+              "type": "unhighlight",
+              "target": "success"
+            },
+            {
+              "type": "unhighlight",
+              "target": "exhausted"
+            },
+            {
+              "type": "unhighlight",
+              "target": "cancel"
+            },
+            {
+              "type": "flow",
+              "target": "retry-timer",
+              "direction": "forward",
+              "highlightParticipants": false
+            }
+          ]
+        },
+        {
+          "durationMs": 2000,
+          "transitionMs": 0,
+          "caption": "任务 A 执行成功，进入已完成终态。终态没有出边，不会继续变成失败或取消。",
+          "actions": [
+            {
+              "type": "unhighlight",
+              "target": "queued"
+            },
+            {
+              "type": "updateNode",
+              "target": "queued",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "待执行"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "等待调度 · 可取消"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "running"
+            },
+            {
+              "type": "updateNode",
+              "target": "running",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "执行中"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "执行任务 · 等待结果"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "retry"
+            },
+            {
+              "type": "updateNode",
+              "target": "retry",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "等待重试"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "暂时错误 · 定时重试"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "highlight",
+              "target": "completed"
+            },
+            {
+              "type": "updateNode",
+              "target": "completed",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已完成"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "当前 · 任务 A",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "重试 1 / 2"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "failed"
+            },
+            {
+              "type": "updateNode",
+              "target": "failed",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已失败"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "cancelled"
+            },
+            {
+              "type": "updateNode",
+              "target": "cancelled",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已取消"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "schedule"
+            },
+            {
+              "type": "unhighlight",
+              "target": "temporary-error"
+            },
+            {
+              "type": "unhighlight",
+              "target": "retry-timer"
+            },
+            {
+              "type": "highlight",
+              "target": "success"
+            },
+            {
+              "type": "unhighlight",
+              "target": "exhausted"
+            },
+            {
+              "type": "unhighlight",
+              "target": "cancel"
+            },
+            {
+              "type": "flow",
+              "target": "success",
+              "direction": "forward",
+              "highlightParticipants": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "exhaust",
+      "label": "另一任务 B 达到上限",
+      "beats": [
+        {
+          "durationMs": 2000,
+          "transitionMs": 0,
+          "caption": "切换到另一项任务 B：它已经进入第 2 次重试的执行阶段。这是独立案例，不是任务 A 的后续。",
+          "actions": [
+            {
+              "type": "unhighlight",
+              "target": "queued"
+            },
+            {
+              "type": "updateNode",
+              "target": "queued",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "待执行"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "等待调度 · 可取消"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "highlight",
+              "target": "running"
+            },
+            {
+              "type": "updateNode",
+              "target": "running",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "执行中"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "当前 · 任务 B",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "重试 2 / 2"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "执行任务 · 等待结果"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "retry"
+            },
+            {
+              "type": "updateNode",
+              "target": "retry",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "等待重试"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "暂时错误 · 定时重试"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "completed"
+            },
+            {
+              "type": "updateNode",
+              "target": "completed",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已完成"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "failed"
+            },
+            {
+              "type": "updateNode",
+              "target": "failed",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已失败"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "cancelled"
+            },
+            {
+              "type": "updateNode",
+              "target": "cancelled",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已取消"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "schedule"
+            },
+            {
+              "type": "unhighlight",
+              "target": "temporary-error"
+            },
+            {
+              "type": "unhighlight",
+              "target": "retry-timer"
+            },
+            {
+              "type": "unhighlight",
+              "target": "success"
+            },
+            {
+              "type": "unhighlight",
+              "target": "exhausted"
+            },
+            {
+              "type": "unhighlight",
+              "target": "cancel"
+            }
+          ]
+        },
+        {
+          "durationMs": 2000,
+          "transitionMs": 0,
+          "caption": "任务 B 再次失败且达到示例重试上限，进入已失败终态。",
+          "actions": [
+            {
+              "type": "unhighlight",
+              "target": "queued"
+            },
+            {
+              "type": "updateNode",
+              "target": "queued",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "待执行"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "等待调度 · 可取消"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "running"
+            },
+            {
+              "type": "updateNode",
+              "target": "running",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "执行中"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "执行任务 · 等待结果"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "retry"
+            },
+            {
+              "type": "updateNode",
+              "target": "retry",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "等待重试"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "暂时错误 · 定时重试"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "completed"
+            },
+            {
+              "type": "updateNode",
+              "target": "completed",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已完成"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "highlight",
+              "target": "failed"
+            },
+            {
+              "type": "updateNode",
+              "target": "failed",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已失败"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "当前 · 任务 B",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "重试 2 / 2"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "cancelled"
+            },
+            {
+              "type": "updateNode",
+              "target": "cancelled",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已取消"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "schedule"
+            },
+            {
+              "type": "unhighlight",
+              "target": "temporary-error"
+            },
+            {
+              "type": "unhighlight",
+              "target": "retry-timer"
+            },
+            {
+              "type": "unhighlight",
+              "target": "success"
+            },
+            {
+              "type": "highlight",
+              "target": "exhausted"
+            },
+            {
+              "type": "unhighlight",
+              "target": "cancel"
+            },
+            {
+              "type": "flow",
+              "target": "exhausted",
+              "direction": "forward",
+              "highlightParticipants": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cancel",
+      "label": "另一任务 C 主动取消",
+      "beats": [
+        {
+          "durationMs": 2000,
+          "transitionMs": 0,
+          "caption": "切换到另一项任务 C：当前待执行，用户仍可取消。此例没有演示运行中取消。",
+          "actions": [
+            {
+              "type": "highlight",
+              "target": "queued"
+            },
+            {
+              "type": "updateNode",
+              "target": "queued",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "待执行"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "当前 · 任务 C",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "重试 0 / 2"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "等待调度 · 可取消"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "running"
+            },
+            {
+              "type": "updateNode",
+              "target": "running",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "执行中"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "执行任务 · 等待结果"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "retry"
+            },
+            {
+              "type": "updateNode",
+              "target": "retry",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "等待重试"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "暂时错误 · 定时重试"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "completed"
+            },
+            {
+              "type": "updateNode",
+              "target": "completed",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已完成"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "failed"
+            },
+            {
+              "type": "updateNode",
+              "target": "failed",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已失败"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "cancelled"
+            },
+            {
+              "type": "updateNode",
+              "target": "cancelled",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已取消"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "schedule"
+            },
+            {
+              "type": "unhighlight",
+              "target": "temporary-error"
+            },
+            {
+              "type": "unhighlight",
+              "target": "retry-timer"
+            },
+            {
+              "type": "unhighlight",
+              "target": "success"
+            },
+            {
+              "type": "unhighlight",
+              "target": "exhausted"
+            },
+            {
+              "type": "unhighlight",
+              "target": "cancel"
+            }
+          ]
+        },
+        {
+          "durationMs": 2000,
+          "transitionMs": 0,
+          "caption": "用户取消任务 C，进入已取消终态。本图演示允许的状态迁移，不调用真实任务系统。",
+          "actions": [
+            {
+              "type": "unhighlight",
+              "target": "queued"
+            },
+            {
+              "type": "updateNode",
+              "target": "queued",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "待执行"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "等待调度 · 可取消"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "running"
+            },
+            {
+              "type": "updateNode",
+              "target": "running",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "执行中"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "执行任务 · 等待结果"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "retry"
+            },
+            {
+              "type": "updateNode",
+              "target": "retry",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "等待重试"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "暂时错误 · 定时重试"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "completed"
+            },
+            {
+              "type": "updateNode",
+              "target": "completed",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已完成"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "failed"
+            },
+            {
+              "type": "updateNode",
+              "target": "failed",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已失败"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "可达状态",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "事件触发迁移"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "highlight",
+              "target": "cancelled"
+            },
+            {
+              "type": "updateNode",
+              "target": "cancelled",
+              "value": {
+                "content": {
+                  "style": {
+                    "padding": 12,
+                    "blockGap": 6
+                  },
+                  "blocks": [
+                    {
+                      "type": "title",
+                      "text": "已取消"
+                    },
+                    {
+                      "type": "list",
+                      "items": [
+                        {
+                          "tags": [
+                            {
+                              "text": "当前 · 任务 C",
+                              "style": {
+                                "shape": "pill",
+                                "fontSize": 12
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "paragraph",
+                      "text": "重试 0 / 2"
+                    },
+                    {
+                      "type": "paragraph",
+                      "role": "auxiliary",
+                      "text": "终态 · 不再迁移"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "unhighlight",
+              "target": "schedule"
+            },
+            {
+              "type": "unhighlight",
+              "target": "temporary-error"
+            },
+            {
+              "type": "unhighlight",
+              "target": "retry-timer"
+            },
+            {
+              "type": "unhighlight",
+              "target": "success"
+            },
+            {
+              "type": "unhighlight",
+              "target": "exhausted"
+            },
+            {
+              "type": "highlight",
+              "target": "cancel"
+            },
+            {
+              "type": "flow",
+              "target": "cancel",
+              "direction": "forward",
+              "highlightParticipants": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

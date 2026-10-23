@@ -98,8 +98,8 @@ export class ShowcaseApp extends Component<Record<string, never>, AppState> {
   private captureSnapshot(): { snapshot?: PlaybackSnapshot; error?: unknown } {
     if (!this.playerRef.current) return {};
     try {
-      const { timeMs, speed } = this.playerRef.current.getState();
-      return { snapshot: { timeMs, speed } };
+      const { timeMs, speed, loop } = this.playerRef.current.getState();
+      return { snapshot: { timeMs, speed, loop } };
     } catch (error) { return { error }; }
   }
 
@@ -145,7 +145,7 @@ export class ShowcaseApp extends Component<Record<string, never>, AppState> {
       </fieldset>
       <div id="player">{!this.state.suspended && <PlayerBoundary key={session.version} onError={(error) => this.showError(error, session.version)}>
         <FlowPlayer ref={this.playerRef} document={definition.document}
-        theme={session.settings.theme} reducedMotion={session.settings.reducedMotion} speed={session.settings.speed}
+        theme={session.settings.theme} reducedMotion={session.settings.reducedMotion} speed={session.settings.speed} loop={session.loop}
         controls gifExport initialTimeMs={session.timeMs} onError={({ error }) => this.showError(error, session.version)} />
       </PlayerBoundary>}</div>
       <div id="download"><a href={`${import.meta.env.BASE_URL}${definition.jsonPath}`} download={`${definition.id}.json`}>Download diagram JSON</a></div>

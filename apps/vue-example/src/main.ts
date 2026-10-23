@@ -63,6 +63,7 @@ const PlayerBoundary = defineComponent({
         },
         document: definition.document,
         ...target.settings,
+        loop: target.loop,
         initialTimeMs: target.timeMs,
         controls: true,
         gifExport: true,
@@ -94,8 +95,8 @@ const App = defineComponent({
     function capture(): { snapshot?: PlaybackSnapshot; error?: unknown } {
       if (!player) return {};
       try {
-        const { timeMs, speed } = player.getState();
-        return { snapshot: { timeMs, speed } };
+        const { timeMs, speed, loop } = player.getState();
+        return { snapshot: { timeMs, speed, loop } };
       } catch (cause) {
         return { error: cause };
       }

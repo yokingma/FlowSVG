@@ -24,6 +24,8 @@ export interface FlowPlayerProps {
   document: DiagramDocument;
   /** Positive playback multiplier; omit to use the player default. */
   speed?: number;
+  /** Defaults to false. Changes update live loop mode without rebuilding the player. */
+  loop?: boolean;
   theme?: ThemeName;
   controls?: boolean;
   /** Defaults to false. Enable GIF downloads when controls are visible; export is independent of playback. */
@@ -38,6 +40,7 @@ export interface FlowPlayerProps {
   onStepChange?: (state: PlayerState) => void;
   onTimeUpdate?: (state: PlayerState) => void;
   onPlayStateChange?: (state: PlayerState) => void;
+  onLoopChange?: (state: PlayerState) => void;
   onError?: (detail: PlayerErrorDetail) => void;
 }
 
@@ -53,6 +56,8 @@ export interface FlowPlayerHandle {
   step(direction: 1 | -1): void;
   /** Set a finite positive multiplier; ignore invalid values. */
   setSpeed(speed: number): void;
+  /** Toggle whole-timeline playback without changing the current position or play state. */
+  setLoop(loop: boolean): void;
   /** Reset/pause at zero on success; emit an error and retain playback state if validation fails. */
   load(document: DiagramDocument): void;
   /** Read the current browser-player snapshot. */
@@ -63,6 +68,7 @@ interface CallbackRefs {
   onStepChange?: (state: PlayerState) => void;
   onTimeUpdate?: (state: PlayerState) => void;
   onPlayStateChange?: (state: PlayerState) => void;
+  onLoopChange?: (state: PlayerState) => void;
   onError?: (detail: PlayerErrorDetail) => void;
 }
 
@@ -97,6 +103,7 @@ export const FlowPlayer = forwardRef<FlowPlayerHandle, FlowPlayerProps>(function
     onStepChange: props.onStepChange,
     onTimeUpdate: props.onTimeUpdate,
     onPlayStateChange: props.onPlayStateChange,
+    onLoopChange: props.onLoopChange,
     onError: props.onError
   };
 
@@ -106,6 +113,7 @@ export const FlowPlayer = forwardRef<FlowPlayerHandle, FlowPlayerProps>(function
     seek: (timeMs) => requirePlayer(playerRef).seek(timeMs),
     step: (direction) => requirePlayer(playerRef).step(direction),
     setSpeed: (speed) => requirePlayer(playerRef).setSpeed(speed),
+    setLoop: (loop) => requirePlayer(playerRef).setLoop(loop),
     load: (document) => requirePlayer(playerRef).load(document),
     getState: () => requirePlayer(playerRef).getState()
   }), []);
@@ -130,7 +138,7 @@ export const FlowPlayer = forwardRef<FlowPlayerHandle, FlowPlayerProps>(function
       // Detach old callbacks before replacement so old lifecycle events cannot reach the new component state.
       eventCleanupRef.current?.();
       existing?.destroy();
-      const player = createPlayer(host, props.document, nextOptions);
+      const player = createPlayer(host, props.document, { ...nextOptions, loop: props.loop ?? existing?.getState().loop });
       // A new instance needs current props even when the separate speed effect has no changed dependency.
       if (props.speed !== undefined) player.setSpeed(props.speed);
       eventCleanupRef.current = attachPlayerEvents(player, callbacksRef);
@@ -151,6 +159,10 @@ export const FlowPlayer = forwardRef<FlowPlayerHandle, FlowPlayerProps>(function
     const player = playerRef.current;
     if (player && props.speed !== undefined) player.setSpeed(props.speed);
   }, [props.speed]);
+
+  useEffect(() => {
+    playerRef.current?.setLoop(props.loop ?? false);
+  }, [props.loop]);
 
   useEffect(() => () => {
     eventCleanupRef.current?.();
@@ -198,17 +210,22 @@ function attachPlayerEvents(
   const onPlayStateChange = (event: Event) => {
     callbacksRef.current.onPlayStateChange?.((event as CustomEvent<PlayerState>).detail);
   };
+  const onLoopChange = (event: Event) => {
+    callbacksRef.current.onLoopChange?.((event as CustomEvent<PlayerState>).detail);
+  };
   const onError = (event: Event) => {
     callbacksRef.current.onError?.((event as unknown as CustomEvent<PlayerErrorDetail>).detail);
   };
   player.element.addEventListener("stepchange", onStepChange);
   player.element.addEventListener("timeupdate", onTimeUpdate);
   player.element.addEventListener("playstatechange", onPlayStateChange);
+  player.element.addEventListener("loopchange", onLoopChange);
   player.element.addEventListener("error", onError);
   return () => {
     player.element.removeEventListener("stepchange", onStepChange);
     player.element.removeEventListener("timeupdate", onTimeUpdate);
     player.element.removeEventListener("playstatechange", onPlayStateChange);
+    player.element.removeEventListener("loopchange", onLoopChange);
     player.element.removeEventListener("error", onError);
   };
 }

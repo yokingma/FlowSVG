@@ -95,16 +95,34 @@ it("keeps compact request transfers outside their source, target and other node 
 });
 
 
-it("offers a standalone 21-second RAG story after the default request-response example", () => {
+it("offers a standalone RAG story with SDK-compiled timing after the default request-response example", () => {
   const { catalog, json } = compileCatalog(catalogSource);
   const example = catalog.get("rag-workflow");
   expect(example, "RAG must be a selectable formal example").toBeDefined();
   expect(example?.name).toBe("RAG：从资料到答案");
-  expect(example?.durationMs).toBe(21_000);
+  expect(example?.durationMs).toBeCloseTo(22_543.151, 3);
   expect(example?.defaults).toEqual({ speed: 1, theme: "light", reducedMotion: false });
   expect(JSON.parse(json.get(example!.jsonPath)!)).toEqual(example?.document);
   expect(example?.document.scenes.map(({ label }) => label)).toEqual([
     "解析与切分", "向量化与入库", "提交问题", "召回候选片段",
     "重排与筛选", "组装上下文", "生成带引用的答案", "完成"
   ]);
+});
+
+it("holds every formal single-flow transfer for exactly 500 ms before its compiled boundary", () => {
+  const { catalog } = compileCatalog(catalogSource);
+  for (const example of catalog.entries) {
+    const diagram = createDiagram(example.document);
+    const authored = example.document.scenes.flatMap(({ beats }) => beats);
+    diagram.beats.forEach((beat, index) => {
+      const flows = authored[index]!.actions.filter((action) => action.type === "flow");
+      if (flows.length !== 1) return;
+      const edgeId = flows[0]!.target;
+      const markerAt = (time: number) => diagram.evaluateAt(time).edges.find(({ id }) => id === edgeId)!.flow!;
+      expect(markerAt(beat.endMs - 501).progress, `${example.id}/${beat.beatId}`).toBeLessThan(1);
+      expect(markerAt(beat.endMs - 500).progress).toBeCloseTo(1);
+      expect(markerAt(beat.endMs - 1).point).toEqual(markerAt(beat.endMs - 499).point);
+      expect(diagram.evaluateAt(beat.endMs - 1, { reducedMotion: true }).beatId).toBe(beat.beatId);
+    });
+  }
 });

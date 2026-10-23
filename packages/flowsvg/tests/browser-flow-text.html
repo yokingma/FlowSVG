@@ -20,16 +20,19 @@ const model = {
 };
 const results = [];
 function assert(condition, message) { if (!condition) throw new Error(message); }
-for (const [theme, reducedMotion, time] of [["light", false, 250], ["dark", false, 1250], ["light", false, 2250], ["dark", true, 250]]) {
+const diagram = createDiagram(model);
+for (const [theme, reducedMotion, beatIndex] of [["light", false, 0], ["dark", false, 1], ["light", false, 2], ["dark", true, 0]]) {
+  const beat = diagram.beats[beatIndex];
+  const time = beat.startMs + (beat.endMs - beat.startMs) / 4;
   const card = document.createElement("section"); card.className = "case";
-  card.innerHTML = `<h2>${theme} · ${reducedMotion ? "reduced motion" : time < 1000 ? "请求" : time < 2000 ? "response" : "dot"}</h2><div class="host"></div>`;
+  card.innerHTML = `<h2>${theme} · ${reducedMotion ? "reduced motion" : beatIndex === 0 ? "请求" : beatIndex === 1 ? "response" : "dot"}</h2><div class="host"></div>`;
   document.querySelector("main").append(card);
   const host = card.querySelector(".host");
   const options = { theme, reducedMotion, controls: false };
   const player = createPlayer(host, model, options);
-  const diagram = createDiagram(model);
   try {
-    for (const seekTime of [0, 250, 500, 999, 1000, 1500, 1999, 2000, 2500, 3000, 1500, 500]) {
+    const samples = diagram.beats.flatMap((beat) => [beat.startMs, beat.startMs + (beat.endMs - beat.startMs) / 2, beat.endMs - 1]);
+    for (const seekTime of [...samples, diagram.totalDuration, ...[...samples].reverse()]) {
       player.seek(seekTime);
       const expected = document.createElement("div"); expected.innerHTML = diagram.renderSvg(seekTime, options);
       assert(host.querySelector("svg").outerHTML === expected.firstElementChild.outerHTML, `export equality at ${seekTime}`);
@@ -42,12 +45,12 @@ for (const [theme, reducedMotion, time] of [["light", false, 250], ["dark", fals
     if (marker) {
       assert(!marker.hasAttribute("tabindex") && marker.getAttribute("pointer-events") === "none", "marker stays decorative");
       assert(!marker.querySelector("script,textPath") && !marker.querySelector("[transform]"), "message is safe and horizontal");
-      if (time < 2000) {
+      if (beatIndex < 2) {
         const text = marker.querySelector("text"); const capsule = marker.querySelector("rect");
         const textBox = text.getBBox(); const capsuleBox = capsule.getBBox();
         assert(textBox.x >= capsuleBox.x && textBox.x + textBox.width <= capsuleBox.x + capsuleBox.width, "capsule contains text width");
         assert(textBox.y >= capsuleBox.y && textBox.y + textBox.height <= capsuleBox.y + capsuleBox.height, "capsule contains text height");
-        assert(text.textContent === (time < 1000 ? "请求 <A>&😀" : "Response OK"), "current beat message is intact");
+        assert(text.textContent === (beatIndex === 0 ? "请求 <A>&😀" : "Response OK"), "current beat message is intact");
         assert(host.textContent.includes("API relation"), "static relation label remains");
       } else assert(marker.tagName.toLowerCase() === "circle", "omitted text retains a dot");
     }

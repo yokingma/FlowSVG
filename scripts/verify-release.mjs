@@ -32,7 +32,9 @@ function packReleaseReadmes(sourceTarball, expectedFiles) {
   for (const name of ["README.md", "README.zh-CN.md"]) {
     const path = join(stagedPackage, name);
     const source = readFileSync(path, "utf8");
-    const published = source.replace(/(!\[[^\]]*\]\()\.\/docs\/images\//g, `$1${previewBaseUrl}`);
+    const published = source
+      .replace(/(!\[[^\]]*\]\()\.\/docs\/images\//g, `$1${previewBaseUrl}`)
+      .replace(/(<img\b[^>]*\bsrc=")\.\/docs\/images\//g, `$1${previewBaseUrl}`);
     writeFileSync(path, published);
   }
   // The first pack ran prepack and built dist. Repacking its contents must not run source-only hooks again.
@@ -56,8 +58,10 @@ try {
     "docs/images/quick-start.png", "docs/images/node-content.png",
     "docs/images/numbered-list.png", "docs/images/numbered-list.zh-CN.png",
     "docs/images/record-tags.png", "docs/images/entity-graph.png",
-    "docs/images/facts-timeline.png", "docs/images/facts-timeline.zh-CN.png"
+    "docs/images/facts-timeline.png", "docs/images/facts-timeline.zh-CN.png", "docs/images/flowsvg-wordmark.gif",
+    "docs/images/job-lifecycle.gif"
   ];
+  const EXAMPLE_FILES = ["examples/job-lifecycle.json"];
   const portableFiles = [
     "dist/portable/export.js", "dist/portable/LICENSE.gifenc.txt", "dist/portable/player.js", "dist/portable/styles.css", "dist/portable/manifest.json",
     "dist/portable/LICENSE.flowsvg.txt", "dist/portable/LICENSE.esbuild.txt"
@@ -65,7 +69,7 @@ try {
   const exportTargets = Object.values(packageJson.exports).flatMap((entry) => (
     typeof entry === "string" ? [entry] : Object.values(entry)
   ));
-  for (const file of [...documents, ...PREVIEW_IMAGES, ...portableFiles, "dist/node/cli.js", "dist/node.d.ts", "dist/export.d.ts", "dist/export/worker-source.js", ...exportTargets.map((target) => target.replace(/^\.\//, ""))]) {
+  for (const file of [...documents, ...PREVIEW_IMAGES, ...EXAMPLE_FILES, ...portableFiles, "dist/node/cli.js", "dist/node.d.ts", "dist/export.d.ts", "dist/export/worker-source.js", ...exportTargets.map((target) => target.replace(/^\.\//, ""))]) {
     if (!packedFiles.includes(file)) throw new Error(`tarball missing ${file}`);
   }
   const modules = [
@@ -73,11 +77,11 @@ try {
     "index", "browser", "react", "vue", "web-component", "node", "node/html", "node/cli", "node/gif", "node/output",
     "browser/player", "browser/controls", "browser/select-control", "browser/export-controls", "browser/accessibility", "browser/lifecycle", "browser/svg-dom",
     "core/model", "core/validation", "core/diagram", "core/edge-geometry", "core/svg-number", "core/timeline", "core/theme", "core/color",
-    "core/node-content", "core/node-content-paint",
+    "core/node-content", "core/node-content-measurement", "core/node-content-paint",
     "adapters/react", "adapters/vue", "adapters/web-component"
   ];
   const allowedFiles = new Set([
-    ...documents, ...PREVIEW_IMAGES, "dist/styles.css",
+    ...documents, ...PREVIEW_IMAGES, ...EXAMPLE_FILES, "dist/styles.css",
     ...portableFiles,
     ...modules.flatMap((module) => [`dist/${module}.js`, `dist/${module}.d.ts`])
   ]);
@@ -93,19 +97,28 @@ try {
     { ...process.env, PLAYWRIGHT_BROWSERS_PATH: browserInstall });
   if (existsSync(browserInstall)) throw new Error("ordinary npm install unexpectedly prepared a browser");
   run(process.execPath, ["--input-type=module", "--eval", `
-    import { createDiagram } from "flowsvg";
+    import { createDiagram, measureNodeContent } from "flowsvg";
     import { createPlayer } from "flowsvg/browser";
     import { defineFlowPlayer } from "flowsvg/web-component";
     import { defineFlowPlayer as defineElement } from "flowsvg/element";
     const diagram = createDiagram({ version: 1, viewport: { width: 100, height: 100 }, nodes: [], edges: [], scenes: [] });
     if (!diagram.renderSvg(0).includes("<svg")) throw new Error("framework-free core export failed");
+    const content = { blocks: [{ type: "paragraph", text: "A" }] };
+    const taller = { blocks: [{ type: "paragraph", text: "A\\nB\\nC" }] };
+    const measured = measureNodeContent({ kind: "rect", width: 240, content: Object.freeze([content, taller]) });
+    if (measured.height !== 92 || measured.diagnostics.length) throw new Error("DOM-free content measurement failed");
+    const measuredDiagram = createDiagram({ version: 1, viewport: { width: 300, height: 300 },
+      nodes: [{ id: "measured", kind: "rect", x: 0, y: 0, width: 240, height: measured.height, content: taller }], edges: [], scenes: [] });
+    if (measuredDiagram.evaluateAt(0).warnings.length || !measuredDiagram.renderSvg().includes("<clipPath")) {
+      throw new Error("measured package dimensions do not fit evaluated SVG content");
+    }
     if (typeof createPlayer !== "function" || defineFlowPlayer() !== undefined || defineElement !== defineFlowPlayer) {
       throw new Error("DOM-free browser/element imports failed");
     }
   `], tempRoot);
   run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", "react", "react-dom", "@types/react", "@types/react-dom", "vue", "jsdom@26.1.0", "typescript", "gifuct-js@2.1.2", "@types/node@22.19.1"], tempRoot);
   writeFileSync(join(tempRoot, "types-smoke.ts"), `
-    import { renderSvg, type DiagramDocument, type NodeContent } from "flowsvg";
+    import { createDiagram, renderSvg, measureNodeContent, type DiagramDocument, type DiagramBeat, type NodeContent, type NodeContentMeasurementInput, type NodeContentMeasurement, type NodeContentMeasurementDiagnostic } from "flowsvg";
     import type { ContentBlock, ContentListItem, ContentListStyle, ContentTag, ContentTagStyle, ContentTagBackground, ContentGraphBlock, ContentGraphNode, ContentGraphEdge, ContentGraphLayout, ContentText, ContentTextSpan, ContentSpanStyle, ContentSpan, ContentTextStyle, ContentAlignment, ContentSafeArea, ContentLine, NodeContentLayout, NodeKind, EdgeRoute, PortDirection, FlowDirection, ThemeName, Viewport, NodeStyle, EdgeStyle, DiagramNode, DiagramEdge, Scene, Beat, NodeVisualState, EdgeVisualState, Action, ValidationIssue, EvaluateOptions, TextLine, EvaluatedNode, EvaluatedEdge, EdgeFlowMarker, LayoutWarning, CameraState, HitObjectType, HitObject, DiagramPoint, DiagramFrameState, DiagramValidationError, Diagram } from "flowsvg";
     import type { FlowPlayer, PlayerOptions } from "flowsvg/browser";
     import { renderHtml, exportGif as exportNodeGif, type HtmlRenderOptions, type NodeGifExportOptions } from "flowsvg/node";
@@ -129,12 +142,22 @@ try {
       { type: "list", marker: "none", items: [{ tags: [{ text: "verified" }], status: "new",
         body: [{ text: "Confirmed", style: { fontSize: 14, fontWeight: 700 } }], auxiliary: "2026-10-18" }] }
     ] };
+    const measurementInput: NodeContentMeasurementInput = { kind: "cylinder", width: 240, content: Object.freeze([content]) };
+    const measurement: NodeContentMeasurement = measureNodeContent(measurementInput);
+    const diagnostic: NodeContentMeasurementDiagnostic | undefined = measurement.diagnostics[0];
+    const diagnosticDimension: "width" | "height" | undefined = diagnostic?.dimension;
+    void diagnosticDimension;
     const authored: DiagramDocument = { version: 1, viewport: { width: 320, height: 260 },
-      nodes: [{ id: "facts", kind: "cylinder", x: 20, y: 20, width: 240, height: 220, content }], edges: [],
+      nodes: [{ id: "facts", kind: "cylinder", x: 20, y: 20, width: 240, height: measurement.height, content }], edges: [],
       scenes: [{ id: "modes", label: "Modes", beats: [
         { durationMs: 500, actions: [{ type: "updateNode", target: "facts", value: { content } }] },
         { durationMs: 500, actions: [{ type: "updateNode", target: "facts", value: { content: null } }] }
       ] }] };
+    const schedule: readonly DiagramBeat[] = createDiagram(authored).beats;
+    const firstBeat: DiagramBeat | undefined = schedule[0];
+    const timing: number | undefined = firstBeat?.endMs;
+    const caption: string | undefined = firstBeat?.caption;
+    void [timing, caption];
     renderSvg(authored, 500); void values; void playerType;
   `);
   run("npx", ["--no-install", "tsc", "--noEmit", "--strict", "--module", "NodeNext", "--moduleResolution", "NodeNext", "--target", "ES2022", "--types", "node,react,react-dom", "types-smoke.ts"], tempRoot);

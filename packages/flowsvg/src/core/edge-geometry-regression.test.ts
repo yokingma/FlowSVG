@@ -34,7 +34,7 @@ function pathPoints(path: string): { x: number; y: number }[] {
 }
 
 describe("shared route geometry regressions", () => {
-  it.each(["right", "left", "bottom", "top"] as const)("centers an unobstructed bridge in the %s port gap", (side) => {
+  it.each(["right", "left", "bottom", "top"] as const)("keeps a rounded bridge inside the %s port gap", (side) => {
     const vertical = side === "top" || side === "bottom";
     const reverse = side === "top" || side === "left";
     const nodes: DiagramDocument["nodes"] = [
@@ -47,9 +47,12 @@ describe("shared route geometry regressions", () => {
       route: "orthogonal", fromPort: side, toPort: opposite[side]
     }] });
     const points = pathPoints(diagram.evaluateAt(0).edges[0]!.path);
-    expect(points).toHaveLength(4);
-    expect(vertical ? points[1]!.y : points[1]!.x).toBe(vertical ? 185 : 225);
-    expect(vertical ? points[2]!.y : points[2]!.x).toBe(vertical ? 185 : 225);
+    const path = diagram.evaluateAt(0).edges[0]!.path;
+    expect(path.match(/ Q /g)).toHaveLength(2);
+    const lane = vertical ? points[2]!.y : points[2]!.x;
+    expect(lane).toBeGreaterThan(vertical ? 160 : 200);
+    expect(lane).toBeLessThan(vertical ? 210 : 250);
+    expect(vertical ? points[5]!.y : points[5]!.x).toBe(lane);
   });
 
   it.each(["right", "left", "bottom", "top"] as const)("uses one outside channel for matching %s ports", (side) => {
@@ -62,10 +65,11 @@ describe("shared route geometry regressions", () => {
       ...alignedDocument().edges[0]!, route: "orthogonal", fromPort: side, toPort: side
     }] });
     const points = pathPoints(diagram.evaluateAt(0).edges[0]!.path);
-    expect(points).toHaveLength(4);
-    const expected = { left: 76, right: 224, top: 76, bottom: 184 }[side];
-    expect(vertical ? points[1]!.y : points[1]!.x).toBe(expected);
-    expect(vertical ? points[2]!.y : points[2]!.x).toBe(expected);
+    expect(diagram.evaluateAt(0).edges[0]!.path.match(/ Q /g)).toHaveLength(2);
+    const lane = vertical ? points[2]!.y : points[2]!.x;
+    const boundary = { left: 100, right: 200, top: 100, bottom: 160 }[side];
+    expect((lane - boundary) * (side === "left" || side === "top" ? -1 : 1)).toBeGreaterThanOrEqual(24);
+    expect(vertical ? points[5]!.y : points[5]!.x).toBe(lane);
   });
 
   it("keeps an outside channel clear of separate ancestor frames but inside a shared container", () => {
@@ -78,9 +82,10 @@ describe("shared route geometry regressions", () => {
       { id: "target", kind: "rect", parentId: "nested", x: 16, y: 44, width: 100, height: 60 }
     ], edges: [{ ...alignedDocument().edges[0]!, route: "orthogonal", fromPort: "left", toPort: "left" }] });
     const points = pathPoints(diagram.evaluateAt(0).edges[0]!.path);
-    expect(points).toHaveLength(4);
-    expect(points[1]!.x).toBe(40);
+    expect(diagram.evaluateAt(0).edges[0]!.path.match(/ Q /g)).toHaveLength(2);
+    expect(points.every(({ x }) => x >= 0)).toBe(true);
     expect(points[2]!.x).toBe(40);
+    expect(points[5]!.x).toBe(points[2]!.x);
   });
 
   it("avoids a node that blocks the centered bridge", () => {
@@ -91,7 +96,7 @@ describe("shared route geometry regressions", () => {
     ], edges: [{ ...document.edges[0]!, route: "orthogonal", fromPort: "right", toPort: "left" }] });
     const points = pathPoints(diagram.evaluateAt(0).edges[0]!.path);
     expect(points.some(({ y }) => y <= 72 || y >= 388)).toBe(true);
-    for (let time = 1; time < 1000; time += 5) {
+    for (let time = 1; time < diagram.totalDuration; time += 5) {
       const point = diagram.evaluateAt(time).edges[0]!.flow!.point;
       expect(point.x > 250 && point.x < 310 && point.y > 80 && point.y < 380).toBe(false);
     }
@@ -106,7 +111,7 @@ describe("shared route geometry regressions", () => {
     });
     const points = pathPoints(diagram.evaluateAt(0).edges[0]!.path);
     expect(points.every(({ x }) => x >= 140 && x <= 160)).toBe(true);
-    for (let time = 1; time < 1000; time += 10) {
+    for (let time = 1; time < diagram.totalDuration; time += 10) {
       const point = diagram.evaluateAt(time).edges[0]!.flow!.point;
       expect(point.x >= 140 && point.x <= 160).toBe(true);
     }
@@ -204,7 +209,7 @@ describe("shared route geometry regressions", () => {
 
   it("retains the return segment of an aligned cubic for flow, hits, focus bounds and labels", () => {
     const diagram = createDiagram(alignedDocument());
-    const frame = diagram.evaluateAt(900);
+    const frame = diagram.evaluateAt((diagram.beats[0]!.endMs - 500) * 0.9);
     const edge = frame.edges[0]!;
 
     // Independent dense SVG sampling gives x=524.65 at 90% distance and an extremum near x=543.69.
@@ -219,7 +224,7 @@ describe("shared route geometry regressions", () => {
     const reverse = createDiagram({ ...document, scenes: [{ id: "return", label: "Return", beats: [{ durationMs: 1000, actions: [
       { type: "flow", target: "transfer", direction: "reverse" }
     ] }] }] });
-    expect.soft(reverse.evaluateAt(100).edges[0]?.flow?.point.x).toBeCloseTo(524.65, 0);
+    expect.soft(reverse.evaluateAt((reverse.totalDuration - 500) * 0.1).edges[0]?.flow?.point.x).toBeCloseTo(524.65, 0);
     expect.soft(diagram.renderSvg(900)).toContain(`d="${edge.path}"`);
   });
 
@@ -247,7 +252,7 @@ describe("shared route geometry regressions", () => {
       expect(segment.x * normal.x + segment.y * normal.y).toBeGreaterThan(0);
       expect(segment.x * normal.y - segment.y * normal.x).toBe(0);
     }
-    for (let timeMs = 1; timeMs < 1000; timeMs += 10) {
+    for (let timeMs = 1; timeMs < diagram.totalDuration; timeMs += 10) {
       const point = diagram.evaluateAt(timeMs).edges[0]!.flow!.point;
       for (const node of document.nodes) {
         expect(point.x > node.x && point.x < node.x + node.width && point.y > node.y && point.y < node.y + node.height).toBe(false);

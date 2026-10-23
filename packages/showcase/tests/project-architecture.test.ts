@@ -2,6 +2,7 @@ import { expect, it } from "vitest";
 import { createDiagram } from "flowsvg";
 import { compileCatalog } from "../src/build.js";
 import { catalogSource } from "../src/formal.js";
+import { beatMiddle, sceneStart } from "./story-timing.js";
 
 function getArchitecture() {
   const compiled = compileCatalog(catalogSource);
@@ -15,14 +16,14 @@ it("offers the architecture as a standalone third example with the original defa
   expect(catalog.entries.map(({ id }) => id)).toEqual(["request-response", "rag-workflow", "project-architecture", "vllm-metal-stack", "job-lifecycle", "order-event-pipeline", "web-service-deployment", "cache-aside-sequence"]);
   expect(catalog.defaultId).toBe("request-response");
   expect(example.name).toBe("FlowSVG：图解如何运行");
-  expect(example.durationMs).toBe(24_000);
+  expect(example.durationMs).toBe(createDiagram(example.document).totalDuration);
   expect(example.defaults).toEqual({ speed: 1, theme: "light", reducedMotion: false });
   expect(JSON.parse(json.get(example.jsonPath)!)).toEqual(example.document);
 });
 
 it("explains the core, shared player, optional exports and private consumer boundary", () => {
   const { diagram } = getArchitecture();
-  const textFor = (id: string) => diagram.evaluateAt(24_000).nodes.find((node) => node.id === id)!
+  const textFor = (id: string) => diagram.evaluateAt(diagram.totalDuration).nodes.find((node) => node.id === id)!
     .contentLayout!.lines.map(({ text }) => text).join("");
   expect(textFor("document")).toContain("DiagramDocument");
   expect(textFor("core")).toContain("无 DOM");
@@ -36,34 +37,38 @@ it("explains the core, shared player, optional exports and private consumer boun
   expect(textFor("node-tools")).toContain("仅 GIF 需要 Chromium");
   expect(textFor("showcase")).toContain("私有消费方");
   expect(textFor("showcase")).toContain("不被 SDK 依赖");
-  expect(diagram.evaluateAt(17_000).caption).toContain("不启动 Chromium");
-  expect(diagram.evaluateAt(19_000).caption).toContain("同一浏览器导出器");
-  expect(diagram.evaluateAt(23_000).caption).toContain("SDK 不依赖展示工程");
+  expect(diagram.evaluateAt(beatMiddle(diagram, 7)).caption).toContain("不启动 Chromium");
+  expect(diagram.evaluateAt(beatMiddle(diagram, 8)).caption).toContain("同一浏览器导出器");
+  expect(diagram.evaluateAt(beatMiddle(diagram, 10)).caption).toContain("SDK 不依赖展示工程");
 });
 
 it("shows evaluation, playback, export and consumer calls in their actual directions", () => {
   const { diagram } = getArchitecture();
   const transfersAt = (time: number) => diagram.evaluateAt(time).edges.filter(({ flow }) => flow)
     .map(({ from, to }) => [from, to]);
-  expect(transfersAt(1500)).toEqual([["document", "core"]]);
-  expect(transfersAt(4500)).toEqual([["core", "svg"]]);
-  expect(transfersAt(7000)).toEqual([["adapters", "browser"]]);
-  expect(transfersAt(9000)).toEqual([["core", "browser"]]);
-  expect(transfersAt(11_000)).toEqual([["browser", "core"]]);
-  expect(transfersAt(13_000)).toEqual([["core", "browser"]]);
-  expect(transfersAt(15_000)).toEqual([["svg", "gif"]]);
-  expect(transfersAt(17_000)).toEqual([["browser", "node-tools"]]);
-  expect(transfersAt(19_000)).toEqual([["node-tools", "gif"]]);
-  expect(transfersAt(23_000)).toEqual([["showcase", "adapters"], ["showcase", "browser"]]);
+  expect(transfersAt(beatMiddle(diagram, 0))).toEqual([["document", "core"]]);
+  expect(transfersAt(beatMiddle(diagram, 1))).toEqual([["core", "svg"]]);
+  expect(transfersAt(beatMiddle(diagram, 2))).toEqual([["adapters", "browser"]]);
+  expect(transfersAt(beatMiddle(diagram, 3))).toEqual([["core", "browser"]]);
+  expect(transfersAt(beatMiddle(diagram, 4))).toEqual([["browser", "core"]]);
+  expect(transfersAt(beatMiddle(diagram, 5))).toEqual([["core", "browser"]]);
+  expect(transfersAt(beatMiddle(diagram, 6))).toEqual([["svg", "gif"]]);
+  expect(transfersAt(beatMiddle(diagram, 7))).toEqual([["browser", "node-tools"]]);
+  expect(transfersAt(beatMiddle(diagram, 8))).toEqual([["node-tools", "gif"]]);
+  expect(transfersAt(beatMiddle(diagram, 10))).toEqual([["showcase", "adapters"], ["showcase", "browser"]]);
 });
 
 it("keeps six stages readable in both themes and retains meaning with reduced motion", () => {
   const { example, diagram } = getArchitecture();
   expect(example.document.nodes).toHaveLength(8);
   expect(example.document.nodes.every(({ style }) => style === undefined)).toBe(true);
-  expect(example.document.edges.every(({ style, route }) => style === undefined && route === "curved")).toBe(true);
-  const stages = [[0, "define"], [3000, "evaluate"], [6000, "integrate"], [10_000, "operate"], [14_000, "export"], [22_000, "boundary"]] as const;
-  for (const [time, sceneId] of stages) {
+  expect(example.document.edges.every(({ style, route }) => style === undefined && route === "orthogonal")).toBe(true);
+  const paths = diagram.evaluateAt(0).edges.map(({ path }) => path);
+  expect(paths.some((path) => path.includes("Q"))).toBe(true);
+  expect(paths.every((path) => !path.includes("C"))).toBe(true);
+  const stages = ["define", "evaluate", "integrate", "operate", "export", "boundary"];
+  for (const sceneId of stages) {
+    const time = sceneStart(diagram, sceneId);
     expect(diagram.evaluateAt(time).sceneId).toBe(sceneId);
     if (time > 0) expect(diagram.evaluateAt(time - 1).sceneId).not.toBe(sceneId);
     for (const theme of ["light", "dark"] as const) {

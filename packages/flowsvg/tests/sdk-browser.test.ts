@@ -90,3 +90,46 @@ it.each(["light", "dark"])("keeps content hits, clipping and cleanup independent
     expect(errors).toEqual([]);
   });
 }, 30_000);
+
+it.each(["forward", "reverse"] as const)("keeps rounded %s markers and hits on Chromium's visible SVG geometry", async (direction) => {
+  await withPage(async (page, errors) => {
+    await page.goto(`${origin}/tests/browser-controls.html`);
+    await page.addScriptTag({ type: "module", content: "import * as sdk from '/dist/index.js'; window.roundedSdk = sdk;" });
+    await page.waitForFunction("Boolean(window.roundedSdk)");
+    const result = await page.evaluate((flowDirection) => {
+      const sdk: typeof import("../src/index.js") = Reflect.get(window, "roundedSdk");
+      const diagram = sdk.createDiagram({
+        version: 1, viewport: { width: 500, height: 400 },
+        nodes: [
+          { id: "source", kind: "rect", x: 20, y: 100, width: 100, height: 60 },
+          { id: "target", kind: "rect", x: 300, y: 220, width: 100, height: 60 },
+          { id: "blocker", kind: "rect", x: 175, y: 160, width: 60, height: 50 }
+        ],
+        edges: [{ id: "transfer", from: "source", to: "target", route: "orthogonal", style: { strokeWidth: 6 } }],
+        scenes: [{ id: "send", label: "Send", beats: [{ durationMs: 1000, actions: [
+          { type: "flow", target: "transfer", direction: flowDirection }
+        ] }] }]
+      });
+      const root = new DOMParser().parseFromString(diagram.renderSvg(0), "image/svg+xml");
+      const path = root.querySelector<SVGPathElement>('path[data-id="transfer"]');
+      if (!path) throw new Error("Expected exported transfer path");
+      let maximumError = 0;
+      let missedHits = 0;
+      // Sample movement only: an arrived marker sits on a node boundary, where node hits take precedence.
+      for (let sample = 1; sample < 200; sample += 1) {
+        const time = (diagram.beats[0]!.endMs - 500) * sample / 200;
+        const flow = diagram.evaluateAt(time).edges[0]!.flow!;
+        const point = flow.point;
+        const progress = flowDirection === "forward" ? flow.progress : 1 - flow.progress;
+        const expected = path.getPointAtLength(path.getTotalLength() * progress);
+        maximumError = Math.max(maximumError, Math.hypot(point.x - expected.x, point.y - expected.y));
+        if (diagram.hitTest(time, point)?.id !== "transfer") missedHits += 1;
+      }
+      return { rounded: path.getAttribute("d")!.includes(" Q "), maximumError, missedHits };
+    }, direction);
+    expect(result.rounded).toBe(true);
+    expect(result.maximumError).toBeLessThan(0.1);
+    expect(result.missedHits).toBe(0);
+    expect(errors).toEqual([]);
+  });
+});
