@@ -74,11 +74,11 @@ try {
   }
   const modules = [
     "export", "export/browser", "export/types", "export/plan", "export/captions", "export/worker-source",
-    "index", "browser", "react", "vue", "web-component", "node", "node/html", "node/cli", "node/gif", "node/output",
+    "index", "browser", "react", "vue", "web-component", "node", "node/html", "node/cli", "node/gif", "node/gif-runtime", "node/output",
     "browser/player", "browser/controls", "browser/select-control", "browser/export-controls", "browser/accessibility", "browser/lifecycle", "browser/svg-dom",
     "core/model", "core/validation", "core/diagram", "core/edge-geometry", "core/svg-number", "core/timeline", "core/theme", "core/color",
     "core/node-content", "core/node-content-measurement", "core/node-content-paint",
-    "adapters/react", "adapters/vue", "adapters/web-component"
+    "adapters/host-lifecycle", "adapters/react", "adapters/vue", "adapters/web-component"
   ];
   const allowedFiles = new Set([
     ...documents, ...PREVIEW_IMAGES, ...EXAMPLE_FILES, "dist/styles.css",

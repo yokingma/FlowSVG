@@ -24,8 +24,8 @@ export function wrapCaption(context: CanvasRenderingContext2D, text: string, wid
 /** Effective plain text and the source location used in actionable overflow errors. */
 export interface CaptionInterval { text: string; location: string }
 /** Enumerate compiled half-open intervals rather than samples; core already resolves caption inheritance. */
-export function collectCaptions(diagram: Diagram, startMs: number, endMs: number): CaptionInterval[] {
-  if (diagram.beats.length === 0) return [{ text: diagram.evaluateAt(0).caption ?? "", location: "static document title" }];
+export function collectCaptions(diagram: Diagram, startMs: number, endMs: number, staticCaption?: string): CaptionInterval[] {
+  if (diagram.beats.length === 0) return [{ text: staticCaption ?? diagram.evaluateAt(0).caption ?? "", location: "static document title" }];
   return diagram.beats.filter((beat) => beat.startMs < endMs && beat.endMs > startMs).map((beat) => ({
     text: beat.caption ?? "", location: `scene "${beat.sceneId}", beat ${beat.beatIndex + 1}`
   }));

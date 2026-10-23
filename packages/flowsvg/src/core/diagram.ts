@@ -19,7 +19,51 @@ import { formatNumber } from "./svg-number.js";
 export function createDiagram(input: DiagramDocument): Diagram {
   const issues = validateDocument(input);
   if (issues.length > 0) throw new DiagramValidationError(issues);
-  return new CompiledDiagram(cloneDocument(input));
+  const diagram = new CompiledDiagram(cloneDocument(input));
+  frameStateEvaluators.set(diagram, diagram.getFrameStateEvaluator());
+  return diagram;
+}
+
+/** Internal frame result shared by browser rendering, captions and hit testing. */
+export interface DiagramFrameEvaluation {
+  readonly frame: DiagramFrameState;
+  readonly edgeGeometries: ReadonlyMap<string, PathGeometry>;
+  readonly palette: ThemePalette;
+}
+
+interface FrameStateEvaluator {
+  evaluate(timeMs: number, options?: EvaluateOptions): DiagramFrameEvaluation;
+  render(evaluation: DiagramFrameEvaluation): string;
+  hitTest(evaluation: DiagramFrameEvaluation, point: DiagramPoint): HitObject | null;
+}
+
+const frameStateEvaluators = new WeakMap<Diagram, FrameStateEvaluator>();
+
+/** Evaluate one internal frame result without expanding the public Diagram interface. */
+export function evaluateDiagramFrame(diagram: Diagram, timeMs: number, options: EvaluateOptions = {}): DiagramFrameEvaluation {
+  const evaluator = frameStateEvaluators.get(diagram);
+  if (!evaluator) throw new Error("FlowSVG diagram does not expose its internal frame evaluator.");
+  return evaluator.evaluate(timeMs, options);
+}
+
+/** Serialize an existing internal frame result without evaluating the timeline again. */
+export function renderDiagramFrame(diagram: Diagram, evaluation: DiagramFrameEvaluation): string {
+  const evaluator = frameStateEvaluators.get(diagram);
+  if (!evaluator) throw new Error("FlowSVG diagram does not expose its internal frame evaluator.");
+  return evaluator.render(evaluation);
+}
+
+/** Hit-test an existing internal frame result without evaluating the timeline again. */
+export function hitTestDiagramFrame(evaluation: DiagramFrameEvaluation, point: DiagramPoint): HitObject | null {
+  if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return null;
+  const nodes = [...evaluation.frame.nodes].reverse();
+  const containsPoint = (candidate: EvaluatedNode): boolean => candidate.visible && candidate.opacity > 0 && isPointInNode(point, candidate);
+  const node = nodes.find((candidate) => candidate.kind !== "group" && containsPoint(candidate));
+  if (node) return { id: node.id, type: "node" };
+  const edge = [...evaluation.frame.edges].reverse().find((candidate) => candidate.visible && candidate.opacity > 0 && isPointNearPath(point, evaluation.edgeGeometries.get(candidate.id) ?? emptyPathGeometry(), (candidate.style?.strokeWidth ?? 2) + HIT_TOLERANCE));
+  if (edge) return { id: edge.id, type: "edge" };
+  const group = nodes.find((candidate) => candidate.kind === "group" && containsPoint(candidate));
+  return group ? { id: group.id, type: "node" } : null;
 }
 
 /** One-shot static SVG export; use createDiagram to reuse compilation across repeated evaluations or exports. */
@@ -89,10 +133,14 @@ class CompiledDiagram implements Diagram {
   evaluateAt(timeMs: number, options: EvaluateOptions = {}): DiagramFrameState {
     return this.evaluateFrame(timeMs, options).frame;
   }
-  private evaluateFrame(timeMs: number, options: EvaluateOptions = {}, compiledTimeline = this.timeline): {
-    frame: DiagramFrameState;
-    edgeGeometries: ReadonlyMap<string, PathGeometry>;
-  } {
+  getFrameStateEvaluator(): FrameStateEvaluator {
+    return {
+      evaluate: (timeMs, options = {}) => this.evaluateFrame(timeMs, options),
+      render: (evaluation) => serializeSvg(this.document, evaluation.frame, evaluation.palette),
+      hitTest: (evaluation, point) => hitTestDiagramFrame(evaluation, point)
+    };
+  }
+  private evaluateFrame(timeMs: number, options: EvaluateOptions = {}, compiledTimeline = this.timeline): DiagramFrameEvaluation {
     const palette = resolvePalette(this.document, options);
     const timeline = compiledTimeline.evaluateAt(timeMs, options, palette);
     const currentNodes = new Map(this.document.nodes.map((node) => {
@@ -165,26 +213,17 @@ class CompiledDiagram implements Diagram {
     const camera = resolveCamera(this.document.viewport, timeline.focusBefore, timeline.focusAfter, timeline.transitionProgress, nodes, edges, edgeGeometries);
     return {
       frame: { timeMs: timeline.timeMs, sceneId: timeline.sceneId, beatId: timeline.beatId, beatProgress: timeline.beatProgress, nodes, edges, camera, warnings, ...(timeline.caption !== undefined ? { caption: timeline.caption } : {}) },
-      edgeGeometries
+      edgeGeometries,
+      palette
     };
   }
   renderSvg(timeMs = 0, options: EvaluateOptions = {}): string {
-    const frame = this.evaluateAt(timeMs, options);
-    const palette = resolvePalette(this.document, options);
-    return serializeSvg(this.document, frame, palette);
+    const evaluation = this.evaluateFrame(timeMs, options);
+    return serializeSvg(this.document, evaluation.frame, evaluation.palette);
   }
   hitTest(timeMs: number, point: DiagramPoint, options: EvaluateOptions = {}): HitObject | null {
-    if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return null;
     const evaluated = this.evaluateFrame(timeMs, options);
-    const frame = evaluated.frame;
-    const nodes = [...frame.nodes].reverse();
-    const containsPoint = (candidate: EvaluatedNode): boolean => candidate.visible && candidate.opacity > 0 && isPointInNode(point, candidate);
-    const node = nodes.find((candidate) => candidate.kind !== "group" && containsPoint(candidate));
-    if (node) return { id: node.id, type: "node" };
-    const edge = [...frame.edges].reverse().find((candidate) => candidate.visible && candidate.opacity > 0 && isPointNearPath(point, evaluated.edgeGeometries.get(candidate.id) ?? emptyPathGeometry(), (candidate.style?.strokeWidth ?? 2) + HIT_TOLERANCE));
-    if (edge) return { id: edge.id, type: "edge" };
-    const group = nodes.find((candidate) => candidate.kind === "group" && containsPoint(candidate));
-    return group ? { id: group.id, type: "node" } : null;
+    return hitTestDiagramFrame(evaluated, point);
   }
   private resolvePosition(id: string, nodes: ReadonlyMap<string, DiagramNode>): {
     x: number;

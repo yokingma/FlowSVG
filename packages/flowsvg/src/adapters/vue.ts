@@ -13,12 +13,16 @@ import {
   type PropType
 } from "vue";
 import {
-  createPlayer,
   type FlowPlayer as BrowserFlowPlayer,
   type PlayerErrorDetail,
   type PlayerState
 } from "../browser/player.js";
 import type { DiagramDocument, ThemeName } from "../core/model.js";
+import {
+  HostPlayerLifecycle,
+  type HostPlayerLifecycleOptions,
+  sameHostPlayerOptions
+} from "./host-lifecycle.js";
 
 /** Vue document, visual options and callbacks; document reference changes trigger a reload. */
 export interface FlowPlayerProps {
@@ -65,15 +69,6 @@ export interface FlowPlayerHandle {
   getState(): PlayerState;
 }
 
-/** Changes to these creation options rebuild the instance; speed is updated separately with setSpeed. */
-interface PlayerOptionsSnapshot {
-  theme: ThemeName | undefined;
-  controls: boolean | undefined;
-  gifExport: boolean | undefined;
-  hoverFill: boolean | undefined;
-  reducedMotion: boolean | undefined;
-}
-
 const propsOptions = {
   document: { type: Object as PropType<DiagramDocument>, required: true },
   speed: { type: Number, required: false },
@@ -110,15 +105,53 @@ export const FlowPlayer = defineComponent({
   },
   setup(props, { attrs, emit, expose }) {
     const hostRef = ref<HTMLElement | null>(null);
-    let player: BrowserFlowPlayer | undefined;
-    let cleanupEvents: (() => void) | undefined;
-    let optionsSnapshot: PlayerOptionsSnapshot | undefined;
     let mounted = false;
-    let initialApplied = false;
+
+    const lifecycle = new HostPlayerLifecycle({
+      attachEvents: (next) => {
+        const onStepChange = (event: Event) => {
+          const state = (event as CustomEvent<PlayerState>).detail;
+          emit("stepchange", state);
+          props.onStepChange?.(state);
+        };
+        const onTimeUpdate = (event: Event) => {
+          const state = (event as CustomEvent<PlayerState>).detail;
+          emit("timeupdate", state);
+          props.onTimeUpdate?.(state);
+        };
+        const onPlayStateChange = (event: Event) => {
+          const state = (event as CustomEvent<PlayerState>).detail;
+          emit("playstatechange", state);
+          props.onPlayStateChange?.(state);
+        };
+        const onLoopChange = (event: Event) => {
+          const state = (event as CustomEvent<PlayerState>).detail;
+          emit("loopchange", state);
+          props.onLoopChange?.(state);
+        };
+        const onError = (event: Event) => {
+          const detail = (event as CustomEvent<PlayerErrorDetail>).detail;
+          // Vue's error event already invokes the onError prop; an explicit callback would duplicate delivery.
+          emit("error", detail);
+        };
+        next.element.addEventListener("stepchange", onStepChange);
+        next.element.addEventListener("timeupdate", onTimeUpdate);
+        next.element.addEventListener("playstatechange", onPlayStateChange);
+        next.element.addEventListener("loopchange", onLoopChange);
+        next.element.addEventListener("error", onError);
+        return () => {
+          next.element.removeEventListener("stepchange", onStepChange);
+          next.element.removeEventListener("timeupdate", onTimeUpdate);
+          next.element.removeEventListener("playstatechange", onPlayStateChange);
+          next.element.removeEventListener("loopchange", onLoopChange);
+          next.element.removeEventListener("error", onError);
+        };
+      }
+    });
 
     const requirePlayer = (): BrowserFlowPlayer => {
-      if (!player) throw new Error("FlowPlayer is not mounted");
-      return player;
+      if (!lifecycle.player) throw new Error("FlowPlayer is not mounted");
+      return lifecycle.player;
     };
 
     expose({
@@ -132,7 +165,7 @@ export const FlowPlayer = defineComponent({
       getState: () => requirePlayer().getState()
     } satisfies FlowPlayerHandle);
 
-    const currentOptions = (): PlayerOptionsSnapshot => ({
+    const currentOptions = (): HostPlayerLifecycleOptions => ({
       theme: props.theme,
       controls: props.controls,
       gifExport: props.gifExport,
@@ -140,73 +173,35 @@ export const FlowPlayer = defineComponent({
       reducedMotion: props.reducedMotion
     });
 
-    const attachEvents = (next: BrowserFlowPlayer): (() => void) => {
-      const onStepChange = (event: Event) => {
-        const state = (event as CustomEvent<PlayerState>).detail;
-        emit("stepchange", state);
-        props.onStepChange?.(state);
-      };
-      const onTimeUpdate = (event: Event) => {
-        const state = (event as CustomEvent<PlayerState>).detail;
-        emit("timeupdate", state);
-        props.onTimeUpdate?.(state);
-      };
-      const onPlayStateChange = (event: Event) => {
-        const state = (event as CustomEvent<PlayerState>).detail;
-        emit("playstatechange", state);
-        props.onPlayStateChange?.(state);
-      };
-      const onLoopChange = (event: Event) => {
-        const state = (event as CustomEvent<PlayerState>).detail;
-        emit("loopchange", state);
-        props.onLoopChange?.(state);
-      };
-      const onError = (event: Event) => {
-        const detail = (event as CustomEvent<PlayerErrorDetail>).detail;
-        // Vue's error event already invokes the onError prop; an explicit callback would duplicate delivery.
-        emit("error", detail);
-      };
-      next.element.addEventListener("stepchange", onStepChange);
-      next.element.addEventListener("timeupdate", onTimeUpdate);
-      next.element.addEventListener("playstatechange", onPlayStateChange);
-      next.element.addEventListener("loopchange", onLoopChange);
-      next.element.addEventListener("error", onError);
-      return () => {
-        next.element.removeEventListener("stepchange", onStepChange);
-        next.element.removeEventListener("timeupdate", onTimeUpdate);
-        next.element.removeEventListener("playstatechange", onPlayStateChange);
-        next.element.removeEventListener("loopchange", onLoopChange);
-        next.element.removeEventListener("error", onError);
-      };
-    };
-
     // Keep initialApplied across option rebuilds so initialTimeMs is not reapplied.
     const mount = (previousLoop?: boolean): void => {
       const host = hostRef.value;
-      if (!host || player) return;
-      const next = createPlayer(host, props.document, { ...currentOptions(), loop: props.loop ?? previousLoop });
-      player = next;
-      optionsSnapshot = currentOptions();
-      cleanupEvents = attachEvents(next);
-      if (props.speed !== undefined) next.setSpeed(props.speed);
-      if (!initialApplied && props.initialTimeMs !== undefined) next.seek(props.initialTimeMs);
-      initialApplied = true;
+      if (!host || lifecycle.player) return;
+      lifecycle.mount({
+        host,
+        document: props.document,
+        options: currentOptions(),
+        loop: props.loop ?? previousLoop,
+        speed: props.speed,
+        initialTimeMs: props.initialTimeMs
+      });
     };
 
-    // Detach event forwarding first so destruction does not call an unmounted component.
     const unmount = (): void => {
-      cleanupEvents?.();
-      cleanupEvents = undefined;
-      player?.destroy();
-      player = undefined;
-      optionsSnapshot = undefined;
+      lifecycle.destroy();
     };
 
     const rebuild = (): void => {
-      if (!mounted || !player) return;
-      const previousLoop = player.getState().loop;
-      unmount();
-      mount(previousLoop);
+      const host = hostRef.value;
+      if (!mounted || !host || !lifecycle.player) return;
+      lifecycle.rebuild({
+        host,
+        document: props.document,
+        options: currentOptions(),
+        loop: props.loop,
+        speed: props.speed,
+        initialTimeMs: props.initialTimeMs
+      });
     };
 
     onMounted(() => {
@@ -215,21 +210,21 @@ export const FlowPlayer = defineComponent({
     });
 
     watch(() => props.document, (next, previous) => {
-      if (!mounted || next === previous || !player) return;
-      player.load(next);
+      if (!mounted || next === previous || !lifecycle.player) return;
+      lifecycle.load(next);
     });
 
     watch(() => [props.theme, props.controls, props.gifExport, props.reducedMotion, props.hoverFill], () => {
       const next = currentOptions();
-      if (!mounted || sameOptions(optionsSnapshot, next)) return;
+      if (!mounted || sameHostPlayerOptions(lifecycle.options, next)) return;
       rebuild();
     });
 
     watch(() => props.speed, (speed) => {
-      if (player && speed !== undefined) player.setSpeed(speed);
+      if (lifecycle.player && speed !== undefined) lifecycle.player.setSpeed(speed);
     });
 
-    watch(() => props.loop, (loop) => player?.setLoop(loop ?? false));
+    watch(() => props.loop, (loop) => lifecycle.player?.setLoop(loop ?? false));
 
     onBeforeUnmount(() => {
       mounted = false;
@@ -243,12 +238,3 @@ export const FlowPlayer = defineComponent({
     });
   }
 });
-
-function sameOptions(previous: PlayerOptionsSnapshot | undefined, next: PlayerOptionsSnapshot): boolean {
-  if (!previous) return false;
-  return previous.theme === next.theme
-    && previous.controls === next.controls
-    && previous.gifExport === next.gifExport
-    && previous.hoverFill === next.hoverFill
-    && previous.reducedMotion === next.reducedMotion;
-}

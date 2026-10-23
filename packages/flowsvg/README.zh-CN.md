@@ -4,7 +4,7 @@
 
 <p align="center">声明式 SVG 图解，支持时间线播放与 SVG／GIF 导出。</p>
 
-<p align="center"><a href="https://cdn.jsdelivr.net/npm/flowsvg@0.2.0/README.md">English</a> | 简体中文</p>
+<p align="center"><a href="https://cdn.jsdelivr.net/npm/flowsvg@0.2.1/README.md">English</a> | 简体中文</p>
 
 <p align="center">
   <a href="#定义图解">快速开始</a> ·
@@ -26,14 +26,6 @@ npm install flowsvg
 任务 A 重试后完成，任务 B 达到重试上限，任务 C 在执行前取消。三个案例相互独立。结构化卡片和胶囊标签展示当前任务与重试次数，圆角折线展示迁移事件。
 
 ![后台任务生命周期：重试、完成、失败与取消](./docs/images/job-lifecycle.gif)
-
-完整图解位于 `node_modules/flowsvg/examples/job-lifecycle.json`。将其中的内容用作下方各集成方式的 `diagram` 文档。在 Node 20+ 中，可直接生成带播放控件和 GIF 下载的离线播放器：
-
-```sh
-npx flowsvg node_modules/flowsvg/examples/job-lifecycle.json --format html --output job-lifecycle.html --gif-export
-```
-
-用浏览器打开 `job-lifecycle.html` 即可播放。生成 HTML 无需安装 Chromium。示例设置 `flow.highlightParticipants: false`，并显式高亮唯一的当前状态，避免事件移动时同时高亮迁移两端。重试上限仅为教学设定。
 
 ## 定义图解
 
@@ -247,4 +239,4 @@ GIF 限制：有效时长 120 秒，1800 个采样帧，1801 个编码帧，含�
 
 ESM，附 TypeScript 声明。无 DOM 核心支持 Node 18+，Node 工具要求 Node 20+；Vue 3.5+／React 18+。
 
-[完整 SDK 手册](https://github.com/yokingma/FlowSVG/blob/main/docs/SDK-GUIDE.zh-CN.md) · [更新记录](https://cdn.jsdelivr.net/npm/flowsvg@0.2.0/CHANGELOG.md) · [MIT](https://cdn.jsdelivr.net/npm/flowsvg@0.2.0/LICENSE)
+[完整 SDK 手册](https://github.com/yokingma/FlowSVG/blob/main/docs/SDK-GUIDE.zh-CN.md) · [更新记录](https://cdn.jsdelivr.net/npm/flowsvg@0.2.1/CHANGELOG.md) · [MIT](https://cdn.jsdelivr.net/npm/flowsvg@0.2.1/LICENSE)

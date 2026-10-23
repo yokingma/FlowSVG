@@ -4,7 +4,7 @@
 
 <p align="center">Declarative SVG diagrams with timeline playback and SVG/GIF export.</p>
 
-<p align="center">English | <a href="https://cdn.jsdelivr.net/npm/flowsvg@0.2.0/README.zh-CN.md">简体中文</a></p>
+<p align="center">English | <a href="https://cdn.jsdelivr.net/npm/flowsvg@0.2.1/README.zh-CN.md">简体中文</a></p>
 
 <p align="center">
   <a href="#define-a-diagram">Quick&nbsp;start</a> ·
@@ -26,14 +26,6 @@ npm install flowsvg
 Task A retries and completes, task B exhausts its retries, and task C is cancelled before execution. These are three independent cases. Structured cards and pill tags display the current task and retry count; rounded orthogonal edges carry transition events.
 
 ![Background task lifecycle: retry, completion, failure and cancellation](./docs/images/job-lifecycle.gif)
-
-The full document ships as `node_modules/flowsvg/examples/job-lifecycle.json`, with Chinese labels and captions. Use its contents as the `diagram` document in the integrations below. On Node 20+, generate an offline player with playback controls and GIF download:
-
-```sh
-npx flowsvg node_modules/flowsvg/examples/job-lifecycle.json --format html --output job-lifecycle.html --gif-export
-```
-
-Open `job-lifecycle.html` in a browser. HTML generation needs no Chromium installation. The example sets `flow.highlightParticipants: false` and explicitly highlights one state at a time, so moving event markers do not highlight both states. Retry limits are teaching data.
 
 ## Define a diagram
 
@@ -247,4 +239,4 @@ GIF limits: 120 effective seconds, 1800 samples, 1801 encoded frames, final long
 
 ESM with TypeScript declarations. Core runs without DOM on Node 18+; Node tools require Node 20+. Vue 3.5+ / React 18+.
 
-[Full SDK guide](https://github.com/yokingma/FlowSVG/blob/main/docs/SDK-GUIDE.md) · [Changelog](https://cdn.jsdelivr.net/npm/flowsvg@0.2.0/CHANGELOG.md) · [MIT](https://cdn.jsdelivr.net/npm/flowsvg@0.2.0/LICENSE)
+[Full SDK guide](https://github.com/yokingma/FlowSVG/blob/main/docs/SDK-GUIDE.md) · [Changelog](https://cdn.jsdelivr.net/npm/flowsvg@0.2.1/CHANGELOG.md) · [MIT](https://cdn.jsdelivr.net/npm/flowsvg@0.2.1/LICENSE)

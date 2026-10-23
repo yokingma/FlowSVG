@@ -10,7 +10,14 @@ import { attachPlayerLifecycle } from "./lifecycle.js";
 import { observeKeyboard, observeReducedMotion } from "./accessibility.js";
 import { PlayerControls, type SceneChoice } from "./controls.js";
 import { resolveThemePalette } from "../core/theme.js";
-import { createDiagram, type Diagram } from "../core/diagram.js";
+import {
+  createDiagram,
+  evaluateDiagramFrame,
+  hitTestDiagramFrame,
+  renderDiagramFrame,
+  type Diagram,
+  type DiagramFrameEvaluation
+} from "../core/diagram.js";
 import type {
   DiagramDocument,
   DiagramFrameState,
@@ -123,6 +130,7 @@ class BrowserPlayer implements FlowPlayer {
   private destroyed = false;
   private frameHandle: number | undefined;
   private lastTimestamp: number | undefined;
+  private evaluation: DiagramFrameEvaluation;
   private frame: DiagramFrameState;
   private readonly canvas: HTMLDivElement;
   private readonly caption: HTMLParagraphElement;
@@ -153,7 +161,8 @@ class BrowserPlayer implements FlowPlayer {
     this.stopMotion = motion.cleanup;
     this.themeOverride = options.theme;
     this.options = { ...options, theme: options.theme ?? document.theme ?? "light", reducedMotion: motion.value };
-    this.frame = diagram.evaluateAt(0, this.options);
+    this.evaluation = evaluateDiagramFrame(diagram, 0, this.options);
+    this.frame = this.evaluation.frame;
     this.canvas = owner.createElement("div");
     this.canvas.className = "flowsvg-canvas";
     this.stopKeyboard = observeKeyboard(this.canvas, { toggle: this.togglePlayback, step: (direction) => this.step(direction) });
@@ -318,7 +327,8 @@ class BrowserPlayer implements FlowPlayer {
   private updateFrame(): void {
     const previousBeat = this.frame.beatId;
     const previousScene = this.frame.sceneId;
-    this.frame = this.diagram.evaluateAt(this.timeMs, this.options);
+    this.evaluation = evaluateDiagramFrame(this.diagram, this.timeMs, this.options);
+    this.frame = this.evaluation.frame;
     this.render();
     if (previousBeat !== this.frame.beatId || previousScene !== this.frame.sceneId) this.emit("stepchange");
     this.emit("timeupdate");
@@ -332,7 +342,7 @@ class BrowserPlayer implements FlowPlayer {
     if (this.playing) this.pause(); else this.play();
   };
   private render(): void {
-    updateSvgDom(this.canvas, this.diagram.renderSvg(this.timeMs, this.options));
+    updateSvgDom(this.canvas, renderDiagramFrame(this.diagram, this.evaluation));
     this.canvas.style.aspectRatio = `${this.frame.camera.width} / ${this.frame.camera.height}`;
     this.updateHover();
     this.caption.textContent = this.frame.caption ?? "";
@@ -348,13 +358,13 @@ class BrowserPlayer implements FlowPlayer {
     if (this.destroyed) return;
     if (type === "hover") {
       this.pointerPosition = { clientX: event.clientX, clientY: event.clientY };
-      updateSvgDom(this.canvas, this.diagram.renderSvg(this.timeMs, this.options));
+      updateSvgDom(this.canvas, renderDiagramFrame(this.diagram, this.evaluation));
       this.updateHover(true);
       return;
     }
     if (type === "click") event.stopPropagation();
     const point = pointerToDiagramPoint(this.canvas, this.frame.camera, event);
-    const hit = this.diagram.hitTest(this.timeMs, point, this.options);
+    const hit = hitTestDiagramFrame(this.evaluation, point);
     const detail = hit ? { ...hit, point, timeMs: this.timeMs, sceneId: this.frame.sceneId, beatId: this.frame.beatId } : null;
     this.emit("click", detail);
     this.emit("objectclick", detail);
@@ -362,7 +372,7 @@ class BrowserPlayer implements FlowPlayer {
   /** Re-hit the saved screen position after camera/geometry updates; hover never changes the core hit geometry. */
   private updateHover(emitAlways = false): void {
     const point = this.pointerPosition ? pointerToDiagramPoint(this.canvas, this.frame.camera, this.pointerPosition) : undefined;
-    const hit = point ? this.diagram.hitTest(this.timeMs, point, this.options) : null;
+    const hit = point ? hitTestDiagramFrame(this.evaluation, point) : null;
     if (hit?.type === "node") {
       const shape = Array.from(this.canvas.querySelectorAll("[data-id]")).find((element) => element.getAttribute("data-id") === hit.id);
       const palette = resolveThemePalette(this.options.theme);
@@ -384,7 +394,7 @@ class BrowserPlayer implements FlowPlayer {
   private clearPointer(): void {
     if (this.destroyed) return;
     this.pointerPosition = undefined;
-    updateSvgDom(this.canvas, this.diagram.renderSvg(this.timeMs, this.options));
+    updateSvgDom(this.canvas, renderDiagramFrame(this.diagram, this.evaluation));
     this.updateHover(true);
   }
   private emit<K extends keyof PlayerEventMap>(type: K, detail?: PlayerEventMap[K]["detail"]): void {

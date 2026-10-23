@@ -12,12 +12,15 @@ import {
   type ReactElement
 } from "react";
 import {
-  createPlayer,
   type FlowPlayer as BrowserFlowPlayer,
   type PlayerErrorDetail,
   type PlayerState
 } from "../browser/player.js";
 import type { DiagramDocument, ThemeName } from "../core/model.js";
+import {
+  HostPlayerLifecycle,
+  type HostPlayerLifecycleOptions
+} from "./host-lifecycle.js";
 
 /** React document, visual options and callbacks; document reference changes trigger a reload. */
 export interface FlowPlayerProps {
@@ -72,15 +75,6 @@ interface CallbackRefs {
   onError?: (detail: PlayerErrorDetail) => void;
 }
 
-/** Changes to these creation options rebuild the instance; speed is updated separately with setSpeed. */
-interface PlayerOptionsSnapshot {
-  theme: ThemeName | undefined;
-  controls: boolean | undefined;
-  gifExport: boolean | undefined;
-  hoverFill: boolean | undefined;
-  reducedMotion: boolean | undefined;
-}
-
 /**
  * SSR renders only a host container; an effect mounts the browser player and unmount cleanup releases it.
  * Document reference changes call load; visual/control options rebuild the instance, with initial positioning applied once.
@@ -90,13 +84,8 @@ export const FlowPlayer = forwardRef<FlowPlayerHandle, FlowPlayerProps>(function
   ref
 ): ReactElement {
   const hostRef = useRef<HTMLDivElement | null>(null);
-  const playerRef = useRef<BrowserFlowPlayer | null>(null);
-  const eventCleanupRef = useRef<(() => void) | null>(null);
   const callbacksRef = useRef<CallbackRefs>({});
-  const documentRef = useRef<DiagramDocument | null>(null);
-  const optionsRef = useRef<PlayerOptionsSnapshot | null>(null);
   const initialTimeRef = useRef(props.initialTimeMs);
-  const initialAppliedRef = useRef(false);
 
   // Listeners read current callbacks through a stable ref so callback identity changes do not rebuild the player.
   callbacksRef.current = {
@@ -107,91 +96,65 @@ export const FlowPlayer = forwardRef<FlowPlayerHandle, FlowPlayerProps>(function
     onError: props.onError
   };
 
+  const lifecycleRef = useRef<HostPlayerLifecycle | null>(null);
+  if (!lifecycleRef.current) {
+    lifecycleRef.current = new HostPlayerLifecycle({
+      attachEvents: (player) => attachPlayerEvents(player, callbacksRef)
+    });
+  }
+  const lifecycle = lifecycleRef.current;
+
   useImperativeHandle(ref, () => ({
-    play: () => requirePlayer(playerRef).play(),
-    pause: () => requirePlayer(playerRef).pause(),
-    seek: (timeMs) => requirePlayer(playerRef).seek(timeMs),
-    step: (direction) => requirePlayer(playerRef).step(direction),
-    setSpeed: (speed) => requirePlayer(playerRef).setSpeed(speed),
-    setLoop: (loop) => requirePlayer(playerRef).setLoop(loop),
-    load: (document) => requirePlayer(playerRef).load(document),
-    getState: () => requirePlayer(playerRef).getState()
-  }), []);
+    play: () => requirePlayer(lifecycle.player).play(),
+    pause: () => requirePlayer(lifecycle.player).pause(),
+    seek: (timeMs) => requirePlayer(lifecycle.player).seek(timeMs),
+    step: (direction) => requirePlayer(lifecycle.player).step(direction),
+    setSpeed: (speed) => requirePlayer(lifecycle.player).setSpeed(speed),
+    setLoop: (loop) => requirePlayer(lifecycle.player).setLoop(loop),
+    load: (document) => requirePlayer(lifecycle.player).load(document),
+    getState: () => requirePlayer(lifecycle.player).getState()
+  }), [lifecycle]);
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
-    const nextOptions: PlayerOptionsSnapshot = {
+    const nextOptions: HostPlayerLifecycleOptions = {
       theme: props.theme,
       controls: props.controls,
       gifExport: props.gifExport,
       hoverFill: props.hoverFill,
       reducedMotion: props.reducedMotion
     };
-    const existing = playerRef.current;
-    const optionsChanged = !sameOptions(optionsRef.current, nextOptions);
-
-    if (existing && !optionsChanged && documentRef.current !== props.document) {
-      existing.load(props.document);
-      documentRef.current = props.document;
-    } else if (!existing || optionsChanged) {
-      // Detach old callbacks before replacement so old lifecycle events cannot reach the new component state.
-      eventCleanupRef.current?.();
-      existing?.destroy();
-      const player = createPlayer(host, props.document, { ...nextOptions, loop: props.loop ?? existing?.getState().loop });
-      // A new instance needs current props even when the separate speed effect has no changed dependency.
-      if (props.speed !== undefined) player.setSpeed(props.speed);
-      eventCleanupRef.current = attachPlayerEvents(player, callbacksRef);
-      playerRef.current = player;
-      documentRef.current = props.document;
-      optionsRef.current = nextOptions;
-      if (!initialAppliedRef.current && initialTimeRef.current !== undefined) {
-        player.seek(initialTimeRef.current);
-      }
-      initialAppliedRef.current = true;
-      return;
-    }
-
-    optionsRef.current = nextOptions;
+    lifecycle.sync({
+      host,
+      document: props.document,
+      options: nextOptions,
+      loop: props.loop,
+      speed: props.speed,
+      initialTimeMs: initialTimeRef.current
+    });
   }, [props.document, props.theme, props.controls, props.gifExport, props.reducedMotion, props.hoverFill]);
 
   useEffect(() => {
-    const player = playerRef.current;
+    const player = lifecycle.player;
     if (player && props.speed !== undefined) player.setSpeed(props.speed);
-  }, [props.speed]);
+  }, [lifecycle, props.speed]);
 
   useEffect(() => {
-    playerRef.current?.setLoop(props.loop ?? false);
-  }, [props.loop]);
+    lifecycle.player?.setLoop(props.loop ?? false);
+  }, [lifecycle, props.loop]);
 
   useEffect(() => () => {
-    eventCleanupRef.current?.();
-    eventCleanupRef.current = null;
-    playerRef.current?.destroy();
-    playerRef.current = null;
-    documentRef.current = null;
-    optionsRef.current = null;
-    initialAppliedRef.current = false;
+    lifecycle.destroy();
   }, []);
 
   const className = props.className ? `flowsvg ${props.className}` : "flowsvg";
   return createElement("div", { ref: hostRef, className, style: props.style });
 });
 
-function requirePlayer(playerRef: {
-  current: BrowserFlowPlayer | null
-}): BrowserFlowPlayer {
-  if (!playerRef.current) throw new Error("FlowPlayer is not mounted");
-  return playerRef.current;
-}
-
-function sameOptions(previous: PlayerOptionsSnapshot | null, next: PlayerOptionsSnapshot): boolean {
-  if (!previous) return false;
-  return previous.theme === next.theme
-    && previous.controls === next.controls
-    && previous.gifExport === next.gifExport
-    && previous.hoverFill === next.hoverFill
-    && previous.reducedMotion === next.reducedMotion;
+function requirePlayer(player: BrowserFlowPlayer | undefined): BrowserFlowPlayer {
+  if (!player) throw new Error("FlowPlayer is not mounted");
+  return player;
 }
 
 /** Translate browser event details to component callbacks; share cleanup between replacement and unmount. */

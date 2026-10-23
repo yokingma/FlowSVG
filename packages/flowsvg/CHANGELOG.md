@@ -1,8 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.2.1 - 2026-10-23
 
-- Add the background task lifecycle as the typical example in both SDK READMEs, with an SDK-exported GIF and complete `examples/job-lifecycle.json` in the npm package. Demonstrate structured state cards, pill tags, explicit current-state highlights and event flows without automatic endpoint highlights. Include a command to generate an offline player from the installed JSON.
+- Isolate Node GIF browser execution behind an internal runtime seam. The production path still uses the pinned Playwright Chromium exporter, while task-owned context/page and temporary files are released on success, failure, and cancellation without closing caller-owned browsers. Add deterministic runtime coverage for launch, page-load, encoding, progress-callback, and late resource-acquisition cancellation paths. Contexts, pages, browser launches and temporary directories that finish after cancellation are released even if task disposal already returned.
+
+- Reuse one internal frame-state evaluation for each browser player update and GIF sample. SVG serialization, captions, hover hit testing and edge geometry now consume the same evaluated result without changing the public `Diagram` interface or output behavior. Static GIF documents without titles reuse their empty caption without a second evaluation.
+
+- Share browser-player lifecycle ownership between the React and Vue host adapters. A single internal coordinator now snapshots rebuild options, removes old event listeners before replacing an instance, preserves initial-time and loop semantics, and performs idempotent teardown without changing public adapter contracts.
+
+- Present the background task lifecycle in both SDK READMEs with a brief scenario description and an SDK-exported GIF. Demonstrate structured state cards, pill tags, retries, completion, failure and cancellation.
 
 - Place the animated FlowSVG wordmark first in centered headers in both SDK READMEs. Use larger text inside a compact frame, a closely cropped 50 fps GIF, and a closed signal loop at the upper-right corner. Ship the shared GIF under `docs/images/` and rewrite relative Markdown and HTML image paths to the versioned npm CDN URL during release verification.
 

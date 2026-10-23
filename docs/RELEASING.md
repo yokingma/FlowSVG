@@ -2,9 +2,9 @@
 
 项目品牌名为 FlowSVG（流形）。唯一发布包是 `packages/flowsvg`，npm 包名为 [`flowsvg`](https://www.npmjs.com/package/flowsvg)，维护者为 `zac_ma`。工作区根包与示例包均为 private。开发与发布需要 Node.js 22.12+ 和 pnpm 10.12.1。
 
-截至 2026-10-22，npm 的 `latest` 为 `0.1.1`。仓库 SDK 版本已更新为待发布的 `0.2.0`，包含 GIF、离线 HTML、Node 工具、CLI、循环播放、节点内容测量和时序调整。该版本尚未上传到 npm。
+截至 2026-10-23，已核对 npm 的 `latest` 为 `0.2.0`。仓库 SDK 版本已更新为待发布的 `0.2.1`，包含画面状态求值复用、React/Vue 共享宿主生命周期，以及 Node GIF runtime 与取消资源清理优化。公开 API 和既有时序、渲染契约保持不变。`0.2.1` 尚未上传到 npm。
 
-发布脚本读取 SDK `package.json` 的版本，生成 `dist/releases/flowsvg-0.2.0.tgz`。先运行下方发布预演，再显式执行上传。包内 CHANGELOG 的 `0.2.0` 记录最终行为：单条传递节拍改为按距离移动加 500ms 到达区间，迁移时使用 `Diagram.beats` 读取实际边界；较长阅读时间使用独立无传递节拍。历史 `0.1.1` 产物不可覆盖，同一版本不能重复发布。
+发布脚本读取 SDK `package.json` 的版本，生成 `dist/releases/flowsvg-0.2.1.tgz`。先运行下方发布预演，再显式执行上传。包内 CHANGELOG 的 `0.2.1` 记录本次优化。`0.2.0` 的时序契约继续生效：单条传递节拍改为按距离移动加 500ms 到达区间，迁移时使用 `Diagram.beats` 读取实际边界；较长阅读时间使用独立无传递节拍。已发布的 `0.2.0` 及更早产物不可覆盖，同一版本不能重复发布。
 
 ## 浏览器与最低运行时准备
 
@@ -31,6 +31,8 @@ pnpm --filter flowsvg exec node --input-type=module -e 'import { chromium } from
 把查询结果或已有 Chromium 的路径设为 `FLOWSVG_CHROMIUM_PATH`。发布验收要求显式设置该变量，即使默认缓存中已有浏览器。
 
 浏览器用于发布前的真实产物验收：脚本安装打包后的 SDK，启动 Chromium 检查 Node GIF 导出，以及离线 HTML 的播放和 GIF 下载。上传 npm 本身不需要浏览器，但 `pnpm release`、`pnpm release:verify` 和 `pnpm release:publish` 都包含这项检查。
+
+内部架构优化保留上述真实浏览器验收。`adapters/host-lifecycle` 与 `node/gif-runtime` 是打包文件清单中的内部运行依赖，不是新增 npm 导出入口。Node runtime 的确定性测试补充取消与资源清理覆盖；它们不替代安装 tarball 后的 Chromium 验收。构建和 `release:verify` 都会重建 `dist`，须顺序执行。
 
 macOS 已安装 Google Chrome 时，可直接使用以下路径，无需另行下载 Chromium。在仓库根目录运行预演：
 

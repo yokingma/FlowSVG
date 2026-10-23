@@ -1,5 +1,5 @@
 /** Browser-only export owns its canvas, image URLs and inline encoder worker; core rendering stays DOM-free. */
-import { createDiagram, type Diagram } from "../core/diagram.js";
+import { createDiagram, evaluateDiagramFrame, renderDiagramFrame, type Diagram, type DiagramFrameEvaluation } from "../core/diagram.js";
 import type { DiagramDocument } from "../core/model.js";
 import { resolveThemePalette } from "../core/theme.js";
 import { CAPTION_FONT, CAPTION_LINE_HEIGHT, CAPTION_PADDING_X, CAPTION_PADDING_Y, collectCaptions, preflightCaptions, wrapCaption } from "./captions.js";
@@ -36,7 +36,12 @@ export async function exportGif(input: DiagramDocument, options: GifExportOption
   try {
     const context = canvas.getContext("2d", { willReadFrequently: true });
     if (!context) throw new GifExportError("environment", "Canvas 2D is unavailable; enable browser canvas support.");
-    const captions = captured.includeCaptions === false ? [] : collectCaptions(diagram, plan.startMs, plan.endMs);
+    let firstEvaluation: DiagramFrameEvaluation | undefined;
+    if (captured.includeCaptions !== false && diagram.beats.length === 0 && plan.frames[0]) {
+      firstEvaluation = evaluateDiagramFrame(diagram, plan.frames[0].timeMs, plan);
+    }
+    // An absent title is an already evaluated empty caption, not a request for fallback evaluation.
+    const captions = captured.includeCaptions === false ? [] : collectCaptions(diagram, plan.startMs, plan.endMs, firstEvaluation ? firstEvaluation.frame.caption ?? "" : undefined);
     await waitForFonts([document.title ?? "中文", ...captions.map(({ text }) => text)].join("\n"), captured.signal);
     preflightCaptions(context, captions, plan);
     checkAbort(captured.signal);
@@ -46,8 +51,10 @@ export async function exportGif(input: DiagramDocument, options: GifExportOption
     worker.addEventListener("error", failWorker);
     for (const [index, frame] of plan.frames.entries()) {
       report("sampling", index);
-      const caption = diagram.evaluateAt(frame.timeMs, plan).caption ?? "";
-      await paintFrame(context, canvas, diagram.renderSvg(frame.timeMs, plan), caption, plan, captured.signal, workerFailure.signal);
+      const evaluation = firstEvaluation ?? evaluateDiagramFrame(diagram, frame.timeMs, plan);
+      firstEvaluation = undefined;
+      const caption = evaluation.frame.caption ?? "";
+      await paintFrame(context, canvas, renderDiagramFrame(diagram, evaluation), caption, plan, captured.signal, workerFailure.signal);
       const pixels = readPixels(context, plan);
       report("encoding", index);
       await requestWorker(worker, { type: "frame", rgba: pixels.data.buffer, width: plan.width, height: plan.height, delayMs: frame.delayMs, repeat: plan.loopCount === 1 ? -1 : plan.loopCount === 0 ? 0 : plan.loopCount - 1 }, [pixels.data.buffer], captured.signal, workerFailure.signal);
