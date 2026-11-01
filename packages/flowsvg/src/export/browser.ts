@@ -4,6 +4,7 @@ import type { DiagramDocument } from "../core/model.js";
 import { resolveThemePalette } from "../core/theme.js";
 import { CAPTION_FONT, CAPTION_LINE_HEIGHT, CAPTION_PADDING_X, CAPTION_PADDING_Y, collectCaptions, preflightCaptions, wrapCaption } from "./captions.js";
 import { planGif, validateGifOptions, type GifPlan } from "./plan.js";
+import { withSvgImage } from "./rasterize.js";
 import { GIF_WORKER_SOURCE } from "./worker-source.js";
 import { GifExportError, type GifExportOptions, type GifExportProgress } from "./types.js";
 
@@ -86,22 +87,20 @@ function requestWorker(worker: Worker, data: unknown, transfer: Transferable[], 
 }
 async function paintFrame(context: CanvasRenderingContext2D, canvas: HTMLCanvasElement, svg: string, caption: string, plan: GifPlan, signal: AbortSignal | undefined, workerFailure: AbortSignal): Promise<void> {
   checkAbort(signal, workerFailure);
-  const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
-  const image = new Image();
   try {
-    image.src = url;
-    await withAbort(image.decode(), signal, workerFailure);
-    checkAbort(signal, workerFailure);
-    const palette = resolveThemePalette(plan.theme);
-    context.fillStyle = palette.background; context.fillRect(0, 0, canvas.width, canvas.height);
-    context.drawImage(image, 0, 0, plan.width, plan.diagramHeight);
-    if (!plan.captionHeight) return;
-    context.font = CAPTION_FONT; context.fillStyle = palette.text; context.textBaseline = "top";
-    wrapCaption(context, caption, plan.width - CAPTION_PADDING_X * 2).forEach((line, index) => context.fillText(line, CAPTION_PADDING_X, plan.diagramHeight + CAPTION_PADDING_Y + index * CAPTION_LINE_HEIGHT));
+    await withSvgImage(svg, (image) => {
+      checkAbort(signal, workerFailure);
+      const palette = resolveThemePalette(plan.theme);
+      context.fillStyle = palette.background; context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, plan.width, plan.diagramHeight);
+      if (!plan.captionHeight) return;
+      context.font = CAPTION_FONT; context.fillStyle = palette.text; context.textBaseline = "top";
+      wrapCaption(context, caption, plan.width - CAPTION_PADDING_X * 2).forEach((line, index) => context.fillText(line, CAPTION_PADDING_X, plan.diagramHeight + CAPTION_PADDING_Y + index * CAPTION_LINE_HEIGHT));
+    }, (decode) => withAbort(decode, signal, workerFailure));
   } catch (cause) {
     if (cause instanceof GifExportError) throw cause;
     throw new GifExportError("rasterization", "Cannot rasterize the diagram; check browser SVG/canvas support and retry.", { cause });
-  } finally { image.src = ""; URL.revokeObjectURL(url); }
+  }
 }
 
 /** Race browser services with cancellation and worker failure; detach both listeners on settlement. */

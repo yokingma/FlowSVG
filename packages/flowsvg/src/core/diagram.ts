@@ -2,19 +2,21 @@
  * Platform-independent diagram orchestration: compile documents and derive frames, geometry, hit tests and SVG.
  * Validation owns document rules; this module owns cloning and freezing and does not read DOM, clocks or network.
  */
-import { layoutNodeContent, type NodeContentLayout } from "./node-content.js";
+import { diagnoseFrame } from "./geometry-diagnostics.js";
+import { layoutNodeContentWithMetrics, type ContentSafeArea, type NodeContent, type NodeContentLayout } from "./node-content.js";
 import { paintContentHighlight } from "./node-content-paint.js";
 import { CompiledTimeline, type TimelineObject, type CompiledFlow } from "./timeline.js";
 import { mixColor } from "./color.js";
-import { DEFAULT_NODE_STROKE_WIDTH, DIAGRAM_FONT_FAMILY, NODE_CORNER_RADIUS, resolveThemePalette, type ThemePalette } from "./theme.js";
+import { CYLINDER_CAP_RADIUS, DEFAULT_NODE_STROKE_WIDTH, DIAGRAM_FONT_FAMILY, NODE_CORNER_RADIUS, resolveThemePalette, type ThemePalette } from "./theme.js";
 import { DiagramValidationError, validateDocument } from "./validation.js";
-import type { Viewport, DiagramNode, DiagramEdge, DiagramDocument, DiagramBeat, Beat, EvaluateOptions, TextLine, EvaluatedNode, EvaluatedEdge, EdgeFlowMarker, LayoutWarning, CameraState, HitObject, DiagramPoint, DiagramFrameState } from "./model.js";
+import type { Viewport, DiagramNode, DiagramEdge, DiagramDocument, DiagramBeat, Beat, EvaluateOptions, SvgRenderOptions, TextLine, EvaluatedNode, EvaluatedEdge, EdgeFlowMarker, LayoutWarning, GeometryWarning, CameraState, HitObject, DiagramPoint, DiagramFrameState } from "./model.js";
 import { ARROW_MARKER_SIZE, emptyPathGeometry, isPointNearPath, routedTargetOffsets, pathLabelAnchor, routeEdge, type PathGeometry } from "./edge-geometry.js";
+import { DEFAULT_NODE_TYPOGRAPHY, EDGE_LABEL_HALO_RADIUS, textLineBounds, estimateTextWidth, flowCapsuleHeight, resolveTypography, type ResolvedTypography, type TextMetrics } from "./typography.js";
 import { formatNumber } from "./svg-number.js";
 
 /**
  * Validate and copy a document, then compile its timeline; later input mutations cannot affect evaluation.
- * @throws {DiagramValidationError} If document structure, values or references are invalid, or derived flow timing is non-finite.
+ * @throws {DiagramValidationError} If document structure, values or references are invalid, or derived typography or flow timing is non-finite.
  */
 export function createDiagram(input: DiagramDocument): Diagram {
   const issues = validateDocument(input);
@@ -29,11 +31,12 @@ export interface DiagramFrameEvaluation {
   readonly frame: DiagramFrameState;
   readonly edgeGeometries: ReadonlyMap<string, PathGeometry>;
   readonly palette: ThemePalette;
+  readonly typography: ResolvedTypography;
 }
 
 interface FrameStateEvaluator {
   evaluate(timeMs: number, options?: EvaluateOptions): DiagramFrameEvaluation;
-  render(evaluation: DiagramFrameEvaluation): string;
+  render(evaluation: DiagramFrameEvaluation, options?: SvgRenderOptions): string;
   hitTest(evaluation: DiagramFrameEvaluation, point: DiagramPoint): HitObject | null;
 }
 
@@ -47,17 +50,17 @@ export function evaluateDiagramFrame(diagram: Diagram, timeMs: number, options: 
 }
 
 /** Serialize an existing internal frame result without evaluating the timeline again. */
-export function renderDiagramFrame(diagram: Diagram, evaluation: DiagramFrameEvaluation): string {
+export function renderDiagramFrame(diagram: Diagram, evaluation: DiagramFrameEvaluation, options?: SvgRenderOptions): string {
   const evaluator = frameStateEvaluators.get(diagram);
   if (!evaluator) throw new Error("FlowSVG diagram does not expose its internal frame evaluator.");
-  return evaluator.render(evaluation);
+  return evaluator.render(evaluation, options);
 }
 
 /** Hit-test an existing internal frame result without evaluating the timeline again. */
 export function hitTestDiagramFrame(evaluation: DiagramFrameEvaluation, point: DiagramPoint): HitObject | null {
   if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return null;
   const nodes = [...evaluation.frame.nodes].reverse();
-  const containsPoint = (candidate: EvaluatedNode): boolean => candidate.visible && candidate.opacity > 0 && isPointInNode(point, candidate);
+  const containsPoint = (candidate: EvaluatedNode): boolean => candidate.visible && candidate.opacity > 0 && isPointInNode(point, candidate, evaluation.typography.nodeLabel);
   const node = nodes.find((candidate) => candidate.kind !== "group" && containsPoint(candidate));
   if (node) return { id: node.id, type: "node" };
   const edge = [...evaluation.frame.edges].reverse().find((candidate) => candidate.visible && candidate.opacity > 0 && isPointNearPath(point, evaluation.edgeGeometries.get(candidate.id) ?? emptyPathGeometry(), (candidate.style?.strokeWidth ?? 2) + HIT_TOLERANCE));
@@ -67,7 +70,7 @@ export function hitTestDiagramFrame(evaluation: DiagramFrameEvaluation, point: D
 }
 
 /** One-shot static SVG export; use createDiagram to reuse compilation across repeated evaluations or exports. */
-export function renderSvg(document: DiagramDocument, timeMs = 0, options?: EvaluateOptions): string {
+export function renderSvg(document: DiagramDocument, timeMs = 0, options?: SvgRenderOptions): string {
   return createDiagram(document).renderSvg(timeMs, options);
 }
 
@@ -80,10 +83,17 @@ export interface Diagram {
   /**
    * Evaluate a frame; finite times clamp to [0, totalDuration], and non-finite times become zero.
    * Beat intervals include their start and exclude their end; totalDuration returns the completed final beat.
+   * Throws DiagramValidationError with a typography role path when text-derived geometry is non-finite.
    */
   evaluateAt(timeMs: number, options?: EvaluateOptions): DiagramFrameState;
+  /**
+   * Detect three additional geometric risks on demand, using evaluateAt time and visual options.
+   * Only visible camera/safe-area portions participate; text is estimated and curves are sampled.
+   * Does not return text-overflow warnings, mutate the diagram, or run during normal evaluation/playback.
+   */
+  diagnoseAt(timeMs: number, options?: EvaluateOptions): GeometryWarning[];
   /** Serialize the same frame as self-contained static SVG with escaped text and resolved colors, without controls. */
-  renderSvg(timeMs?: number, options?: EvaluateOptions): string;
+  renderSvg(timeMs?: number, options?: SvgRenderOptions): string;
   /**
    * Hit-test document coordinates in paint order: ordinary nodes, then edges, then group backgrounds.
    * Objects within each layer are searched in reverse document order.
@@ -103,9 +113,11 @@ class CompiledDiagram implements Diagram {
   readonly beats: readonly DiagramBeat[];
   private readonly timeline: CompiledTimeline;
   private readonly document: DiagramDocument;
+  private readonly typography: ResolvedTypography;
   private readonly nodesById: ReadonlyMap<string, DiagramNode>;
   constructor(document: DiagramDocument) {
     this.document = deepFreeze(document);
+    this.typography = resolveTypography(document.typography);
     this.nodesById = new Map(document.nodes.map((node) => [node.id, node]));
     // Resolve reference lengths from target snapshots using the same routing as ordinary frame evaluation.
     // The second compilation changes timing only; authored transitions are capped at each effective beat duration.
@@ -133,15 +145,19 @@ class CompiledDiagram implements Diagram {
   evaluateAt(timeMs: number, options: EvaluateOptions = {}): DiagramFrameState {
     return this.evaluateFrame(timeMs, options).frame;
   }
+  diagnoseAt(timeMs: number, options: EvaluateOptions = {}): GeometryWarning[] {
+    return diagnoseFrame(this.evaluateFrame(timeMs, options));
+  }
   getFrameStateEvaluator(): FrameStateEvaluator {
     return {
       evaluate: (timeMs, options = {}) => this.evaluateFrame(timeMs, options),
-      render: (evaluation) => serializeSvg(this.document, evaluation.frame, evaluation.palette),
+      render: (evaluation, options) => serializeSvg(this.document, evaluation.frame, evaluation.palette, this.typography, options),
       hitTest: (evaluation, point) => hitTestDiagramFrame(evaluation, point)
     };
   }
   private evaluateFrame(timeMs: number, options: EvaluateOptions = {}, compiledTimeline = this.timeline): DiagramFrameEvaluation {
     const palette = resolvePalette(this.document, options);
+    const { nodeLabel: nodeTypography, edgeLabel: edgeTypography } = this.typography;
     const timeline = compiledTimeline.evaluateAt(timeMs, options, palette);
     const currentNodes = new Map(this.document.nodes.map((node) => {
       const values = timeline.objects.get(node.id)!.values;
@@ -151,10 +167,10 @@ class CompiledDiagram implements Diagram {
     const warnings: LayoutWarning[] = [];
     const nodes = [...currentNodes.values()].map((node, index) => {
       const position = this.resolvePosition(node.id, currentNodes);
-      const labelLines = node.label ? wrapText(node.label, Math.max(1, node.width - TEXT_PADDING * 2), NODE_TYPOGRAPHY) : [];
+      const labelLines = node.label ? wrapText(node.label, Math.max(1, node.width - TEXT_PADDING * 2), nodeTypography) : [];
       const labelCenterY = node.kind === "group" ? position.y + 24 : position.y + node.height / 2;
-      const labelBoxes = makeLabelBoxes(labelLines, position.x + node.width / 2, labelCenterY, NODE_TYPOGRAPHY);
-      if (node.label && labelLines.length * NODE_TYPOGRAPHY.lineHeight > Math.max(0, node.height - TEXT_PADDING * 2)) warnings.push({ path: `nodes[${index}].label`, objectId: node.id, code: "text-overflow", message: `label for node \"${node.id}\" exceeds its height` });
+      const labelBoxes = makeLabelBoxes(labelLines, position.x + node.width / 2, labelCenterY, nodeTypography, "nodeLabel");
+      if (node.label && labelLines.length * nodeTypography.lineHeight > Math.max(0, node.height - TEXT_PADDING * 2)) warnings.push({ path: `nodes[${index}].label`, objectId: node.id, code: "text-overflow", message: `label for node \"${node.id}\" exceeds its height` });
       const visual = this.resolveVisibility(node.id, timeline.objects);
       const own = timeline.objects.get(node.id)!;
       const highlight = Math.max(own.highlight, flowHighlights.get(node.id) ?? 0);
@@ -166,7 +182,7 @@ class CompiledDiagram implements Diagram {
         stroke: mixColor(own.values.stroke ?? palette.stroke, palette.highlight, highlight)
       };
       const contentLayout = node.content ? paintContentHighlight(
-        layoutNodeContent(node.content, { ...position, width: node.width, height: node.height }, palette, node.kind),
+        layoutFiniteNodeContent(node.content, { ...position, width: node.width, height: node.height }, palette, node.kind, this.typography.contentScale),
         highlight, style.fill
       ) : undefined;
       if (contentLayout) {
@@ -200,7 +216,7 @@ class CompiledDiagram implements Diagram {
       const reverseOffset = hasReverseCurve ? 1 : 0;
       const geometry = from && to ? routeEdge({ ...edge, style }, from, to, nodes, { reverseOffset, targetOffset: targetOffsets.get(edge.id) ?? 0 }) : emptyPathGeometry();
       edgeGeometries.set(edge.id, geometry);
-      const labelLines = edge.label ? wrapText(edge.label, Math.max(1, geometry.length - TEXT_PADDING * 2), EDGE_TYPOGRAPHY) : [];
+      const labelLines = edge.label ? wrapText(edge.label, Math.max(1, geometry.length - TEXT_PADDING * 2), edgeTypography) : [];
       const midpoint = pathLabelAnchor(geometry);
       const flow = activeFlow && visible && opacity > 0 && !options.reducedMotion ? {
         direction: activeFlow.direction,
@@ -208,18 +224,20 @@ class CompiledDiagram implements Diagram {
         point: geometry.pointAt(activeFlow.direction === "forward" ? timeline.flowProgress : 1 - timeline.flowProgress),
         ...(activeFlow.text !== undefined ? { text: activeFlow.text } : {})
       } : undefined;
-      return { ...edge, visible, opacity, highlighted: own.highlighted || activeFlow !== undefined, style, path: geometry.path, labelLines, labelBoxes: makeLabelBoxes(labelLines, midpoint.x, midpoint.y, EDGE_TYPOGRAPHY), ...(flow ? { flow } : {}) };
+      if (flow?.text !== undefined) assertFiniteTypography("flowLabel", [flowCapsuleWidth(flow.text, this.typography.flowLabel)]);
+      return { ...edge, visible, opacity, highlighted: own.highlighted || activeFlow !== undefined, style, path: geometry.path, labelLines, labelBoxes: makeLabelBoxes(labelLines, midpoint.x, midpoint.y, edgeTypography, "edgeLabel"), ...(flow ? { flow } : {}) };
     });
-    const camera = resolveCamera(this.document.viewport, timeline.focusBefore, timeline.focusAfter, timeline.transitionProgress, nodes, edges, edgeGeometries);
+    const camera = resolveCamera(this.document.viewport, timeline.focusBefore, timeline.focusAfter, timeline.transitionProgress, nodes, edges, edgeGeometries, this.typography);
     return {
       frame: { timeMs: timeline.timeMs, sceneId: timeline.sceneId, beatId: timeline.beatId, beatProgress: timeline.beatProgress, nodes, edges, camera, warnings, ...(timeline.caption !== undefined ? { caption: timeline.caption } : {}) },
       edgeGeometries,
-      palette
+      palette,
+      typography: this.typography
     };
   }
-  renderSvg(timeMs = 0, options: EvaluateOptions = {}): string {
+  renderSvg(timeMs = 0, options: SvgRenderOptions = {}): string {
     const evaluation = this.evaluateFrame(timeMs, options);
-    return serializeSvg(this.document, evaluation.frame, evaluation.palette);
+    return serializeSvg(this.document, evaluation.frame, evaluation.palette, this.typography, options);
   }
   hitTest(timeMs: number, point: DiagramPoint, options: EvaluateOptions = {}): HitObject | null {
     const evaluated = this.evaluateFrame(timeMs, options);
@@ -249,27 +267,17 @@ class CompiledDiagram implements Diagram {
 
 const TEXT_PADDING = 12;
 const CONTENT_TAG_CORNER_RADIUS = 3;
-const NODE_TYPOGRAPHY = { fontSize: 16, lineHeight: 20, charWidth: 8.5 } as const;
-const EDGE_TYPOGRAPHY = { fontSize: 14, lineHeight: 18, charWidth: 8.4 } as const;
-const TEXT_DESCENT_RATIO = 0.25;
-const FLOW_TYPOGRAPHY = { fontSize: 12, lineHeight: 16, charWidth: 7.2 } as const;
-const FLOW_CAPSULE_HEIGHT = 24;
 const FLOW_TEXT_PADDING = 10;
 const FLOW_DOT_RADIUS = 5;
 const FLOW_UNITS_PER_SECOND = 180;
 const MIN_FLOW_MOVEMENT_MS = 400;
 const MILLISECONDS_PER_SECOND = 1000;
-interface Typography {
-  fontSize: number;
-  lineHeight: number;
-  charWidth: number;
-}
 
 /**
  * Estimate wrapping with fixed code-point widths, preserving explicit empty lines and preferring spaces as breaks.
  * No font/DOM measurement is used; this handles width only, while frame evaluation reports height overflow.
  */
-export function wrapText(label: string, maxWidth: number, typography: Typography = NODE_TYPOGRAPHY): string[] {
+export function wrapText(label: string, maxWidth: number, typography: TextMetrics = DEFAULT_NODE_TYPOGRAPHY): string[] {
   const maxChars = Math.max(1, Math.floor(maxWidth / typography.charWidth));
   const lines: string[] = [];
   for (const explicitLine of label.split("\n")) {
@@ -308,13 +316,15 @@ function resolveFlowHighlights(flows: readonly CompiledFlow[], edges: readonly D
   return highlights;
 }
 
-function makeLabelBoxes(lines: string[], centerX: number, centerY: number, typography: Typography): TextLine[] {
+function makeLabelBoxes(lines: string[], centerX: number, centerY: number, typography: TextMetrics, role: "nodeLabel" | "edgeLabel"): TextLine[] {
+  assertFiniteTypography(role, [lines.length * typography.lineHeight, ...lines.map((text) => estimateTextWidth(text, typography))]);
   const startY = centerY - ((lines.length - 1) * typography.lineHeight) / 2 + typography.fontSize * 0.35;
   return lines.map((text, index) => ({ text, x: centerX, y: startY + index * typography.lineHeight }));
 }
 
 /** Serialize group backgrounds, edges, ordinary nodes, then labels; write the evaluated camera directly to viewBox. */
-function serializeSvg(document: DiagramDocument, frame: DiagramFrameState, palette: ThemePalette): string {
+function serializeSvg(document: DiagramDocument, frame: DiagramFrameState, palette: ThemePalette, typography: ResolvedTypography, options: SvgRenderOptions = {}): string {
+  const { nodeLabel: nodeTypography, edgeLabel: edgeTypography } = typography;
   const title = escapeText(document.title ?? "Diagram");
   const edgeShapes = frame.edges.filter((edge) => edge.opacity > 0).map((edge) => {
     const stroke = edge.style?.stroke ?? palette.edge;
@@ -324,13 +334,14 @@ function serializeSvg(document: DiagramDocument, frame: DiagramFrameState, palet
   }).join("");
   const groupShapes = frame.nodes.filter((node) => node.opacity > 0 && node.kind === "group").map((node) => serializeNodeShape(node, palette)).join("");
   const nodeShapes = frame.nodes.filter((node) => node.opacity > 0 && node.kind !== "group").map((node) => serializeNodeShape(node, palette)).join("");
-  const labels = frame.edges.filter((edge) => edge.opacity > 0).map((edge) => serializeLabel(edge.labelLines, edge.labelBoxes, edge.style?.stroke ?? palette.text, EDGE_TYPOGRAPHY, edge.opacity, palette.background)).join("") + frame.nodes.filter((node) => node.opacity > 0).map((node) => serializeLabel(node.labelLines, node.labelBoxes, node.style?.textColor ?? palette.text, NODE_TYPOGRAPHY, node.opacity)).join("");
+  const labels = frame.edges.filter((edge) => edge.opacity > 0).map((edge) => serializeLabel(edge.labelLines, edge.labelBoxes, edge.style?.stroke ?? palette.text, edgeTypography, edge.opacity, palette.background)).join("") + frame.nodes.filter((node) => node.opacity > 0).map((node) => serializeLabel(node.labelLines, node.labelBoxes, node.style?.textColor ?? palette.text, nodeTypography, node.opacity)).join("");
   const contents = frame.nodes.filter((node) => node.opacity > 0 && node.contentLayout).map((node, index) => serializeNodeContent(node, index)).join("");
-  const flows = frame.edges.filter((edge) => edge.opacity > 0 && edge.flow).map((edge) => serializeFlowMarker(edge.flow!, edge.id, palette, edge.opacity)).join("");
+  const flows = frame.edges.filter((edge) => edge.opacity > 0 && edge.flow).map((edge) => serializeFlowMarker(edge.flow!, edge.id, palette, edge.opacity, typography.flowLabel)).join("");
   const marker = `<defs><marker id="diagram-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="${ARROW_MARKER_SIZE}" markerHeight="${ARROW_MARKER_SIZE}" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker></defs>`;
   const ariaLabel = escapeAttribute(document.title ?? "Diagram");
   const camera = `${formatNumber(frame.camera.x)} ${formatNumber(frame.camera.y)} ${formatNumber(frame.camera.width)} ${formatNumber(frame.camera.height)}`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${camera}" role="img" aria-label="${ariaLabel}" font-family="${escapeAttribute(DIAGRAM_FONT_FAMILY)}"><title>${title}</title>${marker}<rect x="${formatNumber(frame.camera.x)}" y="${formatNumber(frame.camera.y)}" width="${formatNumber(frame.camera.width)}" height="${formatNumber(frame.camera.height)}" fill="${palette.background}"/>${groupShapes}${edgeShapes}${nodeShapes}${labels}${contents}${flows}</svg>`;
+  const background = options.background === "transparent" ? "" : `<rect x="${formatNumber(frame.camera.x)}" y="${formatNumber(frame.camera.y)}" width="${formatNumber(frame.camera.width)}" height="${formatNumber(frame.camera.height)}" fill="${palette.background}"/>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${camera}" role="img" aria-label="${ariaLabel}" font-family="${escapeAttribute(DIAGRAM_FONT_FAMILY)}"><title>${title}</title>${marker}${background}${groupShapes}${edgeShapes}${nodeShapes}${labels}${contents}${flows}</svg>`;
 }
 
 /** Serialize evaluated text and tag backgrounds inside one clip; authored content cannot introduce SVG markup or CSS. */
@@ -348,23 +359,48 @@ function serializeNodeContent(node: EvaluatedNode, index: number): string {
 }
 
 /** Keep markers decorative and horizontal; coordinates come only from the evaluated path point. */
-function serializeFlowMarker(flow: EdgeFlowMarker, edgeId: string, palette: ThemePalette, opacity: number): string {
+function serializeFlowMarker(flow: EdgeFlowMarker, edgeId: string, palette: ThemePalette, opacity: number, flowTypography: TextMetrics): string {
+  const capsuleHeight = flowCapsuleHeight(flowTypography);
   const attributes = `fill="${palette.highlight}" data-flow-id="${escapeAttribute(edgeId)}" opacity="${opacity}" pointer-events="none" aria-hidden="true"`;
   if (flow.text === undefined) return `<circle cx="${formatNumber(flow.point.x)}" cy="${formatNumber(flow.point.y)}" r="${FLOW_DOT_RADIUS}" ${attributes}/>`;
-  const width = Math.max(FLOW_CAPSULE_HEIGHT, estimateTextWidth(flow.text, FLOW_TYPOGRAPHY) + FLOW_TEXT_PADDING * 2);
+  const width = flowCapsuleWidth(flow.text, flowTypography);
   const x = formatNumber(flow.point.x - width / 2);
-  const y = formatNumber(flow.point.y - FLOW_CAPSULE_HEIGHT / 2);
+  const y = formatNumber(flow.point.y - capsuleHeight / 2);
   // Marker ink follows its saturated fill, independently of node text and interior highlight paint.
-  const text = `<text x="${formatNumber(flow.point.x)}" y="${formatNumber(flow.point.y + FLOW_TYPOGRAPHY.fontSize * 0.35)}" fill="${palette.highlightText}" font-size="${FLOW_TYPOGRAPHY.fontSize}" text-anchor="middle">${escapeText(flow.text)}</text>`;
-  return `<g ${attributes}><rect x="${x}" y="${y}" width="${formatNumber(width)}" height="${FLOW_CAPSULE_HEIGHT}" rx="${FLOW_CAPSULE_HEIGHT / 2}"/>${text}</g>`;
+  const text = `<text x="${formatNumber(flow.point.x)}" y="${formatNumber(flow.point.y + flowTypography.fontSize * 0.35)}" fill="${palette.highlightText}" font-size="${flowTypography.fontSize}" text-anchor="middle">${escapeText(flow.text)}</text>`;
+  return `<g ${attributes}><rect x="${x}" y="${y}" width="${formatNumber(width)}" height="${capsuleHeight}" rx="${capsuleHeight / 2}"/>${text}</g>`;
 }
 
-/** Reuse fixed code-point metrics without DOM measurements; reserve a full em for wide letters and Unicode. */
-function estimateTextWidth(text: string, typography: Typography): number {
-  return Array.from(text).reduce((width, character) => {
-    const wide = character.codePointAt(0)! > 0xff || "MWmw@%".includes(character);
-    return width + (wide ? typography.fontSize : typography.charWidth);
-  }, 0);
+/** Validate text-derived arithmetic before exposing or serializing a frame with non-finite coordinates. */
+function assertFiniteTypography(role: "nodeLabel" | "edgeLabel" | "flowLabel", values: Iterable<number>): void {
+  for (const value of values) {
+    if (!Number.isFinite(value)) {
+      throw new DiagramValidationError([{ path: `typography.${role}`, message: "derived text geometry must be finite" }]);
+    }
+  }
+}
+
+/** Check the complete layout, including the final accumulated line box, before paint or public frame exposure. */
+function layoutFiniteNodeContent(content: NodeContent, bounds: ContentSafeArea, palette: ThemePalette,
+  kind: DiagramNode["kind"], defaultFontScale: number): NodeContentLayout {
+  const result = layoutNodeContentWithMetrics(content, bounds, palette, kind, defaultFontScale);
+  // Finite role sizes can overflow after many lines or blocks. Keep measurement's version-path errors independent.
+  assertFiniteTypography("nodeLabel", geometryNumbers(result));
+  return result.layout;
+}
+
+/** Walk numeric geometry lazily so large content layouts do not allocate a second metric array. */
+function* geometryNumbers(value: unknown): Generator<number> {
+  if (typeof value === "number") {
+    yield value;
+    return;
+  }
+  if (value === null || typeof value !== "object") return;
+  for (const entry of Object.values(value)) yield* geometryNumbers(entry);
+}
+
+function flowCapsuleWidth(text: string, typography: TextMetrics): number {
+  return Math.max(flowCapsuleHeight(typography), estimateTextWidth(text, typography) + FLOW_TEXT_PADDING * 2);
 }
 
 /** Serialize supported shapes with escaped color/identity attributes; labels are drawn in a separate text layer. */
@@ -376,7 +412,7 @@ function serializeNodeShape(node: EvaluatedNode, palette: ThemePalette): string 
   const attrs = `fill="${escapeAttribute(fill)}" stroke="${escapeAttribute(stroke)}" stroke-width="${width}"${dash} data-id="${escapeAttribute(node.id)}" opacity="${node.opacity}"`;
   if (node.kind === "ellipse") return `<ellipse cx="${formatNumber(node.x + node.width / 2)}" cy="${formatNumber(node.y + node.height / 2)}" rx="${formatNumber(node.width / 2)}" ry="${formatNumber(node.height / 2)}" ${attrs}/>`;
   if (node.kind === "cylinder") {
-    const ry = Math.min(14, node.height / 4);
+    const ry = Math.min(CYLINDER_CAP_RADIUS, node.height / 4);
     const bottom = node.y + node.height - ry;
     const bodyPath = `M ${formatNumber(node.x)} ${formatNumber(node.y + ry)} L ${formatNumber(node.x + node.width)} ${formatNumber(node.y + ry)} L ${formatNumber(node.x + node.width)} ${formatNumber(bottom)} A ${formatNumber(node.width / 2)} ${formatNumber(ry)} 0 0 1 ${formatNumber(node.x)} ${formatNumber(bottom)} Z`;
     // Keep the cap as a filled sibling so the SVG fill rule cannot turn its interior into a hole.
@@ -384,15 +420,15 @@ function serializeNodeShape(node: EvaluatedNode, palette: ThemePalette): string 
     const cap = `<ellipse cx="${formatNumber(node.x + node.width / 2)}" cy="${formatNumber(node.y + ry)}" rx="${formatNumber(node.width / 2)}" ry="${formatNumber(ry)}"/>`;
     return `<g ${attrs}><path d="${bodyPath}"/>${cap}</g>`;
   }
-  const radius = node.kind === "roundedRect" ? ` rx="${Math.min(NODE_CORNER_RADIUS, node.width / 4, node.height / 4)}"` : "";
+  const radius = node.kind === "roundedRect" || node.kind === "group" ? ` rx="${Math.min(NODE_CORNER_RADIUS, node.width / 4, node.height / 4)}"` : "";
   return `<rect x="${formatNumber(node.x)}" y="${formatNumber(node.y)}" width="${formatNumber(node.width)}" height="${formatNumber(node.height)}"${radius} ${attrs}/>`;
 }
-function serializeLabel(lines: string[], boxes: TextLine[], color: string, typography: Typography, opacity = 1, background?: string): string {
+function serializeLabel(lines: string[], boxes: TextLine[], color: string, typography: TextMetrics, opacity = 1, background?: string): string {
   if (lines.length === 0) return "";
   const x = boxes[0]?.x ?? 0;
   const body = lines.map((line, index) => `<tspan x="${formatNumber(x)}" y="${formatNumber(boxes[index]?.y ?? 0)}">${escapeText(line)}</tspan>`).join("");
   // Only edge labels need background isolation from the path beneath them.
-  const halo = background ? ` stroke="${escapeAttribute(background)}" stroke-width="6" stroke-linejoin="round" paint-order="stroke"` : "";
+  const halo = background ? ` stroke="${escapeAttribute(background)}" stroke-width="${EDGE_LABEL_HALO_RADIUS * 2}" stroke-linejoin="round" paint-order="stroke"` : "";
   return `<text fill="${escapeAttribute(color)}"${halo} font-size="${typography.fontSize}" text-anchor="middle" opacity="${opacity}">${body}</text>`;
 }
 interface Rect {
@@ -404,12 +440,11 @@ interface Rect {
 
 const FOCUS_PADDING = 24;
 const MIN_FITTED_HEIGHT = 1;
-const EDGE_LABEL_HALO_RADIUS = 3;
 const HIT_TOLERANCE = 6;
 
 /** Resolve both focus targets against current geometry, then interpolate cameras with the timeline's eased progress. */
-function resolveCamera(viewport: Viewport, beforeTarget: string | null, afterTarget: string | null, progress: number, nodes: readonly EvaluatedNode[], edges: readonly EvaluatedEdge[], edgeGeometries: ReadonlyMap<string, PathGeometry>): CameraState {
-  const full = { x: 0, y: 0, width: viewport.width, height: fittedHeight(viewport, nodes, edges, edgeGeometries) };
+function resolveCamera(viewport: Viewport, beforeTarget: string | null, afterTarget: string | null, progress: number, nodes: readonly EvaluatedNode[], edges: readonly EvaluatedEdge[], edgeGeometries: ReadonlyMap<string, PathGeometry>, typography: ResolvedTypography): CameraState {
+  const full = { x: 0, y: 0, width: viewport.width, height: fittedHeight(viewport, nodes, edges, edgeGeometries, typography) };
   const before = focusCamera(viewport, beforeTarget, nodes, edges, edgeGeometries) ?? full;
   const after = focusCamera(viewport, afterTarget, nodes, edges, edgeGeometries) ?? full;
   if (progress <= 0) return before;
@@ -423,13 +458,14 @@ function resolveCamera(viewport: Viewport, beforeTarget: string | null, afterTar
 }
 
 /** Full-view fitting keeps authored width and origin; include paint without changing node geometry. */
-function fittedHeight(viewport: Viewport, nodes: readonly EvaluatedNode[], edges: readonly EvaluatedEdge[], geometries: ReadonlyMap<string, PathGeometry>): number {
+function fittedHeight(viewport: Viewport, nodes: readonly EvaluatedNode[], edges: readonly EvaluatedEdge[], geometries: ReadonlyMap<string, PathGeometry>, typography: ResolvedTypography): number {
+  const { nodeLabel: nodeTypography, edgeLabel: edgeTypography } = typography;
   if (!viewport.fitHeight) return viewport.height;
   const bottoms: number[] = [];
   for (const node of nodes) {
     if (node.opacity <= 0) continue;
     bottoms.push(node.y + node.height + (node.style?.strokeWidth ?? DEFAULT_NODE_STROKE_WIDTH) / 2);
-    for (const bottom of labelBottoms(node.labelBoxes, NODE_TYPOGRAPHY)) bottoms.push(bottom);
+    for (const bottom of labelBottoms(node.labelBoxes, nodeTypography)) bottoms.push(bottom);
   }
   for (const edge of edges) {
     if (edge.opacity <= 0) continue;
@@ -438,8 +474,8 @@ function fittedHeight(viewport: Viewport, nodes: readonly EvaluatedNode[], edges
       const strokeWidth = edge.style?.strokeWidth ?? 2;
       bottoms.push(geometry.paintedBottom + strokeWidth / 2, arrowBottom(geometry, strokeWidth));
     }
-    for (const bottom of labelBottoms(edge.labelBoxes, EDGE_TYPOGRAPHY, EDGE_LABEL_HALO_RADIUS)) bottoms.push(bottom);
-    if (edge.flow) bottoms.push(edge.flow.point.y + (edge.flow.text === undefined ? FLOW_DOT_RADIUS : FLOW_CAPSULE_HEIGHT / 2));
+    for (const bottom of labelBottoms(edge.labelBoxes, edgeTypography, EDGE_LABEL_HALO_RADIUS)) bottoms.push(bottom);
+    if (edge.flow) bottoms.push(edge.flow.point.y + (edge.flow.text === undefined ? FLOW_DOT_RADIUS : flowCapsuleHeight(typography.flowLabel) / 2));
   }
   if (bottoms.length === 0) return viewport.height;
   const bottom = bottoms.reduce((maximum, value) => Math.max(maximum, value), 0);
@@ -459,8 +495,8 @@ function arrowBottom(geometry: PathGeometry, strokeWidth: number): number {
 }
 
 /** Use the same deterministic text descent as node hit bounds; edge labels also paint a three-unit halo. */
-function labelBottoms(boxes: readonly TextLine[], typography: Typography, halo = 0): number[] {
-  return boxes.filter((line) => line.text.length > 0).map((line) => line.y + typography.fontSize * TEXT_DESCENT_RATIO + halo);
+function labelBottoms(boxes: readonly TextLine[], typography: TextMetrics, halo = 0): number[] {
+  return boxes.filter((line) => line.text.length > 0).map((line) => textLineBounds(line, typography, halo).bottom);
 }
 
 /** Pad bounds of the target, descendants and visible incident edges, preserving aspect ratio within the initial viewport. */
@@ -517,12 +553,11 @@ function clampCamera(value: number, min: number, max: number): number {
 }
 
 /** Include deterministic label bounds so overflowing text remains part of the node's interaction target. */
-function isPointInNode(point: DiagramPoint, node: EvaluatedNode): boolean {
+function isPointInNode(point: DiagramPoint, node: EvaluatedNode, nodeTypography: TextMetrics): boolean {
   const labelHit = node.labelBoxes.some((line) => {
     if (line.text.length === 0) return false;
-    const halfWidth = estimateTextWidth(line.text, NODE_TYPOGRAPHY) / 2;
-    return point.x >= line.x - halfWidth && point.x <= line.x + halfWidth
-      && point.y >= line.y - NODE_TYPOGRAPHY.fontSize && point.y <= line.y + NODE_TYPOGRAPHY.fontSize * TEXT_DESCENT_RATIO;
+    const bounds = textLineBounds(line, nodeTypography);
+    return point.x >= bounds.left && point.x <= bounds.right && point.y >= bounds.top && point.y <= bounds.bottom;
   });
   if (labelHit) return true;
   if (node.kind === "ellipse") {

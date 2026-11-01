@@ -28,7 +28,7 @@ pnpm --filter flowsvg-native-example dev
 
 ## Static build and acceptance input
 
-The root [GitHub Pages workflow](../../.github/workflows/pages.yml) publishes this host with formal input and the repository deployment base. Initial publication is pending repository eligibility. See [Pages setup and verification](../../docs/GITHUB-PAGES.md).
+The root [GitHub Pages workflow](../../.github/workflows/pages.yml) publishes this host with formal input and the repository deployment base. Initial publication is pending repository eligibility. See [Pages setup and verification](../../docs/development/github-pages.md).
 
 ```sh
 pnpm --filter flowsvg-native-example build
@@ -84,8 +84,10 @@ The built-site suite exercises query normalization, direct entry/refresh, actual
 
 ## Cross-host delivery
 
-From the repository root, `pnpm build:examples` prepares SDK, shared author output and all three sites in order. `pnpm test:examples` runs shared contracts, each host suite and copied-artifact root/subpath delivery. `pnpm test:all` explicitly adds SDK type/test/tarball verification. See [showcase verification](../../docs/SHOWCASE-VERIFICATION.md) for independent hosting, narrower commands and resource checks.
+From the repository root, `pnpm build:examples` prepares SDK, shared author output and all three sites in order. `pnpm test:examples` runs shared contracts, each host suite and copied-artifact root/subpath delivery. `pnpm test:all` explicitly adds SDK type/test/tarball verification. See [showcase verification](../../docs/verification/showcase-verification.md) for independent hosting, narrower commands and resource checks.
 
-The SDK owns effective playback timing. One flow targets 180 diagram units/second (minimum movement 400 ms); each single-flow beat lasts for movement plus a fixed 500 ms post-arrival interval, replacing its authored duration. Use separate no-flow beats for longer reading time. Multiple flows stay synchronized. The shared catalog derives its duration from SDK compilation, and scene controls use the compiled schedule.
+## Shared SDK contract
 
-Single-flow receivers fade fill and stroke in for 200 ms after arrival. Automatic node and edge highlights then hold for 100 ms and fade out for 200 ms. Explicit highlights and participant opt-out retain authored behavior. See [SDK transfer semantics](../../docs/SDK-GUIDE.md#beats-and-actions) for direction, reduced motion and export behavior.
+The public SDK owns rendering, effective timeline timing, playback, and GIF export. This host consumes the compiled beat schedule; see the [SDK timeline contract](../../docs/guides/sdk-guide.md#beats-and-actions) for movement, post-arrival, reduced-motion, default, and error behavior, and the [SDK export sections](../../docs/guides/sdk-guide.md#browser-png-and-svg-backgrounds) for PNG/GIF requirements and limits.
+
+Host lifecycle, cancellation, address, and build behavior remain documented above and are maintained by this app's source and tests.

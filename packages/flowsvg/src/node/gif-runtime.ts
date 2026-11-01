@@ -1,4 +1,4 @@
-/** Node-only GIF runtime. Own Playwright, isolated page resources and temporary files for one export. */
+/** Node image runtime. Share offline Playwright ownership and late-resource cleanup across GIF and PNG. */
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -6,7 +6,9 @@ import { pathToFileURL } from "node:url";
 import type { Browser, BrowserContext } from "playwright-core";
 import type { DiagramDocument } from "../core/model.js";
 import { GifExportError, type GifExportErrorCode, type GifExportOptions, type GifExportProgress } from "../export/types.js";
+import { PngExportError, type PngExportOptions } from "../export/png-types.js";
 
+export type BrowserPngOptions = Omit<PngExportOptions, "signal">;
 export type BrowserGifOptions = Omit<GifExportOptions, "signal" | "onProgress">;
 
 export interface NodeGifRuntimeInput {
@@ -21,7 +23,7 @@ export interface NodeGifRuntimeInput {
 }
 
 /**
- * Internal boundary between GIF orchestration and Playwright. The caller owns
+ * Internal boundary between image orchestration and Playwright. The caller owns
  * the export protocol; this runtime owns only browser/page/temp resources.
  */
 export interface NodeGifRuntime {
@@ -30,18 +32,32 @@ export interface NodeGifRuntime {
   dispose(): Promise<void>;
 }
 
+export interface NodePngRuntime {
+  run(document: DiagramDocument, options: BrowserPngOptions): Promise<Uint8Array>;
+  abort(): void;
+  dispose(): Promise<void>;
+}
+
 interface ExportBridge {
-  FlowSVGExport: { exportGif(document: DiagramDocument, options: GifExportOptions): Promise<Uint8Array> };
+  FlowSVGExport: {
+    exportGif(document: DiagramDocument, options: GifExportOptions): Promise<Uint8Array>;
+    exportPng(document: DiagramDocument, options: PngExportOptions): Promise<Uint8Array>;
+  };
   flowSvgProgress(progress: GifExportProgress): Promise<void>;
 }
 type ExportResult = { bytes: number[] } | { error: { code: GifExportErrorCode; message: string } };
 
 /** Create the production runtime; tests can inject another NodeGifRuntime at the same seam. */
 export function createNodeGifRuntime(input: NodeGifRuntimeInput): NodeGifRuntime {
-  return new PlaywrightGifRuntime(input);
+  return new PlaywrightImageRuntime(input);
 }
 
-class PlaywrightGifRuntime implements NodeGifRuntime {
+/** Reuse the same ownership state machine; PNG differs only in its browser call and error class. */
+export function createNodePngRuntime(input: NodeGifRuntimeInput): NodePngRuntime {
+  return new PlaywrightImageRuntime(input, "png");
+}
+
+class PlaywrightImageRuntime implements NodeGifRuntime, NodePngRuntime {
   private browser?: Browser;
   private context?: BrowserContext;
   private directory?: string;
@@ -49,18 +65,18 @@ class PlaywrightGifRuntime implements NodeGifRuntime {
   private contextClosing?: Promise<void>;
   private disposed = false;
   private cancelled = false;
-  private rejectCancellation?: (error: GifExportError) => void;
+  private rejectCancellation?: (error: GifExportError | PngExportError) => void;
   private readonly cancellation: Promise<never>;
   private readonly abortHandler = (): void => { this.abort(); };
 
-  constructor(private readonly input: NodeGifRuntimeInput) {
+  constructor(private readonly input: NodeGifRuntimeInput, private readonly format: "gif" | "png" = "gif") {
     this.ownsBrowser = input.browser === undefined;
     this.cancellation = new Promise<never>((_, reject) => { this.rejectCancellation = reject; });
     void this.cancellation.catch(() => undefined);
     this.input.signal?.addEventListener("abort", this.abortHandler, { once: true });
   }
 
-  async run(document: DiagramDocument, options: BrowserGifOptions): Promise<Uint8Array> {
+  async run(document: DiagramDocument, options: BrowserGifOptions | BrowserPngOptions): Promise<Uint8Array> {
     const script = this.input.portableExportScript ?? await this.race(readFile(new URL("../portable/export.js", import.meta.url), "utf8"));
     this.checkActive();
     this.browser = this.input.browser ?? await this.launch(this.input.executablePath);
@@ -73,17 +89,17 @@ class PlaywrightGifRuntime implements NodeGifRuntime {
       if (this.cancelled || this.disposed || this.input.signal?.aborted) return;
       this.input.onProgress?.(progress);
     }));
-    const directory = await this.acquire(mkdtemp(join(tmpdir(), "flowsvg-gif-")), removeDirectory, (value) => { this.directory = value; });
+    const directory = await this.acquire(mkdtemp(join(tmpdir(), `flowsvg-${this.format}-`)), removeDirectory, (value) => { this.directory = value; });
     const html = join(directory, "export.html");
     await this.race(writeFile(html, `<meta charset="utf-8"><script>${script}</script>`));
     this.checkActive();
     await this.race(page.goto(pathToFileURL(html).href));
-    const result: ExportResult = await this.race(page.evaluate(async ({ document: inputDocument, options: inputOptions }) => {
+    const result: ExportResult = await this.race(page.evaluate(async ({ document: inputDocument, options: inputOptions, format }) => {
       const bridge = globalThis as unknown as ExportBridge;
       const controller = new AbortController();
       const progressPending: Promise<void>[] = [];
       try {
-        const bytes = await bridge.FlowSVGExport.exportGif(inputDocument, {
+        const bytes = format === "png" ? await bridge.FlowSVGExport.exportPng(inputDocument, { ...inputOptions, signal: controller.signal }) : await bridge.FlowSVGExport.exportGif(inputDocument, {
           ...inputOptions,
           signal: controller.signal,
           onProgress: (progress) => { progressPending.push(bridge.flowSvgProgress(progress)); }
@@ -92,17 +108,17 @@ class PlaywrightGifRuntime implements NodeGifRuntime {
         return { bytes: Array.from(bytes) };
       } catch (error: unknown) {
         const failure = error as { code?: GifExportErrorCode; message?: string };
-        return { error: { code: failure.code ?? "encoding", message: failure.message ?? "Browser GIF export failed." } };
+        return { error: { code: failure.code ?? "encoding", message: failure.message ?? `Browser ${format.toUpperCase()} export failed.` } };
       }
-    }, { document, options }));
+    }, { document, options, format: this.format }));
     this.checkActive();
-    if ("error" in result) throw new GifExportError(result.error.code, result.error.message);
+    if ("error" in result) throw this.exportError(result.error.code, result.error.message);
     return Uint8Array.from(result.bytes);
   }
 
   abort(): void {
     this.cancelled = true;
-    this.rejectCancellation?.(cancelledError());
+    this.rejectCancellation?.(this.cancelledError());
     void this.closeContext().catch(() => undefined);
   }
 
@@ -111,7 +127,7 @@ class PlaywrightGifRuntime implements NodeGifRuntime {
     let automation: typeof import("playwright-core");
     try { automation = await import("playwright-core"); }
     catch (error: unknown) {
-      throw new GifExportError("environment", "GIF export requires playwright-core. Reinstall flowsvg with its runtime dependencies, then prepare Chromium explicitly.", { cause: error });
+      throw this.exportError("environment", `${this.format.toUpperCase()} export requires playwright-core. Reinstall flowsvg with its runtime dependencies, then prepare Chromium explicitly.`, { cause: error });
     }
     this.checkActive();
     // Keep process signal ownership with the caller so CLI cancellation reaches this task.
@@ -121,7 +137,7 @@ class PlaywrightGifRuntime implements NodeGifRuntime {
 
   private async acceptLaunchedBrowser(browser: Browser): Promise<Browser> {
     // A launch can settle after cancellation or dispose; close that late process immediately.
-    if (this.cancelled || this.input.signal?.aborted || this.disposed) { await browser.close(); throw cancelledError(); }
+    if (this.cancelled || this.input.signal?.aborted || this.disposed) { await browser.close(); throw this.cancelledError(); }
     this.browser = browser;
     return browser;
   }
@@ -131,7 +147,7 @@ class PlaywrightGifRuntime implements NodeGifRuntime {
     return this.race(operation.then(async (value) => {
       if (this.cancelled || this.input.signal?.aborted || this.disposed) {
         await release(value);
-        throw cancelledError();
+        throw this.cancelledError();
       }
       retain?.(value);
       return value;
@@ -139,7 +155,7 @@ class PlaywrightGifRuntime implements NodeGifRuntime {
   }
 
   private checkActive(): void {
-    if (this.cancelled || this.disposed || this.input.signal?.aborted) throw cancelledError();
+    if (this.cancelled || this.disposed || this.input.signal?.aborted) throw this.cancelledError();
   }
 
   private closeContext(): Promise<void> {
@@ -149,6 +165,14 @@ class PlaywrightGifRuntime implements NodeGifRuntime {
 
   private race<T>(operation: PromiseLike<T>): Promise<T> {
     return Promise.race([operation, this.cancellation]);
+  }
+
+  private exportError(code: GifExportErrorCode, message: string, options?: ErrorOptions): GifExportError | PngExportError {
+    return this.format === "png" ? new PngExportError(code === "caption-overflow" ? "encoding" : code, message, options) : new GifExportError(code, message, options);
+  }
+
+  private cancelledError(): GifExportError | PngExportError {
+    return this.exportError("cancelled", `${this.format.toUpperCase()} export was cancelled. Start a new export when ready.`);
   }
 
   async dispose(): Promise<void> {
@@ -163,5 +187,4 @@ class PlaywrightGifRuntime implements NodeGifRuntime {
   }
 }
 
-function cancelledError(): GifExportError { return new GifExportError("cancelled", "GIF export was cancelled. Start a new export when ready."); }
 async function removeDirectory(directory: string): Promise<void> { await rm(directory, { recursive: true, force: true }); }

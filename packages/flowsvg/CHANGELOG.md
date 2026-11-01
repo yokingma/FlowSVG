@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.2 - 2026-10-28
+
+- Add `flowsvg/node.exportPng` with preflight, offline Chromium rasterization, caller browser ownership and late-resource cleanup.
+
+- Reject non-finite accumulated structured-content geometry before evaluation, SVG or on-demand diagnostics expose it. Report `DiagramValidationError` at `typography.nodeLabel`, including overflow from many scaled lines or blocks; keep finite overflow warnings and explicit font-size inheritance.
+
+- Exclude halo-only intersections between normally spaced lines of one ordinary edge label. Retain foreground text conflicts, independent line identities and full halo risks against other labels or nodes.
+
+- Add on-demand `Diagram.diagnoseAt` for edge–node, label–node and label–label risks. Reuse effective camera, typography, content clips and route samples. Match filled contours analytically, retain transparent-fill outlines and provide canonical role/field/line warning identities without adding pair checks to playback.
+
+- Add browser PNG bytes through `flowsvg/export` and portable exports, with exact selected-camera dimensions, optional transparency, cancellation and separate preflight limits. Preserve opaque GIF output while sharing SVG image resource cleanup.
+- Add transparent static SVG backgrounds while preserving node fills, edge-label halos and selected camera geometry.
+- Add document-level `typography.nodeLabel`, `edgeLabel` and `flowLabel` in diagram units. Resolve omitted roles to 16/14/12 and share text metrics across evaluation, SVG, hit testing and height fitting. Scale omitted structured-content role sizes and `measureNodeContent` by the effective node size while retaining explicit sizes, authored geometry and compiled duration. Capsules follow the flow size, stay decorative and participate in fitted height. Reject invalid or unrepresentable derived metrics with typography field paths.
+
+- Round group borders by default, using the same 8-unit radius as rounded rectangles and reducing it for small groups. Nested and dashed groups share this rendering across players, SVG and GIF exports.
+
 ## 0.2.1 - 2026-10-23
 
 - Isolate Node GIF browser execution behind an internal runtime seam. The production path still uses the pinned Playwright Chromium exporter, while task-owned context/page and temporary files are released on success, failure, and cancellation without closing caller-owned browsers. Add deterministic runtime coverage for launch, page-load, encoding, progress-callback, and late resource-acquisition cancellation paths. Contexts, pages, browser launches and temporary directories that finish after cancellation are released even if task disposal already returned.

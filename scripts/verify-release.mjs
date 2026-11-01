@@ -73,10 +73,10 @@ try {
     if (!packedFiles.includes(file)) throw new Error(`tarball missing ${file}`);
   }
   const modules = [
-    "export", "export/browser", "export/types", "export/plan", "export/captions", "export/worker-source",
-    "index", "browser", "react", "vue", "web-component", "node", "node/html", "node/cli", "node/gif", "node/gif-runtime", "node/output",
+    "export", "export/png-browser", "export/png-plan", "export/png-types", "export/rasterize", "export/browser", "export/types", "export/plan", "export/captions", "export/worker-source",
+    "index", "browser", "react", "vue", "web-component", "node", "node/html", "node/cli", "node/gif", "node/gif-runtime", "node/png", "node/output",
     "browser/player", "browser/controls", "browser/select-control", "browser/export-controls", "browser/accessibility", "browser/lifecycle", "browser/svg-dom",
-    "core/model", "core/validation", "core/diagram", "core/edge-geometry", "core/svg-number", "core/timeline", "core/theme", "core/color",
+    "core/diagnostic-geometry", "core/geometry-diagnostics", "core/model", "core/typography", "core/validation", "core/diagram", "core/edge-geometry", "core/svg-number", "core/timeline", "core/theme", "core/color",
     "core/node-content", "core/node-content-measurement", "core/node-content-paint",
     "adapters/host-lifecycle", "adapters/react", "adapters/vue", "adapters/web-component"
   ];
@@ -103,6 +103,16 @@ try {
     import { defineFlowPlayer as defineElement } from "flowsvg/element";
     const diagram = createDiagram({ version: 1, viewport: { width: 100, height: 100 }, nodes: [], edges: [], scenes: [] });
     if (!diagram.renderSvg(0).includes("<svg")) throw new Error("framework-free core export failed");
+    const geometry = createDiagram({ version: 1, viewport: { width: 300, height: 150 },
+      nodes: [{ id: "from", kind: "rect", x: 0, y: 50, width: 20, height: 20 },
+        { id: "to", kind: "rect", x: 250, y: 50, width: 20, height: 20 },
+        { id: "barrier", kind: "ellipse", x: 120, y: 40, width: 40, height: 40 }],
+      edges: [{ id: "edge", from: "from", to: "to" }], scenes: [] });
+    const risks = geometry.diagnoseAt(0);
+    if (risks.length !== 1 || risks[0].code !== "edge-node-overlap" || risks[0].relatedObjectIds[0] !== "barrier"
+      || JSON.parse(risks[0].warningKey)[1] !== 1 || geometry.evaluateAt(0).warnings.length) {
+      throw new Error("DOM-free public geometry diagnostics failed");
+    }
     const content = { blocks: [{ type: "paragraph", text: "A" }] };
     const taller = { blocks: [{ type: "paragraph", text: "A\\nB\\nC" }] };
     const measured = measureNodeContent({ kind: "rect", width: 240, content: Object.freeze([content, taller]) });
@@ -118,16 +128,22 @@ try {
   `], tempRoot);
   run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", "react", "react-dom", "@types/react", "@types/react-dom", "vue", "jsdom@26.1.0", "typescript", "gifuct-js@2.1.2", "@types/node@22.19.1"], tempRoot);
   writeFileSync(join(tempRoot, "types-smoke.ts"), `
-    import { createDiagram, renderSvg, measureNodeContent, type DiagramDocument, type DiagramBeat, type NodeContent, type NodeContentMeasurementInput, type NodeContentMeasurement, type NodeContentMeasurementDiagnostic } from "flowsvg";
-    import type { ContentBlock, ContentListItem, ContentListStyle, ContentTag, ContentTagStyle, ContentTagBackground, ContentGraphBlock, ContentGraphNode, ContentGraphEdge, ContentGraphLayout, ContentText, ContentTextSpan, ContentSpanStyle, ContentSpan, ContentTextStyle, ContentAlignment, ContentSafeArea, ContentLine, NodeContentLayout, NodeKind, EdgeRoute, PortDirection, FlowDirection, ThemeName, Viewport, NodeStyle, EdgeStyle, DiagramNode, DiagramEdge, Scene, Beat, NodeVisualState, EdgeVisualState, Action, ValidationIssue, EvaluateOptions, TextLine, EvaluatedNode, EvaluatedEdge, EdgeFlowMarker, LayoutWarning, CameraState, HitObjectType, HitObject, DiagramPoint, DiagramFrameState, DiagramValidationError, Diagram } from "flowsvg";
+    import { createDiagram, renderSvg, measureNodeContent, type DiagramDocument, type DiagramTypography, type DiagramBeat, type NodeContent, type NodeContentMeasurementInput, type NodeContentMeasurement, type NodeContentMeasurementDiagnostic } from "flowsvg";
+    import type { ContentBlock, ContentListItem, ContentListStyle, ContentTag, ContentTagStyle, ContentTagBackground, ContentGraphBlock, ContentGraphNode, ContentGraphEdge, ContentGraphLayout, ContentText, ContentTextSpan, ContentSpanStyle, ContentSpan, ContentTextStyle, ContentAlignment, ContentSafeArea, ContentLine, NodeContentLayout, NodeKind, EdgeRoute, PortDirection, FlowDirection, ThemeName, Viewport, NodeStyle, EdgeStyle, DiagramNode, DiagramEdge, Scene, Beat, NodeVisualState, EdgeVisualState, Action, ValidationIssue, EvaluateOptions, SvgRenderOptions, TextLine, EvaluatedNode, EvaluatedEdge, EdgeFlowMarker, LayoutWarning, GeometryWarning, GeometryWarningCode, TextOverflowWarning, CameraState, HitObjectType, HitObject, DiagramPoint, DiagramFrameState, DiagramValidationError, Diagram } from "flowsvg";
     import type { FlowPlayer, PlayerOptions } from "flowsvg/browser";
-    import { renderHtml, exportGif as exportNodeGif, type HtmlRenderOptions, type NodeGifExportOptions } from "flowsvg/node";
-    import { exportGif, GifExportError, type GifExportOptions, type GifExportProgress, type GifExportErrorCode } from "flowsvg/export";
+    import { renderHtml, exportGif as exportNodeGif, type HtmlRenderOptions, type NodeGifExportOptions, exportPng as exportNodePng, type NodePngExportOptions } from "flowsvg/node";
+    import { exportPng, PngExportError, type PngExportOptions, type PngExportErrorCode, exportGif, GifExportError, type GifExportOptions, type GifExportProgress, type GifExportErrorCode } from "flowsvg/export";
+    const pngOptions: PngExportOptions = { timeMs: 0, width: 640, background: "transparent", reducedMotion: false, theme: "dark", signal: new AbortController().signal };
+    const pngCode: PngExportErrorCode = "rasterization";
+    const svgOptions: SvgRenderOptions = { background: "transparent" };
+    void [exportPng, PngExportError, pngOptions, pngCode, svgOptions];
     const progress = (value: GifExportProgress): void => { const phase: string = value.phase; void phase; };
     const options: GifExportOptions = { startMs: 0, endMs: 1000, width: 320, fps: 15, speed: 2,
       includeCaptions: true, captionHeight: 80, loopCount: 65536, finalHoldMs: 0, reducedMotion: false,
       theme: "dark", signal: new AbortController().signal, onProgress: progress };
     const nodeOptions: NodeGifExportOptions = { ...options, executablePath: "/prepared/chromium" };
+    const nodePngOptions: NodePngExportOptions = { timeMs: 0, width: 1280, background: "transparent", executablePath: "/prepared/chromium" };
+    void [exportNodePng, nodePngOptions];
     const htmlOptions: HtmlRenderOptions = { gifExport: true };
     const playerOptions: PlayerOptions = { gifExport: true };
     const code: GifExportErrorCode = "limit";
@@ -142,17 +158,26 @@ try {
       { type: "list", marker: "none", items: [{ tags: [{ text: "verified" }], status: "new",
         body: [{ text: "Confirmed", style: { fontSize: 14, fontWeight: 700 } }], auxiliary: "2026-10-18" }] }
     ] };
-    const measurementInput: NodeContentMeasurementInput = { kind: "cylinder", width: 240, content: Object.freeze([content]) };
+    const typography: DiagramTypography = { nodeLabel: 20, edgeLabel: 18, flowLabel: 16 };
+    const measurementInput: NodeContentMeasurementInput = { typography, kind: "cylinder", width: 240, content: Object.freeze([content]) };
     const measurement: NodeContentMeasurement = measureNodeContent(measurementInput);
     const diagnostic: NodeContentMeasurementDiagnostic | undefined = measurement.diagnostics[0];
     const diagnosticDimension: "width" | "height" | undefined = diagnostic?.dimension;
     void diagnosticDimension;
-    const authored: DiagramDocument = { version: 1, viewport: { width: 320, height: 260 },
+    const authored: DiagramDocument = { version: 1, typography, viewport: { width: 320, height: 260 },
       nodes: [{ id: "facts", kind: "cylinder", x: 20, y: 20, width: 240, height: measurement.height, content }], edges: [],
       scenes: [{ id: "modes", label: "Modes", beats: [
         { durationMs: 500, actions: [{ type: "updateNode", target: "facts", value: { content } }] },
         { durationMs: 500, actions: [{ type: "updateNode", target: "facts", value: { content: null } }] }
       ] }] };
+    const geometryWarnings: GeometryWarning[] = createDiagram(authored).diagnoseAt(0, { theme: "dark", reducedMotion: false });
+    const geometryCode: GeometryWarningCode | undefined = geometryWarnings[0]?.code;
+    const textWarning: TextOverflowWarning = { code: "text-overflow", objectId: "facts", path: "nodes[0].content", message: "example" };
+    const layoutWarnings: LayoutWarning[] = [textWarning, ...geometryWarnings];
+    for (const warning of layoutWarnings) {
+      if (warning.code !== "text-overflow") { const key: string = warning.warningKey; void key; }
+    }
+    void [geometryCode, textWarning];
     const schedule: readonly DiagramBeat[] = createDiagram(authored).beats;
     const firstBeat: DiagramBeat | undefined = schedule[0];
     const timing: number | undefined = firstBeat?.endMs;

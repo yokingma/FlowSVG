@@ -1,12 +1,14 @@
 # FlowSVG SDK 使用手册
 
-[English](SDK-GUIDE.md) | 简体中文
+[English](sdk-guide.md) | 简体中文
 
-FlowSVG（流形）将 JSON 或 TypeScript 文档转换为 SVG 动画图解。定义节点、连线、场景与节拍，即可在浏览器播放、导出 SVG 或 GIF，或分享一个离线 HTML 文件。
+> **文档状态：当前入口。** `packages/flowsvg/` 下的公开类型、实现与测试是行为事实来源。本手册是维护中的中文任务路径；验证说明描述可重现的检查方法，不替代当前契约。
+
+FlowSVG（流形）将 JSON 或 TypeScript 文档转换为 SVG 动画图解。定义节点、连线、场景与节拍，即可在浏览器播放、导出 SVG、PNG 或 GIF，或分享一个离线 HTML 文件。
 
 SDK 使用 ESM，提供无 DOM 核心及原生浏览器、Vue、React、Web Component 接入。各接入方式共用同一文档和时间线。
 
-[安装](#安装) · [快速开始](#快速开始) · [Vue](#vue-集成) · [React](#react-集成) · [原生浏览器](#原生浏览器) · [Web Component](#web-component) · [文档](#文档与时间线) · [节点内容](#节点内容) · [API](#api) · [播放器控件](#播放器控件) · [GIF](#浏览器-gif-导出) · [Node / CLI](#node-gif-导出node-20) · [离线 HTML](#离线-htmlnode-20)
+[安装](#安装) · [快速开始](#快速开始) · [Vue](#vue-集成) · [React](#react-集成) · [原生浏览器](#原生浏览器) · [Web Component](#web-component) · [文档](#文档与时间线) · [节点内容](#节点内容) · [字号](#文档级字号) · [API](#api) · [诊断](#按需几何风险诊断) · [播放器控件](#播放器控件) · [PNG](#浏览器-png-与-svg-背景) · [GIF](#浏览器-gif-导出) · [Node PNG](#node-png-导出) · [Node GIF / CLI](#node-gif-导出node-20) · [离线 HTML](#离线-htmlnode-20)
 
 ## 安装
 
@@ -18,14 +20,14 @@ npm install flowsvg
 
 仅提供 ESM，类型声明随包提供。核心与原生浏览器入口无需框架。核心要求 Node.js 18+ 或兼容 ES2022 的浏览器；播放要求 DOM、SVG 和 `requestAnimationFrame`；框架最低版本为 Vue 3.5、React 18。
 
-浏览器 GIF 接口还要求 Canvas 2D、图像解码和宿主内容安全策略允许的 Blob worker。Node 入口及 CLI 要求 Node 20+；生成 HTML 无需浏览器，Node GIF 导出须预装 Chromium 和系统字体。
+浏览器 PNG 和 GIF 导出要求 Canvas 2D、SVG 图像解码与本机已安装的系统字体。GIF 还要求宿主内容安全策略允许 Blob worker。Node 入口及 CLI 要求 Node 20+；生成 HTML 无需浏览器，Node PNG 和 GIF 导出须预装 Chromium 和系统字体。
 
 | 导入路径 | 用途 |
 | --- | --- |
 | `flowsvg` | 无 DOM 的文档校验、编译、求值、命中与 SVG 导出 |
 | `flowsvg/browser` | 原生浏览器播放器 |
-| `flowsvg/export` | 浏览器 GIF 导出、进度、取消与错误 |
-| `flowsvg/node` | Node 20+ 离线 HTML 生成与 Chromium GIF 导出 |
+| `flowsvg/export` | 浏览器 PNG/GIF 导出、取消与错误；GIF 进度 |
+| `flowsvg/node` | Node 20+ 离线 HTML 生成与 Chromium PNG/GIF 导出 |
 | `flowsvg/vue` | Vue 组件与实例类型 |
 | `flowsvg/react` | React 组件与 ref 类型 |
 | `flowsvg/web-component` | 显式注册自定义元素；也可使用 `flowsvg/element` |
@@ -90,7 +92,7 @@ export const diagramDocument: DiagramDocument = {
 
 浅色主题下的最后一拍中段画面：事件与响应消息同时传递，仅高亮当前参与的节点。
 
-![订单流程包含 Client、API gateway、Auth、Order service、Orders 数据库和 Event queue，正在传递 OrderCreated 事件与响应消息](../packages/flowsvg/docs/images/quick-start.png)
+![订单流程包含 Client、API gateway、Auth、Order service、Orders 数据库和 Event queue，正在传递 OrderCreated 事件与响应消息](../../packages/flowsvg/docs/images/quick-start.png)
 
 ### 2. 求值并导出 SVG
 
@@ -255,8 +257,9 @@ if (element) element.document = diagramDocument;
 | `edges` | 连线列表，`id`、`from`、`to` 必填；端点引用节点或分组边界 |
 | `scenes` | `[]` 表示静态图；场景具有唯一 `id`、`label` 和非空 `beats` |
 | `title` / `theme` | 可选标题与 `light` / `dark` 文档主题 |
+| `typography` | 可选的节点、连线与流动标记字号，见[文档级字号](#文档级字号) |
 
-节点与连线 ID 全局唯一。形状：`rect`、`roundedRect`、`ellipse`、`cylinder`、`group`。`parentId` 指向父分组，子节点坐标相对分组原点。标签为纯文本，`visible` 默认 `true`。节点样式：`fill`、`stroke`、`strokeWidth`、`textColor`、`dashed`（分组边框）；连线样式：`stroke`、`strokeWidth`、`dashed`。颜色使用十六进制 RGB/RGBA，如 `#2563eb`、`#2563eb80`。
+节点与连线 ID 全局唯一。形状：`rect`、`roundedRect`、`ellipse`、`cylinder`、`group`。分组边框默认为圆角。`parentId` 指向父分组，子节点坐标相对分组原点。标签为纯文本，`visible` 默认 `true`。节点样式：`fill`、`stroke`、`strokeWidth`、`textColor`、`dashed`（分组边框）；连线样式：`stroke`、`strokeWidth`、`dashed`。颜色使用十六进制 RGB/RGBA，如 `#2563eb`、`#2563eb80`。
 
 路由：`straight`（默认）、`orthogonal`、`curved`。曲线跟随端口切线，不避让其他节点；正交路径默认使用圆角转弯；SVG、流动标记、边界和命中检测共用该几何。圆角按短线段、障碍物与箭头空间收缩。正交路径避开可见普通节点，受阻时固定回退，不保证最短路径或零交叉。`fromPort` / `toPort` 可设为 `top`、`right`、`bottom`、`left`。箭头空间允许时，正交路径优先将跨接线段放在节点间隔中点；相同朝向的端口优先使用单一外侧通道，并为双方各自的祖先分组边框预留空间，共同祖先分组不推动通道外移。正交路径保留向外的端点线段，并按求值后的线宽为箭头预留直线末段；相邻节点空间不足时缩短预留距离。同一目标侧的曲线和正交入线按来源位置分配独立连接位置，来源位置相同时按文档顺序排列；隐藏连线仍保留位置。连接位置限制在该侧的中央区域，节点过小或入线过多时仍需增加空间。曲线端口决定切线。省略时按中心连线主方向选择，椭圆端点位于轮廓。普通标签按估算宽度换行；高度溢出时仍显示全文，并报告 `text-overflow`。
 
@@ -295,15 +298,16 @@ if (element) element.document = diagramDocument;
 
 | API | 返回与行为 |
 | --- | --- |
-| `validateDocument(input: unknown)` | 返回 `{ path, message }[]`；空数组表示通过 |
+| `validateDocument(input: unknown)` | 返回 `{ path, message }[]`；空数组表示作者数据的结构和数值检查通过 |
 | `createDiagram(document)` | 校验、复制并编译，返回 `Diagram`；非法文档抛出 `DiagramValidationError` |
 | `renderSvg(document, timeMs = 0, options?)` | 一次性编译并导出静态 SVG 字符串 |
 | `diagram.totalDuration` | 包含单条流动动画移动和到达停留的全局总时长，静态文档为 `0` |
 | `diagram.beats` | 冻结的有效区间：`{ sceneId, beatId, beatIndex, startMs, endMs, caption? }`；导航和导出按此安排时间。`beatIndex` 为场景内索引，说明文字包含继承结果 |
 | `diagram.evaluateAt(timeMs, options?)` | 返回 `DiagramFrameState` |
+| `diagram.diagnoseAt(timeMs, options?)` | 按需返回 `GeometryWarning[]`，不重复返回文字溢出 |
 | `diagram.renderSvg(timeMs = 0, options?)` | 导出相同求值结果的 SVG |
 | `diagram.hitTest(timeMs, point, options?)` | 在文档坐标中返回 `{ id, type: "node" \| "edge" }` 或 `null` |
-| `measureNodeContent({ kind, width, content })` | 返回推荐的固定高度及各内容版本未解决的溢出诊断，见[内容尺寸测量](#生成文档前测量节点内容) |
+| `measureNodeContent({ kind, width, content, typography? })` | 返回推荐的固定高度及各内容版本未解决的溢出诊断，见[内容尺寸测量](#生成文档前测量节点内容) |
 | `wrapText(label, maxWidth, typography?)` | 按固定字宽估算换行，返回文本行数组 |
 
 `validateDocument` 检查作者数据的结构和数值。编译时，SDK 还会在对应节拍的 `durationMs` 路径报告非有限的移动时长或累计时间，并抛出 `DiagramValidationError`。输入文档保留作者设置的时长。
@@ -312,7 +316,24 @@ if (element) element.document = diagramDocument;
 
 `DiagramFrameState` 包含时间、场景/节拍 ID、进度、求值后的节点/连线、镜头、说明文字及警告。坐标为绝对坐标。静态图的场景/节拍 ID 为 `null`；节拍 ID 为 `${scene.id}:${beatIndex}`，索引从零开始。活动连线的 `flow` 提供方向、进度、位置及可选文字；拍末、隐藏或减少动画时不显示标记。
 
-类型及成员 JSDoc 随包提供：`DiagramDocument`、`DiagramNode`、`DiagramEdge`、`Scene`、`Beat`、`DiagramBeat`、`Action`、`Diagram`、`DiagramFrameState`、`EvaluateOptions`、`ValidationIssue`、`LayoutWarning`。
+类型及成员 JSDoc 随包提供：`DiagramDocument`、`DiagramNode`、`DiagramEdge`、`Scene`、`Beat`、`DiagramBeat`、`Action`、`Diagram`、`DiagramFrameState`、`EvaluateOptions`、`ValidationIssue`、`LayoutWarning`、`GeometryWarning`、`GeometryWarningCode`、`TextOverflowWarning`。
+
+### 按需几何风险诊断
+
+```ts
+const risks = diagram.diagnoseAt(500, { theme: "light", reducedMotion: false });
+for (const risk of risks) {
+  console.log(risk.code, risk.path, risk.objectId, risk.relatedObjectIds, risk.warningKey);
+}
+```
+
+`diagnoseAt` 采用 `evaluateAt` 的时间范围与视觉选项，只返回 `edge-node-overlap`、`label-node-overlap`、`label-overlap`。普通求值、SVG 渲染及播放器不运行新增成对检查。`frame.warnings` 继续提供独立的 `text-overflow`。
+
+SDK 使用有效镜头中的可见部分。普通节点、分组和边标签可溢出所属形状；结构化文字先按 `safeArea` 裁剪。同一行的 span 共用一个标签身份，透明 span 之间的空白不合成可见文字。同一普通边标签的不同文字行比较前景文字区域，共享的背景描边本身不构成内部冲突；与其他字段、对象或节点的背景描边检查仍保留。标签与自身或祖先容器的合法重叠不提示；分组标题遮挡子节点仍提示。连线路径排除端点节点和分组边界，边标签没有端点豁免。隐藏、零透明度和全透明图元不参与；透明填充的可见描边、半透明图元和边标签底色描边仍参与。传递标记胶囊、内容图形和播放器说明文字不属于标签检查范围。
+
+填充先做包围盒筛选，再按矩形、圆角、椭圆和圆柱的实际轮廓判断。曲线路径复用 SDK 采样：普通三次曲线 32 段、分离曲线每段 16 个采样区间、正交圆角 16 段。弯曲节点描边使用每周 256 个轮廓区间，保留圆柱顶盖与内部横线；矩形描边保留方形接角。接触容差为 `1e-6` 图解单位。有限采样、文字矩形估算及不逐像素分析虚线间隙可能漏报或提示实际像素未遮挡的风险；警告不证明最终绘制层的像素遮挡，也不保证连续动画无碰撞。实际交付仍须按目标尺寸查看。
+
+每条结果包含 `code`、`path`、`objectId`、`relatedObjectIds`、`warningKey`、`message`。`warningKey` 为带版本的规范 JSON 数组编码：`["flowsvg-layout-warning", 1, code, left, right]`。参与项包含对象类型、ID、角色、字段路径及文字行/子对象位置。标签对按参与项编码排序；标签与节点、路径与节点保留角色方向。同一对象不同字段或文字行保留不同身份，同一标签行的多个 span 不产生重复警告。同一节点内部的两行也可能产生警告，相关对象 ID 可以与 `objectId` 相同。说明文字、坐标、时间及视觉选项不参与 key。调用方应另外绑定源字节哈希、SDK 身份、时间和视觉选项，才能记录某一次风险的决定。SDK 不自动移动、隐藏或修改对象。
 
 ### 播放器 API
 
@@ -415,6 +436,31 @@ Vue、React 和 Web Component 也可以放入带有 `flowsvg-compact` 类的容�
 
 创建 `new SelectControl(document, "Theme", onChange)`，挂载其 `element`，再调用 `render([{ value: "light", label: "Light" }, { value: "dark", label: "Dark" }], "light")`。`SelectChoice` 包含字符串 `value` 和 `label`，同一控件内的选项值必须唯一。回调接收用户请求的值；调用方持有已确认状态，并调用 `render` 同步显示。`render` 的第三个可选布尔参数控制禁用，默认 `false`；空选项列表也会禁用触发器。移除宿主前调用 `destroy()`，释放外部点击监听并移除菜单元素。菜单复用已引入的 `flowsvg/styles.css`，以及上述颜色变量和尺寸类。
 
+## 文档级字号
+
+图解文档的可选 `typography` 接受 `nodeLabel`、`edgeLabel` 和 `flowLabel`，默认分别为 16、14、12。字号使用图解单位，不是 PNG 像素或 PPT 点数。每个字段独立使用默认值。
+
+```ts
+import { createDiagram, measureNodeContent, type DiagramTypography, type NodeContent } from "flowsvg";
+
+const typography: DiagramTypography = { nodeLabel: 32, edgeLabel: 24, flowLabel: 20 };
+const content: NodeContent = { blocks: [{ type: "paragraph", text: "供演示文稿使用的说明" }] };
+const { height, diagnostics } = measureNodeContent({ kind: "rect", width: 480, content, typography });
+const diagram = createDiagram({ version: 1, viewport: { width: 1280, height: 720 }, typography,
+  nodes: [{ id: "note", kind: "rect", x: 40, y: 40, width: 480, height, content }], edges: [], scenes: [] });
+// 检查 diagnostics 和 diagram.evaluateAt(0).warnings，再按目标展示尺寸查看 SVG。
+```
+
+普通节点和分组标题使用节点字号；边标签使用边字号。换行、行高、估算边界、节点标签命中和绘制共用同一组指标。传递标记文字保持单行，胶囊宽高、基线及 `fitHeight` 边界随有效字号改变，且不新增交互目标。
+
+结构化内容的默认标题、正文、辅助文字、文字标签、状态及实体图标签字号按 `nodeLabel / 16` 调整。显式块、列表、条目和 span 字号按原有继承顺序保留。内容仍使用现有行高规则：`max(20, 当前行最大字号 × 1.35)`。节点宽高、实体图坐标及固定块高、padding 和 gap 不自动改变；重新测量后仍须处理宽度不足和固定实体图块内部溢出。多个内容版本测量取最大所需高度。
+
+字号变化不会改变场景、节拍或实际编译时长。随后显式修改节点尺寸或位置可能改变路径长度，因此应重新读取 `diagram.beats`。核心、浏览器播放器、portable HTML、React、Vue、Web Component 与 GIF 共用上述规则。
+
+PPT 素材的创作起点可用 1280×720、32/24/20；Web 正文插图可用 960×600、20/18/16。SDK 保存具体尺寸与字号，导入图解不会自动应用用途预设。仍须在目标展示尺寸下检查文字。
+
+有限正数字号仍可能让派生行高、整段文字宽度或胶囊尺寸溢出。校验、编译或求值会抛出 `DiagramValidationError`，通过 `typography.nodeLabel`、`typography.edgeLabel` 或 `typography.flowLabel` 定位；请减小相关字号或缩短文字。内容测量共用相同验证与解析规则。
+
 ## 主题与无障碍
 
 主题：显式选项 → 文档主题 → 浅色，核心不读取系统偏好。浏览器动画默认跟随 `prefers-reduced-motion`，核心默认正常动画。减少动画会立即完成过渡并隐藏传递标记，保留总时长。
@@ -436,6 +482,32 @@ Vue、React 和 Web Component 也可以放入带有 `flowsvg-compact` 类的容�
 点击 **Export GIF**，按完整时间线、1×、任务开始时已解析的主题及默认设置导出。控件显示进度、**Cancel export**、完成和可读错误；成功时下载安全处理后的文档标题文件名，无标题时用 `FlowSVG.gif`。播放、调速与跳转独立运行；GIF 不包含控件或悬停效果。
 
 每个播放器最多一个任务。成功加载新文档时，旧任务继续使用固定的文档和主题；后续修改输入对象不改变快照。销毁播放器、卸载组件或因选项变化重建宿主时取消其任务，并阻止后续下载。取消或失败后可重试。需要自定义设置或程序化错误处理时，使用下面独立的 `exportGif` 函数。
+
+## 浏览器 PNG 与 SVG 背景
+
+从 `flowsvg/export` 导入 `exportPng`，返回完整可解码 `Uint8Array`，不自动下载，也不改变播放器状态。
+
+```ts
+import { createDiagram } from "flowsvg";
+import { exportPng } from "flowsvg/export";
+import { diagramDocument } from "./diagram.js";
+
+const compiled = createDiagram(diagramDocument);
+const png = await exportPng(diagramDocument, {
+  timeMs: compiled.totalDuration, width: 1280,
+  theme: "light", background: "transparent", reducedMotion: false,
+  signal: new AbortController().signal
+});
+const svg = compiled.renderSvg(compiled.totalDuration, { background: "transparent" });
+```
+
+`timeMs` 默认 0，拒绝非有限数、负数与超出实际编译时长的时间；静态图仅接受 0。`reducedMotion` 默认 false，保留所选时间的传递标记及过渡。显式 true 沿用已有求值含义，不改变时间线。导出不附加播放器控件、标题栏或说明文字区，不自动裁边。
+
+`width` 为有限正数，默认文档 `viewport.width`，取整且至少为 1。高度按取整宽度和所选有效 camera 比例计算，取整且至少为 1。PNG 保留 `fitHeight` 与 focus。每边上限为 8192 像素，总像素上限为 32,000,000；按取整后尺寸在资源分配前检查，拒绝超限，不自动缩小。这些限制独立于 GIF。
+
+`background` 默认为 `theme`。`transparent` 同时去除 SVG 整图底色和 canvas 初始底色，保留节点填充、边标签可读性背景与其余图形。核心 `renderSvg` 的 `SvgRenderOptions` 接受相同字段，保持无 DOM；普通求值时间的 clamp 合同不变。GIF 仍是不透明输出。
+
+`PngExportError.code` 区分 `options`、`document`、`limit`、`environment`、`rasterization`、`encoding` 和 `cancelled`。浏览器需 Canvas 2D、SVG 图像解码和本机系统字体。调用在首个异步步骤前固定输入；成功、失败与取消均释放任务 canvas、图像及 URL。普通 SDK 与播放入口不提前加载 PNG 栅格化代码；portable `FlowSVGExport.exportPng` 使用同一实现。首批只提供 SDK API，播放器没有 PNG 按钮。
 
 ## 浏览器 GIF 导出
 
@@ -474,6 +546,25 @@ const bytes = await exportGif(diagramDocument, {
 | `signal`、`onProgress` | AbortSignal 取消任务并释放任务资源。回调报告阶段、完成数及总数；取消的任务不报告完成。 |
 
 非法运行时值、空或越界区间及可计算的资源超限，会在分配画布或采样前报错。说明溢出使用 `GifExportError.code === "caption-overflow"`，不静默裁剪或缩字。GIF 调色量化和本机系统字体允许不同环境间的像素差异。
+
+## Node PNG 导出
+
+```ts
+import { exportPng } from "flowsvg/node";
+import { writeFile } from "node:fs/promises";
+
+const png = await exportPng(diagramDocument, {
+  executablePath: "/path/to/installed/chromium",
+  timeMs: 0,
+  width: 1280,
+  background: "transparent"
+});
+await writeFile("diagram.png", png);
+```
+
+Node PNG 复用 `flowsvg/export` 的浏览器导出实现及图片选项。需要 Node 20+ 和已安装的 Chrome/Chromium。`executablePath` 与 Playwright `browser` 互斥。SDK 不下载浏览器，导出 context 处于离线状态。
+
+入口在异步操作前保存文档与选项快照。非法文档、选项及超出像素限制的请求在浏览器分配前失败。成功、失败和取消均释放任务 context、自建 browser 及临时文件，包括取消后才取得的资源。传入的 browser 仍由调用方持有并保持打开。启动、临时文件和桥接失败使用 `PngExportError.code: "environment"`；浏览器栅格化、编码和取消保留各自的错误代码。API 返回字节，调用方负责保存文件。SDK CLI 不提供 PNG 命令。
 
 ## Node GIF 导出（Node 20+）
 
@@ -552,7 +643,7 @@ const service = {
 
 `service` 节点在浅色主题下的渲染结果：
 
-![固定尺寸的 Order service 节点，包含标题、辅助文字、正文与蓝色右对齐段落](../packages/flowsvg/docs/images/node-content.png)
+![固定尺寸的 Order service 节点，包含标题、辅助文字、正文与蓝色右对齐段落](../../packages/flowsvg/docs/images/node-content.png)
 
 文字字段接受字符串或 `ContentTextSpan[]`：`{ text, style?: { fontSize, fontWeight, color } }`。片段继承内容块样式，对齐由内容块决定。换行使用宽度估算，保留显式换行和完整 Unicode 字素，优先在空格处断行，必要时拆分长单词或 URL。
 
@@ -571,7 +662,7 @@ const steps: ContentBlock = { type: "list", marker: "number", style: { itemGap: 
 
 将 `steps` 放入 300 × 180 的矩形，设置 `content: { blocks: [steps] }`：
 
-![包含辅助文字和加粗保存文字的两个编号步骤](../packages/flowsvg/docs/images/numbered-list.zh-CN.png)
+![包含辅助文字和加粗保存文字的两个编号步骤](../../packages/flowsvg/docs/images/numbered-list.zh-CN.png)
 
 文字标签接受 `{ text, style?: { fontSize, fontWeight, color, fill, shape } }`，默认字号 11。`shape` 默认为 `rounded`；设为 `shape: "pill"` 时，圆角随标签最终高度形成胶囊。形状不改变文字排版或主题颜色。列表 `tagGap` 默认 6，须为非负有限数。状态靠右，使用 12 单位强调色；`statusStyle` 支持 `fontSize`、`fontWeight`、`color`。空间不足时，标签换行，状态移至下方。正文、辅助文字随后排列。
 
@@ -586,7 +677,7 @@ const records: ContentBlock = { type: "list", items: [{
 
 将 `records` 放入 300 × 180 的矩形，设置 `content: { blocks: [records] }`：
 
-![记录包含 world 和 experience 标签、new 状态、正文与日期](../packages/flowsvg/docs/images/record-tags.png)
+![记录包含 world 和 experience 标签、new 状态、正文与日期](../../packages/flowsvg/docs/images/record-tags.png)
 
 内容保持节点原尺寸，按形状对应的安全区裁剪。溢出时报告带节点 ID、`nodes[index].content` 路径和方向的 `text-overflow`。请增大节点或精简文字；字体不会自动缩小。内容只有节点级交互，不支持内部链接、按钮、图片或 HTML。裁剪文字不扩大命中范围。
 
@@ -594,7 +685,7 @@ const records: ContentBlock = { type: "list", items: [{
 
 ### 生成文档前测量节点内容
 
-`measureNodeContent({ kind, width, content })` 返回 `{ height, diagnostics }`。从 `flowsvg` 导入函数及 `NodeContentMeasurementInput`、`NodeContentMeasurement`、`NodeContentMeasurementDiagnostic` 类型。`kind` 支持 `rect`、`roundedRect`、`cylinder`；`width` 须为有限正数。`content` 接受一份 `NodeContent`，或包含至少一份内容版本的只读数组。
+`measureNodeContent({ kind, width, content, typography? })` 返回 `{ height, diagnostics }`。从 `flowsvg` 导入函数及 `NodeContentMeasurementInput`、`NodeContentMeasurement`、`NodeContentMeasurementDiagnostic` 类型。`kind` 支持 `rect`、`roundedRect`、`cylinder`；`width` 须为有限正数。`content` 接受一份 `NodeContent`，或包含至少一份内容版本的只读数组。
 
 ```ts
 import { measureNodeContent, type DiagramNode, type NodeContent } from "flowsvg";
@@ -643,7 +734,7 @@ const entities: ContentGraphBlock = {
 
 将 `entities` 放入 280 × 180 的矩形，设置 `content: { blocks: [entities] }`：
 
-![实体关系图中 Alice 和 Google 高亮，ML project 未选中](../packages/flowsvg/docs/images/entity-graph.png)
+![实体关系图中 Alice 和 Google 高亮，ML project 未选中](../../packages/flowsvg/docs/images/entity-graph.png)
 
 `height` 预留固定正数高度。实体中心 `x`/`y` 是相对区域左上角的非负有限坐标。ID 仅在块内唯一，关系端点引用块内 ID。高亮实体使用强调色圆点与粗体；关系两端均高亮时使用强调色。溢出时报告警告，并按父节点裁剪；交互命中父节点。
 
@@ -688,12 +779,25 @@ const svg = diagram.renderSvg(1000, { theme: "dark", reducedMotion: true });
 
 左图为 0 ms 的浅色主题初始画面，右图为 1000 ms 的深色主题替换后画面：
 
-![Facts 时间线在记录替换前后的浅色与深色主题画面](../packages/flowsvg/docs/images/facts-timeline.zh-CN.png)
+![Facts 时间线在记录替换前后的浅色与深色主题画面](../../packages/flowsvg/docs/images/facts-timeline.zh-CN.png)
 
 分享前检查 `frame.warnings`。优先使用默认内容颜色，保持主题与高亮下的对比度。
 
+## 契约归属
+
+以下入口服务不同读者，保留不同层级的细节：
+
+| 入口 | 负责内容 | 重复边界 |
+| --- | --- | --- |
+| [已发布包 README](../../packages/flowsvg/README.zh-CN.md) | 自足的 npm 安装路径、共同默认值、限制和错误行为 | 发布包脱离本仓库也必须可用；仓库内的深入说明回到本手册 |
+| 本 SDK 手册 | 公共 API、文档模型、时间线、播放、导出和诊断的完整仓库参考 | 详细 SDK 行为和跨宿主链接的主要来源 |
+| [宿主 README](../../apps/native-example/README.md)、[React](../../apps/react-example/README.md)、[Vue](../../apps/vue-example/README.md) | 宿主生命周期、开发命令、构建／部署行为和宿主特有的失败处理 | 只摘要编译后时间线，并回链本手册的共同 SDK 规则 |
+| Flow SVG Diagram Skill（独立项目） | 创作命令、布局计划、报告、版本修订和复核／导出工作流 | 安装单元自带精确 SDK 基线所需的执行资料；SDK 用户无需安装 Skill 即可使用本手册。见[仓库边界](../development/repository-split.md) |
+
+如果文字与行为冲突，以公开类型、实现和测试为事实来源。中英文 SDK 手册保持相同的任务覆盖、默认值、限制和错误行为；语言表达可以为了易读性调整。
+
 ## License
 
-[MIT](../packages/flowsvg/LICENSE)。可使用、修改及分发；保留许可证与版权声明。
+[MIT](../../packages/flowsvg/LICENSE)。可使用、修改及分发；保留许可证与版权声明。
 
 仓库维护者准备 Chromium 后可运行 `pnpm --filter flowsvg test:browser`。SDK 构建、测试与发布验收使用 SDK 自有输入，无需构建示例工程。

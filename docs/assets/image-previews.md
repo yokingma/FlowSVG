@@ -1,6 +1,8 @@
 # SDK documentation previews
 
-The PNG files in `packages/flowsvg/docs/images/` show output from the code examples in the [English](SDK-GUIDE.md) and [Chinese](SDK-GUIDE.zh-CN.md) SDK guides. They were rendered with FlowSVG 0.1.1 and captured in Chrome at one CSS pixel per diagram unit. All eight PNG files are included in the npm tarball; this maintenance note is not packaged.
+> **Document status:** Supporting maintenance material. The image files, example JSON, SDK exporter, and the guide source are the maintained inputs. The PNG/GIF outputs are release artifacts and must be regenerated when the documented source or rendering defaults change; they do not define the SDK contract.
+
+The PNG files in `packages/flowsvg/docs/images/` show output from the code examples in the [English](../guides/sdk-guide.md) and [Chinese](../guides/sdk-guide.zh-CN.md) SDK guides. They were rendered with FlowSVG 0.1.1 and captured in Chrome at one CSS pixel per diagram unit. All eight PNG files are included in the npm tarball; this maintenance note is not packaged.
 
 The previews use the default neutral borders and blue emphasis. The quick-start shows pale blue active nodes and blue message capsules. Facts shows the corresponding light and dark palettes. Refresh all previews when the default theme or line metrics change.
 

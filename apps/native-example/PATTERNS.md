@@ -1,6 +1,6 @@
 # Patterns
 
-- GitHub Pages consumes only this host’s static `dist/`. Select formal input explicitly and build with the repository subpath so scripts, JSON downloads and lazy GIF resources share the same base. Private-repository runs skip deployment. See [Pages deployment](../../docs/GITHUB-PAGES.md) for public-repository setup and verification.
+- GitHub Pages consumes only this host’s static `dist/`. Select formal input explicitly and build with the repository subpath so scripts, JSON downloads and lazy GIF resources share the same base. Private-repository runs skip deployment. See [Pages deployment](../../docs/development/github-pages.md) for public-repository setup and verification.
 
 - Follow the SDK 500 ms single-flow post-arrival interval: 200 ms receiver fade-in, 100 ms full paint and 200 ms automatic node/edge fade-out. Consume compiled intervals for navigation and sampling; preserve explicit unique-state highlights.
 

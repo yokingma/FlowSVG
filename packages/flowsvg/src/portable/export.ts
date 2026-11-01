@@ -1,1 +1,1 @@
-export { exportGif, GifExportError } from "../export.js";
+export { exportGif, GifExportError, exportPng, PngExportError } from "../export.js";

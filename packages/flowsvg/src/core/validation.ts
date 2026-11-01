@@ -1,4 +1,5 @@
 /** Validate document fields, references and action conflicts without mutating input; content rules stay shared. */
+import { validateTypography } from "./typography.js";
 import { supportsNodeContent, validateNodeContent } from "./node-content.js";
 import type { NodeKind, PortDirection, ValidationIssue } from "./model.js";
 
@@ -21,10 +22,11 @@ export function validateDocument(input: unknown): ValidationIssue[] {
   if (!isRecord(input)) {
     return [{ path: "$", message: "document must be an object" }];
   }
-  validateUnknownFields(input, ["version", "title", "viewport", "theme", "nodes", "edges", "scenes"], "$", issues);
+  validateUnknownFields(input, ["version", "title", "viewport", "theme", "typography", "nodes", "edges", "scenes"], "$", issues);
   if (input.version !== 1) issues.push({ path: "version", message: "must be 1" });
   if (input.title !== undefined && typeof input.title !== "string") issues.push({ path: "title", message: "must be a string" });
   if (input.theme !== undefined && input.theme !== "light" && input.theme !== "dark") issues.push({ path: "theme", message: "must be light or dark" });
+  validateTypography(input.typography, issues);
   const viewport = input.viewport;
   if (!isRecord(viewport)) {
     issues.push({ path: "viewport", message: "must be an object" });

@@ -2,13 +2,14 @@
  * Deterministic node-content model and layout. The core supplies current absolute node geometry and theme colors.
  * This module does not measure browser fonts or mutate authored dimensions; SVG consumes its evaluated lines and tag backgrounds.
  */
+import { CONTENT_LINE_HEIGHT_RATIO } from "./typography.js";
 import type { NodeKind, ValidationIssue } from "./model.js";
-import type { ThemePalette } from "./theme.js";
+import { CYLINDER_CAP_RADIUS, type ThemePalette } from "./theme.js";
 
 /** Horizontal placement within the current content safe area. */
 export type ContentAlignment = "left" | "center" | "right";
 
-/** Controlled text appearance; omitted values use the block's semantic role. Colors are hexadecimal RGB/RGBA. */
+/** Controlled text appearance; omitted sizes use the block's semantic role scaled by document node typography. Colors are hexadecimal RGB/RGBA. */
 export interface ContentTextStyle {
   /** Positive finite font size in diagram units. */
   fontSize?: number;
@@ -47,13 +48,13 @@ export interface ContentTag {
 export interface ContentListItem {
   tags?: ContentTag[];
   status?: ContentText;
-  /** Status is always right-aligned and defaults to 12-unit accent text. */
+  /** Status is always right-aligned; its 12-unit default scales with document node typography. */
   statusStyle?: ContentSpanStyle;
   body?: ContentText;
   auxiliary?: ContentText;
   /** Body typography; overrides the containing list style. */
   style?: ContentTextStyle;
-  /** Auxiliary typography; defaults to muted 12-unit text. */
+  /** Auxiliary typography; its muted 12-unit default scales with document node typography. */
   auxiliaryStyle?: ContentTextStyle;
 }
 
@@ -187,7 +188,6 @@ export interface NodeContentLayout {
 
 const DEFAULT_PADDING = 16;
 const ROUNDED_RECT_INSET = 4;
-const MAX_CYLINDER_CAP_RADIUS = 14;
 const DEFAULT_BLOCK_GAP = 14;
 const DEFAULT_ITEM_GAP = 12;
 const DEFAULT_TAG_GAP = 6;
@@ -197,7 +197,6 @@ const TAG_PADDING_Y = 2;
 const LIST_MARKER_GAP = 8;
 const OVERFLOW_TOLERANCE = 0.000001;
 const MIN_LINE_HEIGHT = 20;
-const LINE_HEIGHT_RATIO = 1.35;
 const TITLE_SIZE = 20;
 const BODY_SIZE = 14;
 const AUXILIARY_SIZE = 12;
@@ -220,7 +219,7 @@ export function supportsNodeContent(kind: unknown): boolean {
 function contentSafeArea(bounds: ContentSafeArea, padding: number, kind: NodeKind): ContentSafeArea {
   const cornerInset = kind === "roundedRect" ? ROUNDED_RECT_INSET : 0;
   // Match the current SVG cylinder cap; reserve its full diameter above and below the content.
-  const capInset = kind === "cylinder" ? Math.min(MAX_CYLINDER_CAP_RADIUS, bounds.height / 4) * 2 : 0;
+  const capInset = kind === "cylinder" ? Math.min(CYLINDER_CAP_RADIUS, bounds.height / 4) * 2 : 0;
   const horizontalInset = padding + cornerInset;
   const verticalInset = horizontalInset + capInset;
   return {
@@ -232,16 +231,17 @@ function contentSafeArea(bounds: ContentSafeArea, padding: number, kind: NodeKin
 }
 
 /** Lay out current content from the top left, without DOM font measurement or authored-size changes. */
-export function layoutNodeContent(content: NodeContent, bounds: ContentSafeArea, palette: ThemePalette, kind: NodeKind): NodeContentLayout {
-  return layoutNodeContentWithMetrics(content, bounds, palette, kind).layout;
+export function layoutNodeContent(content: NodeContent, bounds: ContentSafeArea, palette: ThemePalette, kind: NodeKind, defaultFontScale = 1): NodeContentLayout {
+  return layoutNodeContentWithMetrics(content, bounds, palette, kind, defaultFontScale).layout;
 }
 
 /**
  * Internal layout shared by fixed-size evaluation and author-time measurement.
  * contentHeight includes complete line boxes, padded tags, graph block heights and all authored gaps.
+ * defaultFontScale applies only to omitted role sizes, before explicit block/item/span overrides. Geometry and gaps stay authored.
  * overflows retain only width limits and graph-internal height limits; outer node height remains adjustable.
  */
-export function layoutNodeContentWithMetrics(content: NodeContent, bounds: ContentSafeArea, palette: ThemePalette, kind: NodeKind): {
+export function layoutNodeContentWithMetrics(content: NodeContent, bounds: ContentSafeArea, palette: ThemePalette, kind: NodeKind, defaultFontScale = 1): {
   layout: NodeContentLayout;
   contentHeight: number;
   overflows: { blockIndex: number; dimension: "width" | "height" }[];
@@ -255,10 +255,10 @@ export function layoutNodeContentWithMetrics(content: NodeContent, bounds: Conte
   const overflows: { blockIndex: number; dimension: "width" | "height" }[] = [];
   const lines = content.blocks.flatMap((block, blockIndex) => {
     const result = block.type === "graph"
-      ? layoutContentGraph(block, safeArea, cursorY, palette, blockIndex, graphs)
+      ? layoutContentGraph(block, safeArea, cursorY, palette, blockIndex, graphs, defaultFontScale)
       : block.type === "list"
-      ? layoutContentList(block, safeArea, cursorY, palette, blockIndex)
-      : layoutTextPart(block.text, block.type === "title" ? "title" : block.role ?? "body", block.style, safeArea, cursorY, palette, blockIndex);
+      ? layoutContentList(block, safeArea, cursorY, palette, blockIndex, defaultFontScale)
+      : layoutTextPart(block.text, block.type === "title" ? "title" : block.role ?? "body", block.style, safeArea, cursorY, palette, blockIndex, undefined, 0, defaultFontScale);
     const blockWidthOverflow = result.widthOverflow || result.lines.some((line) => contentLineExceedsWidth(line, safeArea));
     if (blockWidthOverflow) overflows.push({ blockIndex, dimension: "width" });
     if (result.heightOverflow) overflows.push({ blockIndex, dimension: "height" });
@@ -278,7 +278,8 @@ export function layoutNodeContentWithMetrics(content: NodeContent, bounds: Conte
 
 /** Graph labels reuse text metrics; authored graph geometry is clipped instead of resized. */
 function layoutContentGraph(block: ContentGraphBlock, area: ContentSafeArea, top: number, palette: ThemePalette,
-  blockIndex: number, graphs: ContentGraphLayout[]): ContentPartLayout {
+  blockIndex: number, graphs: ContentGraphLayout[], defaultFontScale: number): ContentPartLayout {
+  const graphLabelSize = GRAPH_LABEL_SIZE * defaultFontScale;
   const points = new Map(block.nodes.map((node) => [node.id, { x: area.x + node.x, y: top + node.y }]));
   const nodes = block.nodes.map((node) => ({ ...points.get(node.id)!, radius: GRAPH_NODE_RADIUS,
     fill: node.highlighted ? palette.accentText : palette.mutedText, highlighted: node.highlighted ?? false }));
@@ -290,8 +291,8 @@ function layoutContentGraph(block: ContentGraphBlock, area: ContentSafeArea, top
   const parts = block.nodes.map((node) => {
     const halfWidth = Math.max(0, Math.min(node.x, area.width - node.x));
     const labelArea = { ...area, x: area.x + node.x - halfWidth, width: halfWidth * 2 };
-    return layoutTextPart(node.label, "body", { fontSize: GRAPH_LABEL_SIZE, fontWeight: node.highlighted ? 700 : 400, align: "center" },
-      labelArea, top + node.y - GRAPH_NODE_RADIUS - GRAPH_LABEL_GAP - GRAPH_LABEL_SIZE, palette, blockIndex);
+    return layoutTextPart(node.label, "body", { fontSize: graphLabelSize, fontWeight: node.highlighted ? 700 : 400, align: "center" },
+      labelArea, top + node.y - GRAPH_NODE_RADIUS - GRAPH_LABEL_GAP - graphLabelSize, palette, blockIndex);
   });
   graphs.push({ blockIndex, nodes, edges });
   return { lines: parts.flatMap((part) => part.lines), tags: [],
@@ -319,12 +320,12 @@ interface ContentPartLayout {
 }
 
 /**
- * Resolve role defaults once and reuse baseline/wrapping rules for every text part.
+ * Scale role defaults before authored overrides and reuse baseline/wrapping rules for every text part.
  * A marked item's first line also reserves its marker size, so smaller source spans cannot lift the marker above the clip.
  */
 function layoutTextPart(text: ContentText, role: ContentLine["role"], style: ContentTextStyle | undefined, area: ContentSafeArea,
-  top: number, palette: ThemePalette, blockIndex: number, itemIndex?: number, minimumFirstLineSize = 0): ContentPartLayout {
-  const fontSize = style?.fontSize ?? (role === "title" ? TITLE_SIZE : role === "auxiliary" || role === "status" ? AUXILIARY_SIZE : role === "tag" ? TAG_SIZE : BODY_SIZE);
+  top: number, palette: ThemePalette, blockIndex: number, itemIndex?: number, minimumFirstLineSize = 0, defaultFontScale = 1): ContentPartLayout {
+  const fontSize = style?.fontSize ?? (role === "title" ? TITLE_SIZE : role === "auxiliary" || role === "status" ? AUXILIARY_SIZE : role === "tag" ? TAG_SIZE : BODY_SIZE) * defaultFontScale;
   const fontWeight = style?.fontWeight ?? (role === "title" ? TITLE_WEIGHT : NORMAL_WEIGHT);
   const color = style?.color ?? (role === "auxiliary" ? palette.mutedText : role === "tag" ? palette.tagText : role === "status" ? palette.accentText : palette.text);
   const align = style?.align ?? "left";
@@ -338,7 +339,7 @@ function layoutTextPart(text: ContentText, role: ContentLine["role"], style: Con
     const y = cursorY + size;
     const startX = x - (align === "right" ? width : align === "center" ? width / 2 : 0);
     const spans = collectContentSpans(glyphs, startX, y);
-    cursorY += Math.max(MIN_LINE_HEIGHT, size * LINE_HEIGHT_RATIO);
+    cursorY += Math.max(MIN_LINE_HEIGHT, size * CONTENT_LINE_HEIGHT_RATIO);
     return { text: glyphs.map((glyph) => glyph.text).join(""), spans, x, y, width,
       fontSize: size, fontWeight, color, align, role, blockIndex, ...(itemIndex === undefined ? {} : { itemIndex }) };
   });
@@ -346,33 +347,33 @@ function layoutTextPart(text: ContentText, role: ContentLine["role"], style: Con
 }
 
 function layoutContentList(block: Extract<ContentBlock, { type: "list" }>, area: ContentSafeArea, top: number,
-  palette: ThemePalette, blockIndex: number): ContentPartLayout {
+  palette: ThemePalette, blockIndex: number, defaultFontScale: number): ContentPartLayout {
   let cursorY = top;
   const lines: ContentLine[] = [];
   const tags: ContentTagBackground[] = [];
   let widthOverflow = false;
-  const markerWidth = contentMarkerWidth(block);
+  const markerWidth = contentMarkerWidth(block, defaultFontScale);
   const indent = markerWidth > 0 ? markerWidth + LIST_MARKER_GAP : 0;
   const bodyArea = { ...area, x: area.x + indent, width: Math.max(0, area.width - indent) };
   block.items.forEach((item, itemIndex) => {
     if (!hasContentItem(item)) return;
     if (lines.length > 0) cursorY += block.style?.itemGap ?? DEFAULT_ITEM_GAP;
     const itemStart = lines.length;
-    const markerSize = markerWidth === 0 ? 0 : item.body === undefined ? item.auxiliaryStyle?.fontSize ?? AUXILIARY_SIZE
-      : item.style?.fontSize ?? block.style?.fontSize ?? BODY_SIZE;
-    const header = layoutItemHeader(item, bodyArea, cursorY, palette, blockIndex, itemIndex, block.style?.tagGap ?? DEFAULT_TAG_GAP, markerSize);
+    const markerSize = markerWidth === 0 ? 0 : item.body === undefined ? item.auxiliaryStyle?.fontSize ?? AUXILIARY_SIZE * defaultFontScale
+      : item.style?.fontSize ?? block.style?.fontSize ?? BODY_SIZE * defaultFontScale;
+    const header = layoutItemHeader(item, bodyArea, cursorY, palette, blockIndex, itemIndex, block.style?.tagGap ?? DEFAULT_TAG_GAP, markerSize, defaultFontScale);
     lines.push(...header.lines);
     tags.push(...header.tags);
     widthOverflow ||= header.widthOverflow;
     cursorY = header.bottom;
     if (item.body !== undefined) {
-      const body = layoutTextPart(item.body, "body", inheritContentStyle(block.style, item.style), bodyArea, cursorY, palette, blockIndex, itemIndex, markerSize);
+      const body = layoutTextPart(item.body, "body", inheritContentStyle(block.style, item.style), bodyArea, cursorY, palette, blockIndex, itemIndex, markerSize, defaultFontScale);
       lines.push(...body.lines);
       widthOverflow ||= body.widthOverflow;
       cursorY = body.bottom;
     }
     if (item.auxiliary !== undefined) {
-      const auxiliary = layoutTextPart(item.auxiliary, "auxiliary", item.auxiliaryStyle, bodyArea, cursorY, palette, blockIndex, itemIndex, item.body === undefined ? markerSize : 0);
+      const auxiliary = layoutTextPart(item.auxiliary, "auxiliary", item.auxiliaryStyle, bodyArea, cursorY, palette, blockIndex, itemIndex, item.body === undefined ? markerSize : 0, defaultFontScale);
       lines.push(...auxiliary.lines);
       widthOverflow ||= auxiliary.widthOverflow;
       cursorY = auxiliary.bottom;
@@ -381,7 +382,7 @@ function layoutContentList(block: Extract<ContentBlock, { type: "list" }>, area:
       const first = lines[itemStart]!;
       const style = item.body === undefined ? item.auxiliaryStyle : inheritContentStyle(block.style, item.style);
       const marker = layoutTextPart(block.marker === "bullet" ? "•" : `${itemIndex + 1}.`, "marker",
-        { ...style, fontSize: style?.fontSize ?? (item.body === undefined ? AUXILIARY_SIZE : BODY_SIZE), align: "left" },
+        { ...style, fontSize: style?.fontSize ?? (item.body === undefined ? AUXILIARY_SIZE : BODY_SIZE) * defaultFontScale, align: "left" },
         { ...area, width: markerWidth }, top, palette, blockIndex, itemIndex).lines[0]!;
       lines.splice(itemStart, 0, { ...marker, y: first.y, spans: marker.spans.map((span) => ({ ...span, y: first.y })) });
     }
@@ -391,17 +392,17 @@ function layoutContentList(block: Extract<ContentBlock, { type: "list" }>, area:
 
 /** Tags occupy rows first. Status shares a single row only when both natural widths fit. */
 function layoutItemHeader(item: ContentListItem, area: ContentSafeArea, top: number, palette: ThemePalette,
-  blockIndex: number, itemIndex: number, gap: number, markerSize: number): ContentPartLayout {
-  const header = layoutContentTags(item.tags ?? [], area, top, palette, blockIndex, itemIndex, gap, markerSize);
+  blockIndex: number, itemIndex: number, gap: number, markerSize: number, defaultFontScale: number): ContentPartLayout {
+  const header = layoutContentTags(item.tags ?? [], area, top, palette, blockIndex, itemIndex, gap, markerSize, defaultFontScale);
   if (item.status === undefined) return header;
-  const statusWidth = naturalContentWidth(item.status, item.statusStyle, AUXILIARY_SIZE);
+  const statusWidth = naturalContentWidth(item.status, item.statusStyle, AUXILIARY_SIZE * defaultFontScale);
   const lastTag = header.tags.at(-1);
   const occupied = lastTag ? lastTag.x + lastTag.width - area.x : 0;
   const singleTagRow = header.tags.every((tag) => tag.y === top) && header.lines.length === header.tags.length;
   const singleStatusLine = !contentTextString(item.status).match(/[\r\n]/);
   const sameRow = singleTagRow && singleStatusLine && occupied + (lastTag ? gap : 0) + statusWidth <= area.width;
   const statusTop = sameRow ? top : header.bottom;
-  let status = layoutTextPart(item.status, "status", { ...item.statusStyle, align: "right" }, area, statusTop, palette, blockIndex, itemIndex, markerSize);
+  let status = layoutTextPart(item.status, "status", { ...item.statusStyle, align: "right" }, area, statusTop, palette, blockIndex, itemIndex, markerSize, defaultFontScale);
   let tags = header;
   if (sameRow && header.lines.length > 0) {
     const baseline = Math.max(...header.lines.map((line) => line.y), status.lines[0]!.y);
@@ -414,7 +415,7 @@ function layoutItemHeader(item: ContentListItem, area: ContentSafeArea, top: num
 
 /** Pack tag boxes in authored order; a long tag wraps inside its own padded full-width box. */
 function layoutContentTags(source: ContentTag[], area: ContentSafeArea, top: number, palette: ThemePalette,
-  blockIndex: number, itemIndex: number, gap: number, markerSize: number): ContentPartLayout {
+  blockIndex: number, itemIndex: number, gap: number, markerSize: number, defaultFontScale: number): ContentPartLayout {
   let row: { tag: ContentTag; tagIndex: number; width: number; x: number }[] = [];
   let right = area.x;
   let result: ContentPartLayout = { lines: [], tags: [], bottom: top, widthOverflow: false };
@@ -422,7 +423,7 @@ function layoutContentTags(source: ContentTag[], area: ContentSafeArea, top: num
     if (row.length === 0) return;
     const rowTop = result.tags.length > 0 ? result.bottom + gap : top;
     const parts = row.map(({ tag, tagIndex, width, x }) => layoutContentTag(tag,
-      { ...area, x, width }, rowTop, palette, blockIndex, itemIndex, tagIndex, markerSize));
+      { ...area, x, width }, rowTop, palette, blockIndex, itemIndex, tagIndex, markerSize, defaultFontScale));
     const baseline = Math.max(...parts.map((part) => part.lines[0]!.y));
     const aligned = parts.map((part) => shiftTagText(part, baseline - part.lines[0]!.y));
     result = { lines: [...result.lines, ...aligned.flatMap((part) => part.lines)],
@@ -432,7 +433,7 @@ function layoutContentTags(source: ContentTag[], area: ContentSafeArea, top: num
     right = area.x;
   };
   source.forEach((tag, tagIndex) => {
-    const width = Math.min(area.width, naturalContentWidth(tag.text, tag.style, TAG_SIZE) + TAG_PADDING_X * 2);
+    const width = Math.min(area.width, naturalContentWidth(tag.text, tag.style, TAG_SIZE * defaultFontScale) + TAG_PADDING_X * 2);
     if (row.length > 0 && right + width > area.x + area.width) flush();
     row.push({ tag, tagIndex, width, x: right });
     right += width + gap;
@@ -442,9 +443,9 @@ function layoutContentTags(source: ContentTag[], area: ContentSafeArea, top: num
 }
 
 function layoutContentTag(tag: ContentTag, area: ContentSafeArea, top: number, palette: ThemePalette,
-  blockIndex: number, itemIndex: number, tagIndex: number, markerSize: number): ContentPartLayout {
+  blockIndex: number, itemIndex: number, tagIndex: number, markerSize: number, defaultFontScale: number): ContentPartLayout {
   const textArea = { ...area, x: area.x + TAG_PADDING_X, width: Math.max(0, area.width - TAG_PADDING_X * 2) };
-  const result = layoutTextPart(tag.text, "tag", tag.style, textArea, top + TAG_PADDING_Y, palette, blockIndex, itemIndex, markerSize);
+  const result = layoutTextPart(tag.text, "tag", tag.style, textArea, top + TAG_PADDING_Y, palette, blockIndex, itemIndex, markerSize, defaultFontScale);
   return { ...result, widthOverflow: result.widthOverflow || area.width < TAG_PADDING_X * 2,
     lines: result.lines.map((line) => ({ ...line, tagIndex })), bottom: result.bottom + TAG_PADDING_Y,
     tags: [{ x: area.x, y: top, width: area.width, height: result.bottom - top + TAG_PADDING_Y,
@@ -477,12 +478,12 @@ function hasContentItem(item: ContentListItem): boolean {
 }
 
 /** Every item uses the same marker column, including multi-digit numbers and authored marker sizes. */
-function contentMarkerWidth(block: Extract<ContentBlock, { type: "list" }>): number {
+function contentMarkerWidth(block: Extract<ContentBlock, { type: "list" }>, defaultFontScale: number): number {
   if (block.marker === undefined || block.marker === "none") return 0;
   return block.items.reduce((width, item, index) => {
     if (!hasContentItem(item)) return width;
-    const size = item.body === undefined ? item.auxiliaryStyle?.fontSize ?? AUXILIARY_SIZE
-      : item.style?.fontSize ?? block.style?.fontSize ?? BODY_SIZE;
+    const size = item.body === undefined ? item.auxiliaryStyle?.fontSize ?? AUXILIARY_SIZE * defaultFontScale
+      : item.style?.fontSize ?? block.style?.fontSize ?? BODY_SIZE * defaultFontScale;
     return Math.max(width, estimateContentWidth(block.marker === "bullet" ? "•" : `${index + 1}.`, size));
   }, 0);
 }

@@ -4,7 +4,7 @@ The formal Native, React and Vue sites consume shared author data from `packages
 
 ## Build and verify
 
-Prepare Chromium and fonts as described in the [release guide](RELEASING.md). Run from the repository root:
+Prepare Chromium and fonts as described in the [release guide](../development/releasing.md). Run from the repository root:
 
 ```sh
 pnpm install --frozen-lockfile

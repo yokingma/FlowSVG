@@ -42,7 +42,7 @@ export interface EdgeStyle {
 
 /**
  * Initial node authored in parent-group coordinates, or document coordinates when parentId is absent.
- * Dimensions are explicit; groups do not clip children, and visible defaults to true.
+ * Dimensions are explicit; groups have rounded borders and do not clip children, and visible defaults to true.
  */
 export interface DiagramNode {
   id: string;
@@ -76,6 +76,16 @@ export interface DiagramEdge {
   style?: EdgeStyle;
 }
 
+/** Positive finite font sizes in diagram units; omitted roles retain their individual defaults. */
+export interface DiagramTypography {
+  /** Ordinary node labels and group headings; defaults to 16. */
+  nodeLabel?: number;
+  /** Ordinary edge labels; defaults to 14. */
+  edgeLabel?: number;
+  /** Single-line decorative flow capsules; defaults to 12. */
+  flowLabel?: number;
+}
+
 /**
  * Serializable version-1 document. Node and edge IDs are globally unique; an empty scenes array defines a static diagram.
  * Nodes and edges define the initial state; each scene inherits the preceding scene's final persistent state.
@@ -86,6 +96,8 @@ export interface DiagramDocument {
   title?: string;
   viewport: Viewport;
   theme?: ThemeName;
+  /** Shared text metrics; structured-content role defaults follow nodeLabel / 16, while explicit sizes remain unchanged. */
+  typography?: DiagramTypography;
   nodes: DiagramNode[];
   edges: DiagramEdge[];
   scenes: Scene[];
@@ -208,6 +220,12 @@ export interface EvaluateOptions {
   reducedMotion?: boolean;
 }
 
+/** Static SVG options; transparency removes only the whole-diagram background, preserving object fills and label halos. */
+export interface SvgRenderOptions extends EvaluateOptions {
+  /** Default: theme. Transparent preserves the selected camera and all diagram paint. */
+  background?: "theme" | "transparent";
+}
+
 /** Deterministically laid-out line; x/y specify its centered anchor and text baseline in SVG document coordinates. */
 export interface TextLine {
   text: string;
@@ -257,13 +275,33 @@ export interface EdgeFlowMarker {
   text?: string;
 }
 
-/** Non-blocking text overflow warning; objectId identifies the object and path locates its document field. */
-export interface LayoutWarning {
+/** Existing text-overflow warning; geometry risks are returned separately by Diagram.diagnoseAt. */
+export interface TextOverflowWarning {
   path: string;
   message: string;
   code: "text-overflow";
   objectId: string;
 }
+
+/** Additional sampled geometric risks; these do not prove pixel occlusion or request automatic repair. */
+export type GeometryWarningCode = "edge-node-overlap" | "label-node-overlap" | "label-overlap";
+
+/**
+ * One on-demand risk with role-preserving object and document-field locations.
+ * warningKey is a versioned canonical array encoding of code, roles, fields and line positions;
+ * it excludes prose, time and visual options. Consumers bind those contexts separately.
+ */
+export interface GeometryWarning {
+  path: string;
+  message: string;
+  code: GeometryWarningCode;
+  objectId: string;
+  relatedObjectIds: string[];
+  warningKey: string;
+}
+
+/** Non-blocking layout warning; only geometry risks carry related objects and a canonical warningKey. */
+export type LayoutWarning = TextOverflowWarning | GeometryWarning;
 
 /** SVG viewBox in document coordinates; focusing preserves the initial viewport aspect ratio. */
 export interface CameraState {

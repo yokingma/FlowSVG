@@ -1,10 +1,18 @@
 # npm 发布指南
 
-项目品牌名为 FlowSVG（流形）。唯一发布包是 `packages/flowsvg`，npm 包名为 [`flowsvg`](https://www.npmjs.com/package/flowsvg)，维护者为 `zac_ma`。工作区根包与示例包均为 private。开发与发布需要 Node.js 22.12+ 和 pnpm 10.12.1。
+> **文档状态：当前入口。** 本文描述仓库维护者当前的发布步骤。实际命令以根 `package.json`、`packages/flowsvg/package.json`、发布脚本和 CI 配置为准；[SDK 验证说明](../verification/sdk-verification.md)描述可重现的检查方法。每次运行的环境、范围和结果单独保存在本地。
 
-截至 2026-10-23，已核对 npm 的 `latest` 为 `0.2.0`。仓库 SDK 版本已更新为待发布的 `0.2.1`，包含画面状态求值复用、React/Vue 共享宿主生命周期，以及 Node GIF runtime 与取消资源清理优化。公开 API 和既有时序、渲染契约保持不变。`0.2.1` 尚未上传到 npm。
+唯一发布包是 `packages/flowsvg`，npm 包名为 [`flowsvg`](https://www.npmjs.com/package/flowsvg)。根工作区和示例包不发布到 npm。开发与发布需要 Node.js 22.12+ 和 pnpm 10.12.1。
 
-发布脚本读取 SDK `package.json` 的版本，生成 `dist/releases/flowsvg-0.2.1.tgz`。先运行下方发布预演，再显式执行上传。包内 CHANGELOG 的 `0.2.1` 记录本次优化。`0.2.0` 的时序契约继续生效：单条传递节拍改为按距离移动加 500ms 到达区间，迁移时使用 `Diagram.beats` 读取实际边界；较长阅读时间使用独立无传递节拍。已发布的 `0.2.0` 及更早产物不可覆盖，同一版本不能重复发布。
+发布前核对 `packages/flowsvg/package.json` 中的版本和 registry 已发布版本：
+
+```sh
+npm view flowsvg versions --json --registry=https://registry.npmjs.org/
+```
+
+待发布版本必须尚未使用。源码版本号相同不代表代码与已发布产物一致；同一版本不能重复发布。版本说明和迁移要求以 [SDK CHANGELOG](../../packages/flowsvg/CHANGELOG.md) 为准。
+
+发布脚本读取包版本，将验证后的产物保存在 `dist/releases/flowsvg-<version>.tgz`。先运行发布预演，再显式执行上传。
 
 ## 浏览器与最低运行时准备
 
@@ -32,7 +40,7 @@ pnpm --filter flowsvg exec node --input-type=module -e 'import { chromium } from
 
 浏览器用于发布前的真实产物验收：脚本安装打包后的 SDK，启动 Chromium 检查 Node GIF 导出，以及离线 HTML 的播放和 GIF 下载。上传 npm 本身不需要浏览器，但 `pnpm release`、`pnpm release:verify` 和 `pnpm release:publish` 都包含这项检查。
 
-内部架构优化保留上述真实浏览器验收。`adapters/host-lifecycle` 与 `node/gif-runtime` 是打包文件清单中的内部运行依赖，不是新增 npm 导出入口。Node runtime 的确定性测试补充取消与资源清理覆盖；它们不替代安装 tarball 后的 Chromium 验收。构建和 `release:verify` 都会重建 `dist`，须顺序执行。
+构建和 `release:verify` 都会重建 `dist`，须顺序执行。内部模块的单元测试与安装 tarball 后的浏览器检查分别验证实现和交付产物。
 
 macOS 已安装 Google Chrome 时，可直接使用以下路径，无需另行下载 Chromium。在仓库根目录运行预演：
 
@@ -59,7 +67,7 @@ printenv FLOWSVG_CHROMIUM_PATH
 test -x "$FLOWSVG_CHROMIUM_PATH" && "$FLOWSVG_CHROMIUM_PATH" --version
 ```
 
-若报错 `Set FLOWSVG_CHROMIUM_PATH to prepared Chromium`，表示运行发布脚本的进程未收到该变量；使用上方单行命令，或在同一终端重新 `export`。若路径存在但浏览器启动失败，检查浏览器安装、系统库和字体。`whatwg-encoding` 弃用警告不是此次缺少变量的原因；`Node 18 executable not provided` 表示跳过最低运行时检查。
+若报错 `Set FLOWSVG_CHROMIUM_PATH to prepared Chromium`，表示运行发布脚本的进程未收到该变量；使用上方单行命令，或在同一终端重新 `export`。若路径存在但浏览器启动失败，检查浏览器安装、系统库和字体。`Node 18 executable not provided` 表示跳过最低运行时检查。
 
 `FLOWSVG_NODE18_PATH` 和 `FLOWSVG_NODE20_PATH` 分别引用已准备的 Node 18、Node 20 可执行文件，用于确认最低运行时。省略 Node 18 路径时，脚本报告跳过最低运行时检查；省略 Node 20 路径时，脚本使用当前 Node。检查不安装 Node。
 
@@ -80,7 +88,7 @@ pnpm release
 4. 输出已验证的 tarball 路径与 SHA256。
 5. 对该 tarball 运行 `npm publish --dry-run`。
 
-任一步失败，脚本立即停止。SDK 发布门禁不读取或构建示例 app、共享展示 package。SDK 类型、行为、浏览器与 tarball 消费验收只使用 SDK 自有输入。示例交付通过 `pnpm build:examples` 和 `pnpm test:examples` 单独运行；`pnpm test:all` 显式组合 SDK 与示例验收，但不进入发布门禁。根路径/子路径独立交付检查见[展示验收说明](SHOWCASE-VERIFICATION.md)。依赖检查与逐项迁移映射见 [SDK 验收说明](SDK-VERIFICATION.md)。可运行 `pnpm release --help` 查看参数；`pnpm release --dry-run` 与默认行为相同。
+任一步失败，脚本立即停止。SDK 发布门禁不读取或构建示例 app、共享展示 package。SDK 类型、行为、浏览器与 tarball 消费验收只使用 SDK 自有输入。示例交付通过 `pnpm build:examples` 和 `pnpm test:examples` 单独运行；`pnpm test:all` 显式组合 SDK 与示例验收，但不进入发布门禁。根路径/子路径独立交付检查见[展示验收说明](../verification/showcase-verification.md)。依赖检查与逐项迁移映射见 [SDK 验收说明](../verification/sdk-verification.md)。可运行 `pnpm release --help` 查看参数；`pnpm release --dry-run` 与默认行为相同。
 
 tarball 验证先删除 SDK 的 `dist`，再通过 `npm pack` 触发 `prepack` 构建，并检查所有导出文件、类型声明、样式、图片和文件白名单。脚本将构建后的包解压到临时目录，如临时 README 包含相对图片地址，则将其转换为当前包版本的 npm CDN 地址，再以 `--ignore-scripts` 重新打包，确认文件集合未变。源码 README 保留相对图片地址，本地预览不依赖版本发布。随后脚本在临时项目中验证无框架安装、无 DOM 导入、严格类型检查、最低 React 18.0.0 / Vue 3.5.0 的类型与服务端渲染，以及原生、Web Component、React 和 Vue 的挂载、更新与清理。临时安装默认自动删除。
 
@@ -90,9 +98,9 @@ tarball 验证先删除 SDK 的 `dist`，再通过 `npm pack` 触发 `prepack` �
 
 ## 登录与上传
 
-确认源码已提交到准备发布的提交，且发布版本尚未使用。包内中英文 README 应描述本次 tarball 提供的能力；发布状态与预演流程保留在仓库文档中。同步更新根目录 README 的“尚未发布”说明与本指南中的版本信息。检查 `package.json` 中的仓库、主页和问题反馈地址。发布元数据指向公开源码仓库；发布前核对仓库、主页与问题反馈地址。
+确认工作区干净，待发布源码已提交，且版本尚未使用。同步更新包内中英文 README、SDK CHANGELOG 和受影响的使用文档。检查 `package.json` 中的仓库、主页和问题反馈地址是否正确。面向 npm 使用者的文档须能在无私有仓库访问权限时使用。
 
-包内中英文 README 面向前端开发者，仅保留定义图解、播放、控制和导出。详细字段、接入语义与示例图保存在仓库的 [SDK 手册](SDK-GUIDE.zh-CN.md)，不额外加入 npm 文件白名单。示例图源文件仍位于 `packages/flowsvg/docs/images/` 并随包分发。当前 README 在最前面居中展示动态 Logo，不嵌入完整图库。发布脚本将 Markdown 图片和 HTML `<img>` 中的 `./docs/images/` 地址转换为按包版本固定的 npm CDN 地址，且只修改临时 README 副本。语言切换与许可证链接继续指向 npm CDN；完整手册链接指向 GitHub 仓库，访问范围取决于仓库可见性。上传时使用重新生成并验证的最终 tarball。图片生成来源与刷新方式见[图片说明](README_IMAGES.md)。
+包内中英文 README 面向前端开发者，保持自足：按安装、首次播放、框架接入、播放控制、导出和编写规则组织，保留常用模型、选项、事件与错误契约。包 README 保持自足，完整手册在公开源码仓库维护；更细的字段说明可查包内 TypeScript 声明与 JSDoc。仓库内的 [SDK 手册](../guides/sdk-guide.zh-CN.md) 供维护者使用，不加入 npm 文件白名单。示例 JSON 和图片仍分别位于 `packages/flowsvg/examples/` 与 `packages/flowsvg/docs/images/` 并随包分发。README 在最前面居中展示动态 Logo，首次播放步骤之后再展示生命周期示例。发布脚本将 Markdown 图片和 HTML `<img>` 中的 `./docs/images/` 地址转换为按包版本固定的 npm CDN 地址，且只修改临时 README 副本。语言切换、更新日志与许可证链接继续指向 npm CDN。上传时使用重新生成并验证的最终 tarball。图片生成来源与刷新方式见[图片说明](../assets/image-previews.md)。
 
 登录 npm 官方 registry：
 
@@ -100,7 +108,7 @@ tarball 验证先删除 SDK 的 `dist`，再通过 `npm pack` 触发 `prepack` �
 npm login --registry=https://registry.npmjs.org/
 ```
 
-`flowsvg` 的维护者已确认为 `zac_ma`。发布时使用该账号或已获授权的其他账号。可通过 `npm whoami --registry=https://registry.npmjs.org/` 核对当前账号，通过 `npm owner ls flowsvg --registry=https://registry.npmjs.org/` 核对维护者。
+发布账号须具有 `flowsvg` 的发布权限。通过 `npm whoami --registry=https://registry.npmjs.org/` 核对当前账号，通过 `npm owner ls flowsvg --registry=https://registry.npmjs.org/` 核对维护者。
 
 准备上传时，在仓库根目录执行：
 
@@ -122,7 +130,7 @@ pnpm release:publish
 npm view flowsvg version exports bin dist.integrity --json --registry=https://registry.npmjs.org/
 ```
 
-在仓库外的新项目中安装本次发布的明确版本，按 SDK README 验证需要的入口。确认成功后再创建对应的版本标签。后续发布时同时更新包版本、CHANGELOG、受影响的 SDK 用法、根目录 README 的发布状态和本指南中的版本说明；发布流程自动根据包版本生成图片 URL。
+在仓库外的新项目中安装本次发布的明确版本，按 SDK README 验证需要的入口。确认成功后再创建对应的版本标签。后续发布时同步更新包版本、CHANGELOG 和受影响的用法；发布流程根据包版本生成图片 URL。
 
 ## 离线 HTML 与 GIF 资产
 
@@ -151,4 +159,4 @@ FLOWSVG_CHROMIUM_PATH=/absolute/path/to/chromium \
 pnpm release
 ```
 
-环境准备和省略路径时的行为见[浏览器与最低运行时准备](#浏览器与最低运行时准备)。GIF 有效时长、采样、最终编码帧和尺寸上限见 [SDK 使用手册](SDK-GUIDE.zh-CN.md#浏览器-gif-导出)。保留临时消费目录时设置 `KEEP_RELEASE_TEMP=1`；默认在验收结束后删除。每次验收重新记录实际环境与结果；临时日志和产物指纹保存在本地。
+环境准备和省略路径时的行为见[浏览器与最低运行时准备](#浏览器与最低运行时准备)。GIF 有效时长、采样、最终编码帧和尺寸上限见 [SDK 使用手册](../guides/sdk-guide.zh-CN.md#浏览器-gif-导出)。保留临时消费目录时设置 `KEEP_RELEASE_TEMP=1`；默认在验收结束后删除。每次验收重新记录实际环境与结果；临时日志和产物指纹保存在本地。

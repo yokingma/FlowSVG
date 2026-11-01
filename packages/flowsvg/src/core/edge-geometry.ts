@@ -3,6 +3,7 @@
  * distance, label anchors and line hit testing; diagram evaluation owns the
  * surrounding frame state and consumes this internal interface.
  */
+import { CYLINDER_CAP_RADIUS } from "./theme.js";
 import { formatNumber } from "./svg-number.js";
 import type { DiagramEdge, DiagramPoint, EvaluatedNode, PortDirection } from "./model.js";
 
@@ -33,7 +34,9 @@ const BEND_SAMPLE_COUNT = 16;
 const BEND_CLEARANCE_EPSILON = 0.002;
 const BEND_RADIUS_SEARCH_STEPS = 16;
 const BEND_RADIUS_PRECISION = 1000;
-const CYLINDER_CAP_RADIUS = 14;
+/** Shared by routing, flow distance and on-demand diagnostics; not a pixel-precision promise. */
+const CUBIC_SAMPLE_COUNT = 32;
+const SEPARATED_CUBIC_SAMPLE_COUNT = 16;
 /** SVG marker size in stroke-width units; routing uses the same footprint as serialization. */
 export const ARROW_MARKER_SIZE = 7;
 const FOCUS_PADDING = 24;
@@ -176,9 +179,8 @@ function clearBendRadius(corner: Point, previous: Point, next: Point, maximum: n
 /** Build sampled geometry for a cubic curve while retaining the exact cubic command for SVG output. */
 function createCurveGeometry(start: Point, controlStart: Point, controlEnd: Point, end: Point): PathGeometry {
   const samples: Point[] = [];
-  const sampleCount = 32;
-  for (let index = 0; index <= sampleCount; index += 1) {
-    const progress = index / sampleCount;
+  for (let index = 0; index <= CUBIC_SAMPLE_COUNT; index += 1) {
+    const progress = index / CUBIC_SAMPLE_COUNT;
     const inverse = 1 - progress;
     samples.push({
       x: inverse ** 3 * start.x + 3 * inverse ** 2 * progress * controlStart.x + 3 * inverse * progress ** 2 * controlEnd.x + progress ** 3 * end.x,
@@ -216,9 +218,9 @@ function cubicBottom(start: Point, first: Point, second: Point, end: Point): num
 function createSeparatedCurveGeometry(start: Point, controlStart: Point, midpoint: Point, controlMidStart: Point, controlMidEnd: Point, controlEnd: Point, end: Point): PathGeometry {
   const samples: Point[] = [];
   const sampleSegment = (first: Point, firstControl: Point, secondControl: Point, last: Point): void => {
-    for (let index = 0; index <= 16; index += 1) {
+    for (let index = 0; index <= SEPARATED_CUBIC_SAMPLE_COUNT; index += 1) {
       if (samples.length > 0 && index === 0) continue;
-      const progress = index / 16;
+      const progress = index / SEPARATED_CUBIC_SAMPLE_COUNT;
       const inverse = 1 - progress;
       samples.push({
         x: inverse ** 3 * first.x + 3 * inverse ** 2 * progress * firstControl.x + 3 * inverse * progress ** 2 * secondControl.x + progress ** 3 * last.x,

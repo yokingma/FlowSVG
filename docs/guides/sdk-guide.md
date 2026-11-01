@@ -1,12 +1,14 @@
 # FlowSVG SDK guide
 
-English | [简体中文](SDK-GUIDE.zh-CN.md)
+English | [简体中文](sdk-guide.zh-CN.md)
 
-FlowSVG turns JSON or TypeScript documents into animated SVG diagrams. Define nodes, edges, scenes, and beats; play them in a browser, export SVG or GIF, or share a single offline HTML file.
+> **Document status:** Current entry. The public types, implementation, and tests under `packages/flowsvg/` are the source of truth for behavior. This guide is the maintained English task path; verification guides describe reproducible checks and do not replace this contract.
+
+FlowSVG turns JSON or TypeScript documents into animated SVG diagrams. Define nodes, edges, scenes, and beats; play them in a browser, export SVG, PNG or GIF, or share a single offline HTML file.
 
 The ESM SDK includes a DOM-free core and native browser, Vue, React, and Web Component integrations. All integrations share the same document and timeline.
 
-[Install](#installation) · [Quick start](#quick-start) · [Vue](#vue-integration) · [React](#react-integration) · [Native browser](#native-browser) · [Web Component](#web-component) · [Documents](#documents-and-timelines) · [Node content](#structured-node-content) · [API](#api) · [Controls](#player-controls) · [GIF](#browser-gif-export) · [Node / CLI](#node-gif-export-node-20) · [Offline HTML](#offline-html-node-20)
+[Install](#installation) · [Quick start](#quick-start) · [Vue](#vue-integration) · [React](#react-integration) · [Native browser](#native-browser) · [Web Component](#web-component) · [Documents](#documents-and-timelines) · [Node content](#structured-node-content) · [Typography](#document-typography) · [API](#api) · [Diagnostics](#on-demand-geometry-diagnostics) · [Controls](#player-controls) · [PNG](#browser-png-and-svg-backgrounds) · [GIF](#browser-gif-export) · [Node PNG](#node-png-export) · [Node GIF / CLI](#node-gif-export-node-20) · [Offline HTML](#offline-html-node-20)
 
 ## Installation
 
@@ -18,14 +20,14 @@ npm install flowsvg
 
 ESM only, with TypeScript declarations. Core and native browser entries need no framework. Core: Node.js 18+ or an ES2022-compatible browser. Playback: DOM, SVG, and `requestAnimationFrame`. Frameworks: Vue 3.5+ or React 18+.
 
-The browser GIF API also requires Canvas 2D, image decoding and Blob workers allowed by the host content security policy. The Node entry and CLI require Node 20+; HTML generation needs no browser, while Node GIF export needs preinstalled Chromium and system fonts.
+Browser PNG and GIF export require Canvas 2D, SVG image decoding and locally installed system fonts. GIF also requires Blob workers allowed by the host content security policy. The Node entry and CLI require Node 20+; HTML generation needs no browser, while Node PNG and GIF export need preinstalled Chromium and system fonts.
 
 | Import path | Purpose |
 | --- | --- |
 | `flowsvg` | DOM-free document validation, compilation, evaluation, hit testing, and SVG export |
 | `flowsvg/browser` | Native browser player |
-| `flowsvg/export` | Browser GIF export, progress, cancellation and errors |
-| `flowsvg/node` | Node 20+ offline HTML generation and Chromium-based GIF export |
+| `flowsvg/export` | Browser PNG/GIF export, cancellation and errors; GIF progress |
+| `flowsvg/node` | Node 20+ offline HTML generation and Chromium-based PNG/GIF export |
 | `flowsvg/vue` | Vue component and handle types |
 | `flowsvg/react` | React component and ref types |
 | `flowsvg/web-component` | Explicit custom element registration; also available as `flowsvg/element` |
@@ -90,7 +92,7 @@ export const diagramDocument: DiagramDocument = {
 
 Halfway through the final beat with the light theme, the event and response messages move together. Only their participating nodes are highlighted.
 
-![Order workflow with Client, API gateway, Auth, Order service, Orders database and Event queue; OrderCreated and response messages are in flight](../packages/flowsvg/docs/images/quick-start.png)
+![Order workflow with Client, API gateway, Auth, Order service, Orders database and Event queue; OrderCreated and response messages are in flight](../../packages/flowsvg/docs/images/quick-start.png)
 
 ### 2. Evaluate and export SVG
 
@@ -255,8 +257,9 @@ Register in a DOM environment. DOM-free imports are safe, but that module instan
 | `edges` | Edge array; `id`, `from`, and `to` are required; endpoints reference nodes or group boundaries |
 | `scenes` | `[]` creates a static diagram; each scene has a unique `id`, a `label`, and nonempty `beats` |
 | `title` / `theme` | Optional title and `light` / `dark` document theme |
+| `typography` | Optional node, edge and flow-label sizes; see [document typography](#document-typography) |
 
-Node and edge IDs are globally unique. Shapes: `rect`, `roundedRect`, `ellipse`, `cylinder`, `group`. `parentId` names a parent group; child coordinates are group-relative. Labels are plain text; `visible` defaults to `true`. Node styles: `fill`, `stroke`, `strokeWidth`, `textColor`, `dashed` (group borders). Edge styles: `stroke`, `strokeWidth`, `dashed`. Colors use hexadecimal RGB/RGBA, such as `#2563eb` or `#2563eb80`.
+Node and edge IDs are globally unique. Shapes: `rect`, `roundedRect`, `ellipse`, `cylinder`, `group`. Group borders are rounded by default. `parentId` names a parent group; child coordinates are group-relative. Labels are plain text; `visible` defaults to `true`. Node styles: `fill`, `stroke`, `strokeWidth`, `textColor`, `dashed` (group borders). Edge styles: `stroke`, `strokeWidth`, `dashed`. Colors use hexadecimal RGB/RGBA, such as `#2563eb` or `#2563eb80`.
 
 Routes: `straight` (default), `orthogonal`, or `curved`. Curves follow endpoint ports without avoiding other nodes. Orthogonal routes round bends by default; SVG output, flow markers, bounds and hit testing share that geometry. Rounding adapts to short segments and obstacle/arrow clearance. Orthogonal routes avoid visible ordinary nodes and use a fixed fallback if blocked; shortest paths and zero crossings are not guaranteed. Set `fromPort` / `toPort` to `top`, `right`, `bottom`, or `left`. Orthogonal routes prefer bridges at the gap midpoint when arrow space permits and single outside channels for matching port sides. Separate ancestor frames add outside clearance; shared containers remain traversable. Orthogonal routes reserve outward endpoint segments and a straight arrow approach scaled to the evaluated stroke width, shortened when adjacent nodes leave insufficient space. Curved and orthogonal inputs on the same target side receive separate positions ordered by source position, with document order breaking ties; hidden edges keep their positions. Positions use the central portion of the side, so crowded or very small nodes can still require more space. Curved ports set tangents. Omitted ports follow the dominant center-to-center axis; ellipse endpoints lie on the contour. Simple labels wrap by estimated width and remain visible on height overflow, with a `text-overflow` warning.
 
@@ -295,15 +298,16 @@ Import from `flowsvg`:
 
 | API | Result and behavior |
 | --- | --- |
-| `validateDocument(input: unknown)` | Returns `{ path, message }[]`; an empty array means valid |
+| `validateDocument(input: unknown)` | Returns `{ path, message }[]`; an empty array means authored structure and value checks passed |
 | `createDiagram(document)` | Validates, copies, and compiles into a `Diagram`; invalid documents throw `DiagramValidationError` |
 | `renderSvg(document, timeMs = 0, options?)` | Compiles once and exports a static SVG string |
 | `diagram.totalDuration` | Compiled timeline duration, including single-flow movement and arrival holds; `0` for a static document |
 | `diagram.beats` | Frozen effective intervals: `{ sceneId, beatId, beatIndex, startMs, endMs, caption? }`; use these for navigation and export timing. `beatIndex` is scene-local; captions include inherited text |
 | `diagram.evaluateAt(timeMs, options?)` | Returns `DiagramFrameState` |
+| `diagram.diagnoseAt(timeMs, options?)` | Return `GeometryWarning[]` on demand, excluding text overflow |
 | `diagram.renderSvg(timeMs = 0, options?)` | Exports SVG from the same evaluation result |
 | `diagram.hitTest(timeMs, point, options?)` | Returns `{ id, type: "node" \| "edge" }` or `null`, using document coordinates |
-| `measureNodeContent({ kind, width, content })` | Returns a recommended fixed height and unresolved per-version overflow diagnostics; see [content measurement](#measure-content-before-creating-a-document) |
+| `measureNodeContent({ kind, width, content, typography? })` | Returns a recommended fixed height and unresolved per-version overflow diagnostics; see [content measurement](#measure-content-before-creating-a-document) |
 | `wrapText(label, maxWidth, typography?)` | Wraps text with fixed width estimates and returns an array of lines |
 
 `validateDocument` checks authored structure and values. Compilation also rejects non-finite derived movement or accumulated timing with `DiagramValidationError` at the affected beat’s `durationMs` path. Input documents retain their authored durations.
@@ -312,7 +316,24 @@ Import from `flowsvg`:
 
 `DiagramFrameState` includes time, scene/beat IDs, progress, evaluated nodes/edges, camera, caption, and warnings. Coordinates are absolute. Static documents have `null` scene/beat IDs; beat IDs use `${scene.id}:${beatIndex}` with zero-based indexes. Active edges expose `flow` direction, progress, point, and optional text. Markers are absent after the beat, on hidden edges, or with reduced motion.
 
-Types and member JSDoc are included: `DiagramDocument`, `DiagramNode`, `DiagramEdge`, `Scene`, `Beat`, `DiagramBeat`, `Action`, `Diagram`, `DiagramFrameState`, `EvaluateOptions`, `ValidationIssue`, and `LayoutWarning`.
+Types and member JSDoc are included: `DiagramDocument`, `DiagramNode`, `DiagramEdge`, `Scene`, `Beat`, `DiagramBeat`, `Action`, `Diagram`, `DiagramFrameState`, `EvaluateOptions`, `ValidationIssue`, `LayoutWarning`, `GeometryWarning`, `GeometryWarningCode`, and `TextOverflowWarning`.
+
+### On-demand geometry diagnostics
+
+```ts
+const risks = diagram.diagnoseAt(500, { theme: "light", reducedMotion: false });
+for (const risk of risks) {
+  console.log(risk.code, risk.path, risk.objectId, risk.relatedObjectIds, risk.warningKey);
+}
+```
+
+`diagnoseAt` uses `evaluateAt` time and visual options. It returns only `edge-node-overlap`, `label-node-overlap` and `label-overlap`. Ordinary evaluation, SVG rendering and playback do not run these pair checks. `frame.warnings` retains separate `text-overflow` results.
+
+The SDK checks visible portions inside the effective camera. Ordinary node, group and edge labels can overflow their shapes; structured lines are first clipped to `safeArea`. Inline spans share one label identity, and transparent span gaps do not become visible text. Different lines of one ordinary edge label compare foreground regions, so their shared background halo alone does not create a self-conflict. Halo checks remain active against other label fields, owners and nodes. Own labels and ancestor containment are excluded, while group titles covering children remain eligible. Edge paths exclude endpoints and group boundaries; edge labels have no endpoint exemption. Hidden, zero-opacity and fully transparent paint is excluded. A transparent fill can retain a visible outline; semi-transparent paint and edge-label background halos remain eligible. Flow capsules, content graphics and player captions are outside label checks.
+
+Fill checks use bounding boxes only as a prefilter, then actual rectangle, rounded, ellipse and cylinder contours. Routes reuse SDK samples: 32 intervals per ordinary cubic, 16 per separated cubic segment and 16 per orthogonal bend. Curved node strokes use 256 contour intervals per revolution, retaining the cylinder cap and internal horizontal seam; rectangle strokes retain square miters. Contact tolerance is `1e-6` diagram units. Finite sampling, estimated text rectangles and the lack of pixel analysis for dash gaps can miss risks or flag risks without actual painted-pixel occlusion. Warnings do not prove final-layer pixel occlusion or continuous collision coverage. Review actual outputs at their intended display size.
+
+Each result has `code`, `path`, `objectId`, `relatedObjectIds`, `warningKey` and `message`. `warningKey` is a versioned canonical JSON array encoding: `["flowsvg-layout-warning", 1, code, left, right]`. Participants include object type, ID, role, field path and line/subobject position. Label pairs sort participant encodings; label–node and path–node pairs preserve role direction. Different fields and lines retain separate identities, while spans on one line do not create duplicates. Two lines in one node can conflict, so a related ID may equal `objectId`. Prose, coordinates, time and visual options are excluded from the key. Consumers must separately bind source bytes, SDK identity, time and visual options before recording a decision about one occurrence. The SDK never moves, hides or rewrites objects.
 
 ### Player API
 
@@ -415,6 +436,31 @@ Use this interface only when building host settings; normal player setup and sty
 
 Create `new SelectControl(document, "Theme", onChange)`, append its `element`, then call `render([{ value: "light", label: "Light" }, { value: "dark", label: "Dark" }], "light")`. `SelectChoice` contains string `value` and `label` fields; choice values must be unique within a control. The callback receives a requested value; the caller owns committed state and must call `render` to reflect it. The optional third `render` argument is a disabled flag, defaulting to `false`; an empty choice list also disables the trigger. Call `destroy()` before removing the host to release outside-dismissal listeners and remove the menu element. The menu reuses the imported `flowsvg/styles.css`, color variables and size class above.
 
+## Document typography
+
+The optional document `typography` accepts `nodeLabel`, `edgeLabel` and `flowLabel`, defaulting independently to 16, 14 and 12. Sizes use diagram units, rather than PNG pixels or PowerPoint points.
+
+```ts
+import { createDiagram, measureNodeContent, type DiagramTypography, type NodeContent } from "flowsvg";
+
+const typography: DiagramTypography = { nodeLabel: 32, edgeLabel: 24, flowLabel: 20 };
+const content: NodeContent = { blocks: [{ type: "paragraph", text: "A presentation note" }] };
+const { height, diagnostics } = measureNodeContent({ kind: "rect", width: 480, content, typography });
+const diagram = createDiagram({ version: 1, viewport: { width: 1280, height: 720 }, typography,
+  nodes: [{ id: "note", kind: "rect", x: 40, y: 40, width: 480, height, content }], edges: [], scenes: [] });
+// Inspect diagnostics and diagram.evaluateAt(0).warnings, then review SVG at its intended display size.
+```
+
+Ordinary node labels and group headings use the node size; edge labels use the edge size. Wrapping, line height, estimated bounds, node label hits and rendering share these metrics. Transfer text remains single-line. Capsule width, height, baseline and `fitHeight` bounds follow its effective size without adding an interaction target.
+
+Default title, body, auxiliary, tag, status and graph-label sizes scale by `nodeLabel / 16`. Explicit block, list, item and span sizes retain their existing inheritance order. Content retains its line-height rule: `max(20, largest current line size × 1.35)`. Node dimensions, graph coordinates and fixed block heights, padding and gaps do not grow automatically. Remeasure with the same typography; width overflow and graph-internal height overflow can remain unresolved. Multiple content versions share the largest required height.
+
+Font changes retain scenes, beats and effective compiled duration. Later explicit geometry changes can alter path length, so reread `diagram.beats`. Core, browser players, portable HTML, React, Vue, Web Components and GIF share these rules.
+
+Presentation material can start at 1280×720 with 32/24/20 sizes; Web prose illustrations can start at 960×600 with 20/18/16. The SDK stores concrete dimensions and sizes. Importing a document does not apply a delivery preset. Review text at its intended display size.
+
+Positive finite source sizes can still overflow derived line heights, whole-text widths or capsules. Validation, compilation or evaluation throws `DiagramValidationError` with `typography.nodeLabel`, `typography.edgeLabel` or `typography.flowLabel`; reduce that size or shorten the text. Measurement shares the same validation and resolution rules.
+
 ## Themes and accessibility
 
 Theme: explicit option → document theme → light. The core ignores system preferences. Browser motion follows `prefers-reduced-motion` unless overridden; the core defaults to full motion. Reduced motion completes transitions immediately and hides transfer markers, preserving duration.
@@ -436,6 +482,51 @@ All four hosts accept `gifExport: true`; Web Component markup uses `gif-export` 
 Click **Export GIF** to download the complete timeline at 1× with the task's resolved theme and default export settings. The controls show progress, **Cancel export**, completion and a readable failure message. Downloads use a sanitized document title or `FlowSVG.gif`. Playback, speed and seeking remain independent; hover and controls never enter the GIF.
 
 Each player owns at most one task. A successful document load retains the old task's captured document/theme. Later input-object mutations cannot change that snapshot. Destroying the player, unmounting a component, or rebuilding an adapter for option changes cancels its task and prevents late downloads. Cancellation or failure permits retry. For custom settings and programmatic error handling, use the separate `exportGif` function below.
+
+## Node PNG export
+
+```ts
+import { exportPng } from "flowsvg/node";
+import { writeFile } from "node:fs/promises";
+
+const png = await exportPng(diagramDocument, {
+  executablePath: "/path/to/installed/chromium",
+  timeMs: 0,
+  width: 1280,
+  background: "transparent"
+});
+await writeFile("diagram.png", png);
+```
+
+Node PNG uses the same browser exporter and image options as `flowsvg/export`. It requires Node 20+ and preinstalled Chrome/Chromium. Choose `executablePath` or an existing Playwright `browser`; the options are mutually exclusive. The SDK never downloads a browser and the export context is offline.
+
+The call snapshots the document and settings before asynchronous work. Invalid documents, options and pixel limits fail before browser allocation. Success, failure and cancellation close task contexts, owned browsers and temporary files, including resources acquired after cancellation. A supplied browser remains caller-owned and open. Launch, temporary-file and bridge failures use `PngExportError.code: "environment"`; browser rasterization, encoding and cancellation retain their distinct codes. The API returns bytes; saving them is the caller's responsibility. The SDK CLI has no PNG command.
+
+## Browser PNG and SVG backgrounds
+
+Import `exportPng` from `flowsvg/export` for complete decodable `Uint8Array` bytes. The call does not download or change player state.
+
+```ts
+import { createDiagram } from "flowsvg";
+import { exportPng } from "flowsvg/export";
+import { diagramDocument } from "./diagram.js";
+
+const compiled = createDiagram(diagramDocument);
+const png = await exportPng(diagramDocument, {
+  timeMs: compiled.totalDuration, width: 1280,
+  theme: "light", background: "transparent", reducedMotion: false,
+  signal: new AbortController().signal
+});
+const svg = compiled.renderSvg(compiled.totalDuration, { background: "transparent" });
+```
+
+`timeMs` defaults to 0. Nonfinite, negative or out-of-range times fail; static documents accept only 0. The range uses actual compiled duration. `reducedMotion` defaults to false, retaining the selected flow markers and transitions. Explicit true uses existing evaluation semantics without changing timing. Exports contain only the diagram, without controls, caption regions, automatic cropping or added headers.
+
+`width` must be positive and finite, defaults to document `viewport.width`, and rounds to at least 1 pixel. Height uses the rounded width and selected effective camera ratio, rounded to at least 1 pixel. PNG retains `fitHeight` and focus. Limits are 8192 pixels per side and 32,000,000 total pixels after rounding. Computable failures precede resource allocation and never shrink output. GIF limits remain separate.
+
+`background` defaults to `theme`. `transparent` removes both the SVG whole-diagram fill and initial canvas fill while preserving node paint, edge-label halos and other diagram shapes. Core `renderSvg` accepts the same field in `SvgRenderOptions` and remains DOM-free. Ordinary core evaluation retains its existing time-clamping contract. GIF remains opaque.
+
+`PngExportError.code` is `options`, `document`, `limit`, `environment`, `rasterization`, `encoding` or `cancelled`. Browser support requires Canvas 2D, SVG image decoding and locally installed system fonts. Inputs are fixed before the first asynchronous step; success, failure and cancellation release task canvas, image and URL resources. Ordinary SDK and playback imports do not load PNG rasterization. Portable `FlowSVGExport.exportPng` uses the same implementation. The initial release exposes the SDK API without a player PNG button.
 
 ## Browser GIF export
 
@@ -552,7 +643,7 @@ const service = {
 
 The `service` node rendered with the light theme:
 
-![Fixed-size Order service node with title, auxiliary text, body and a blue right-aligned paragraph](../packages/flowsvg/docs/images/node-content.png)
+![Fixed-size Order service node with title, auxiliary text, body and a blue right-aligned paragraph](../../packages/flowsvg/docs/images/node-content.png)
 
 Text fields accept strings or `ContentTextSpan[]`: `{ text, style?: { fontSize, fontWeight, color } }`. Spans inherit block styles; alignment belongs to the block. Estimated-width wrapping preserves newlines and Unicode graphemes, prefers spaces, and breaks long words or URLs as needed.
 
@@ -571,7 +662,7 @@ const steps: ContentBlock = { type: "list", marker: "number", style: { itemGap: 
 
 The `steps` block rendered in a 300 × 180 rectangle with `content: { blocks: [steps] }`:
 
-![Two numbered steps with auxiliary text and bold Save text](../packages/flowsvg/docs/images/numbered-list.png)
+![Two numbered steps with auxiliary text and bold Save text](../../packages/flowsvg/docs/images/numbered-list.png)
 
 Tags accept `{ text, style?: { fontSize, fontWeight, color, fill, shape } }`, with font size 11 by default. `shape` is `rounded` by default; set `shape: "pill"` for capsule corners based on the final tag height. Shape does not change text layout or theme colors. List `tagGap` defaults to 6 and must be finite and nonnegative. Status is right-aligned 12-unit accent text; `statusStyle` accepts `fontSize`, `fontWeight`, and `color`. When space is insufficient, tags wrap and status moves below. Body and auxiliary text follow.
 
@@ -586,7 +677,7 @@ const records: ContentBlock = { type: "list", items: [{
 
 The `records` block rendered in a 300 × 180 rectangle with `content: { blocks: [records] }`:
 
-![Record with world and experience tags, new status, body and date](../packages/flowsvg/docs/images/record-tags.png)
+![Record with world and experience tags, new status, body and date](../../packages/flowsvg/docs/images/record-tags.png)
 
 Content keeps authored node dimensions and clips to a shape-specific safe area. Overflow emits `text-overflow` with the node ID, `nodes[index].content` path and direction. Increase node dimensions or shorten text; fonts do not shrink automatically. Content has one node-level interaction target, with no internal links, buttons, images or HTML. Clipped text adds no hit area.
 
@@ -594,7 +685,7 @@ Content keeps authored node dimensions and clips to a shape-specific safe area. 
 
 ### Measure content before creating a document
 
-`measureNodeContent({ kind, width, content })` returns `{ height, diagnostics }`. Import the function and `NodeContentMeasurementInput`, `NodeContentMeasurement`, and `NodeContentMeasurementDiagnostic` from `flowsvg`. `kind` accepts `rect`, `roundedRect`, or `cylinder`; `width` must be finite and greater than zero. `content` accepts one `NodeContent` or a nonempty readonly array of content versions.
+`measureNodeContent({ kind, width, content, typography? })` returns `{ height, diagnostics }`. Import the function and `NodeContentMeasurementInput`, `NodeContentMeasurement`, and `NodeContentMeasurementDiagnostic` from `flowsvg`. `kind` accepts `rect`, `roundedRect`, or `cylinder`; `width` must be finite and greater than zero. `content` accepts one `NodeContent` or a nonempty readonly array of content versions.
 
 ```ts
 import { measureNodeContent, type DiagramNode, type NodeContent } from "flowsvg";
@@ -643,7 +734,7 @@ const entities: ContentGraphBlock = {
 
 The `entities` block rendered in a 280 × 180 rectangle with `content: { blocks: [entities] }`:
 
-![Entity graph with highlighted Alice and Google, and an unselected ML project](../packages/flowsvg/docs/images/entity-graph.png)
+![Entity graph with highlighted Alice and Google, and an unselected ML project](../../packages/flowsvg/docs/images/entity-graph.png)
 
 `height` reserves a positive fixed section. Entity centers use nonnegative finite `x`/`y` offsets from its top-left. IDs are local to each block; edges reference those IDs. Highlighted entities use accent dots and bold labels; edges use accent paint when both endpoints are highlighted. Overflow reports a warning and clips at the parent node; interactions target that node.
 
@@ -688,12 +779,25 @@ const svg = diagram.renderSvg(1000, { theme: "dark", reducedMotion: true });
 
 The initial light-theme frame at 0 ms and the updated dark-theme frame at 1000 ms:
 
-![Facts timeline before and after record replacement, shown in light and dark themes](../packages/flowsvg/docs/images/facts-timeline.png)
+![Facts timeline before and after record replacement, shown in light and dark themes](../../packages/flowsvg/docs/images/facts-timeline.png)
 
 Check `frame.warnings` before sharing. Prefer default content colors for contrast across themes and highlights.
 
+## Contract ownership
+
+These documentation entries serve different readers and keep different levels of detail:
+
+| Entry | Owns | Duplication boundary |
+| --- | --- | --- |
+| [Published package README](../../packages/flowsvg/README.md) | The self-contained npm installation path, common defaults, limits, and error behavior | Must remain usable from the published package without this repository; link here for repository-only depth |
+| This SDK guide | The complete repository reference for the public API, document model, timeline, playback, export, and diagnostics | The primary source for detailed SDK behavior and cross-host links |
+| [Host READMEs](../../apps/native-example/README.md), [React](../../apps/react-example/README.md), [Vue](../../apps/vue-example/README.md) | Host lifecycle, development commands, build/deploy behavior, and host-specific failure handling | Summarize the compiled timeline and link back here for shared SDK rules |
+| Flow SVG Diagram Skill (independent project) | Authoring-tool commands, layout plans, reports, revision history, and review/export workflow | Bundles the execution references for its exact SDK baseline; SDK users can use this guide without installing the Skill. See [repository boundaries](../development/repository-split.md) |
+
+When a description conflicts with behavior, use the public types, implementation, and tests as the fact source. The English and Chinese SDK guides keep the same task coverage, defaults, limits, and error behavior; wording may differ for readability.
+
 ## License
 
-[MIT](../packages/flowsvg/LICENSE). Use, modify, and distribute with the license and copyright notice retained.
+[MIT](../../packages/flowsvg/LICENSE). Use, modify, and distribute with the license and copyright notice retained.
 
 Repository maintainers can run `pnpm --filter flowsvg test:browser` after preparing Chromium. SDK build, tests and release verification use SDK-owned inputs and require no example builds. 

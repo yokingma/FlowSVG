@@ -2,38 +2,49 @@
   <img src="packages/flowsvg/docs/images/flowsvg-wordmark.gif" alt="FlowSVG" width="280">
 </p>
 
-<p align="center">Animated SVG diagrams for logic and architecture.</p>
+<p align="center">Executable diagrams that explain systems and processes.</p>
 
 <p align="center">English | <a href="README.zh-CN.md">简体中文</a></p>
 
 <p align="center">
+  <a href="#related-skill">Skill</a> ·
   <a href="#quick-start">Quick&nbsp;start</a> ·
   <a href="#integrations-and-api">API</a> ·
   <a href="apps/native-example/README.md">Examples</a>
 </p>
 
-Describe nodes, relationships, scenes, and beats in a serializable document, play them on the web, and export a static SVG at any point in time.
+**FlowSVG SDK renders, plays, embeds, and exports executable diagrams that explain systems and processes.**
+
+Use one editable JSON or TypeScript document to describe nodes, relationships, scenes, and beats. Explain structures with static diagrams and show process progression or state changes with animation. Reuse that document for an interactive player, standalone offline HTML, SVG, PNG, or GIF.
+
+This repository maintains the SDK, shared showcase, and native browser, React, and Vue integration examples. The independent [Flow SVG Diagram Skill](#related-skill) handles diagram authoring and review.
 
 The TypeScript core runs without a DOM, network access, or browser clock. Native browser, Vue, React, and Web Component integrations share the same timeline and rendering results.
 
-The Native showcase is prepared for GitHub Pages at `https://yokingma.github.io/FlowSVG/`. Initial publication is pending repository eligibility. See [Pages setup and deployment](docs/GITHUB-PAGES.md) for the workflow, local reproduction and verification.
+## Use cases
 
-For a complete example included in the npm package, see the [background task lifecycle](packages/flowsvg/README.md#typical-example-background-task-lifecycle), with an animated preview, diagram JSON and an offline-player command.
+| Use case | Typical output |
+| --- | --- |
+| Presentation materials | SVG/PNG diagrams or GIF animations for architecture, processes and state changes |
+| Web documentation and product explanations | An embedded player with playback and seeking controls |
+| Technical teaching and onboarding | Step-by-step explanations of requests, data flow and task lifecycles |
+| Design reviews and incident walkthroughs | A structural overview followed by the relevant interactions or failure sequence |
+
+Reuse one diagram document for static SVG/PNG, animated GIF and interactive or offline HTML. Slide materials are exported assets; FlowSVG does not generate PPTX files or native PowerPoint shapes. SVG/PNG/GIF support depends on the presentation software.
 
 ## Features
 
-- Draw rectangles, rounded rectangles, ellipses, cylinders, and groups with straight, orthogonal, or curved edges. Curved and orthogonal inputs use separate same-side arrow tips. Orthogonal routes prefer bridges at the gap midpoint when arrow space permits and single outside channels for matching port sides. Separate ancestor frames add outside clearance; shared containers remain traversable. Orthogonal routes round bends by default and reserve straight approaches based on stroke width. SVG output, flow markers and hit testing share the rounded path geometry. Show forward or reverse dots and horizontal text capsules. A single transfer uses distance-based movement at a target 180 diagram units/second, with a 400 ms minimum, then holds for 500 ms; multiple transfers remain synchronized. Single-flow receivers fade their fill and stroke over 200 ms after arrival, within the 500 ms post-arrival interval. Automatic node and edge highlights then hold for 100 ms and fade out over 200 ms. Explicit highlights retain authored timing; reduced motion skips the fades.
-- Compose titles, paragraphs, lists with rounded or pill tags and statuses, muted auxiliary text, and inline styled spans inside fixed-size rectangles, rounded rectangles, and cylinders, with controlled styles, safe-area clipping, and directional overflow warnings.
-- Measure one or more explicit node-content versions at an authored width, then store a shared fixed height and inspect unresolved overflow diagnostics.
-- Organize explanations into scenes, beats, and actions that change visibility, highlights, geometry, styles, and camera focus. Replace node content or switch text modes at beat starts.
-- Play, pause, change speed, step through beats, switch scenes, and scrub the timeline. Enable the Loop control to repeat the whole timeline; loop mode defaults off. Styled scene/speed menus support keyboard selection; optional `flowsvg-compact` styling provides smaller controls.
-- Hover a node's shape, label, or structured content to highlight its border by default; opt into background feedback with `hoverFill` / `hover-fill`.
-- Seek to an exact time, inspect the frame, hit-test objects, and export the matching static SVG.
-- Use thin neutral borders, gray edges and blue emphasis in light/dark themes, with keyboard controls, caption announcements and reduced motion.
-- Report document errors with field paths and layout warnings for overflowing text.
-- Generate standalone offline HTML and export GIFs in browsers or Node, with optional download controls, progress and cancellation.
+- Draw nodes, nested groups and directed straight, orthogonal or curved edges.
+- Compose titles, paragraphs, lists, tags and inline styled text inside nodes; measure content before choosing dimensions.
+- Configure document-level node, edge and flow-marker font sizes across players and exports.
+- Animate visibility, emphasis, geometry, content and camera focus through scenes and beats.
+- Play, pause, seek, step, change speed and loop with built-in controls.
+- Evaluate frames, hit-test objects and export SVG/PNG at a specified time.
+- Generate standalone offline HTML and export GIFs with progress and cancellation.
+- Use light/dark themes, keyboard controls and reduced motion.
+- Validate documents with field-level errors and text-overflow warnings; query geometric overlap risks on demand.
 
-Authors specify node positions and sizes. The project focuses on diagram presentation; drag-and-drop editing, automatic layout, and complex global routing are outside its current scope.
+Node positions and sizes are authored explicitly. FlowSVG focuses on presentation and playback; drag-and-drop editing and semantic automatic layout are outside its scope. Authoring and deterministic layout-plan tools belong to the independent Skill.
 
 ## Installation
 
@@ -43,7 +54,7 @@ Install from [npm](https://www.npmjs.com/package/flowsvg):
 pnpm add flowsvg
 ```
 
-The package includes ESM entries and TypeScript declarations. Core and native browser usage need no framework; see the [SDK guide](docs/SDK-GUIDE.md).
+The package includes ESM entries and TypeScript declarations. Core and native browser usage need no framework; see the [SDK guide](docs/guides/sdk-guide.md).
 
 ## Quick start
 
@@ -113,7 +124,9 @@ console.log(svg);
 
 `svg` is a complete SVG string for saving or previewing. Reuse the compiled `diagram` for repeated evaluation or export.
 
-Use the separate [`flowsvg/export` browser API](docs/SDK-GUIDE.md#browser-gif-export) to produce GIF bytes with captions, progress and cancellation. Its inline worker keeps encoding separate from playback. Range, speed, dimensions, captions, loop counts and motion are configurable; computable resource limits and every effective caption are checked before sampling. Enable built-in download controls with `gifExport: true` in native, React or Vue options, or `gif-export` on the Web Component. The controls show progress, cancel, completion and errors; GIF export is off by default.
+For GIF export, see the [browser API](docs/guides/sdk-guide.md#browser-gif-export) or [Node API](docs/guides/sdk-guide.md#node-gif-export-node-20).
+
+The browser SDK also exports PNG at controlled pixel dimensions, with transparent SVG/PNG backgrounds. See [Browser PNG and SVG backgrounds](docs/guides/sdk-guide.md#browser-png-and-svg-backgrounds).
 
 ## Offline HTML
 
@@ -126,42 +139,27 @@ import { writeFile } from "node:fs/promises";
 await writeFile("diagram.html", await renderHtml(diagramDocument, { theme: "dark" }));
 ```
 
-For the CLI, save the document as JSON and run the built tool from the repository root:
-
-```bash
-node packages/flowsvg/dist/node/cli.js diagram.json --output diagram.html --format html
-```
-
-Use `--theme light|dark`, `--autoplay`, `--no-controls`, `--gif-export` and `--overwrite` as needed. Existing output is preserved unless `--overwrite` is specified. HTML generation requires no Chromium. Core and browser entries retain Node 18+ support.
-
-The build also produces `packages/flowsvg/dist/portable/` with a bundled player, CSS, version manifest and licenses. Copy the entire package `dist/` plus a `package.json` containing `{"type":"module"}` to distribute the Node HTML generator without source files or installed dependencies. Run `node dist/node/cli.js` in that directory. Keep all supplied licenses with the copy. The generator selects matching assets automatically. Enable `renderHtml(document, { gifExport: true })` or `--gif-export` to embed the GIF exporter and worker as well. GIF export is off by default; basic HTML excludes the encoder. Recipients can download GIFs with progress and cancellation in the offline browser; `controls: false` hides all controls.
-
-## Node GIF export
-
-Node 20+ `exportGif` from `flowsvg/node` runs the same browser exporter in an offline Chromium page. Prepare Chromium, system libraries and fonts explicitly before going offline. Neither installation nor export downloads a browser. Use `executablePath` for an installed browser, or pass a connected Playwright `browser`; caller-owned sessions remain open. Browser export options, progress, error codes and cancellation apply. See the [Node GIF API and setup](docs/SDK-GUIDE.md#node-gif-export-node-20).
-
-```bash
-node packages/flowsvg/dist/node/cli.js diagram.json --output diagram.gif --format gif --executable-path /path/to/chromium --fps 15 --loop-count 1
-```
-
-GIF options include time range, speed, dimensions, captions, loops, final hold and reduced motion. CLI SIGINT/SIGTERM cancellation exits nonzero. Both HTML and GIF use complete, atomic publication and preserve existing files unless `--overwrite` is set. Copied HTML tools need no installed dependencies; copied GIF tools need `playwright-core@1.58.2` beside the copied `dist/`.
+For CLI usage, optional GIF downloads and portable tools, see [offline HTML](docs/guides/sdk-guide.md#offline-html-node-20). Node GIF export additionally requires a prepared Chromium browser; see [Node GIF export](docs/guides/sdk-guide.md#node-gif-export-node-20).
 
 ## Integrations and API
 
-The [SDK manual](docs/SDK-GUIDE.md) covers integrations, the document model, and public APIs. The npm package README keeps the main usage path concise.
+For documentation by reader and task, see the [documentation map](docs/README.md).
+
+The [SDK guide](docs/guides/sdk-guide.md) covers integrations, the document model and public APIs.
 
 | Goal | Documentation |
 | --- | --- |
-| Create documents, evaluate frames, or export SVG | [Quick start](docs/SDK-GUIDE.md#quick-start), [Core API](docs/SDK-GUIDE.md#core-api) |
-| Measure node content at a fixed width | [Content measurement](docs/SDK-GUIDE.md#measure-content-before-creating-a-document) |
-| Use a Vue component | [Vue integration](docs/SDK-GUIDE.md#vue-integration) |
-| Use a React component | [React integration](docs/SDK-GUIDE.md#react-integration) |
-| Integrate with a plain webpage or custom controls | [Native browser](docs/SDK-GUIDE.md#native-browser), [Player API](docs/SDK-GUIDE.md#player-api) |
-| Use a custom element or load a document URL | [Web Component](docs/SDK-GUIDE.md#web-component) |
-| Export GIF bytes or enable player downloads | [Browser GIF export](docs/SDK-GUIDE.md#browser-gif-export), [Built-in GIF downloads](docs/SDK-GUIDE.md#built-in-gif-downloads) |
-| Generate offline HTML or export GIFs from Node | [Offline HTML](docs/SDK-GUIDE.md#offline-html-node-20), [Node GIF export](docs/SDK-GUIDE.md#node-gif-export-node-20) |
-| Write scenes and actions | [Documents and timelines](docs/SDK-GUIDE.md#documents-and-timelines) |
-| Handle events, errors, and themes | [Events](docs/SDK-GUIDE.md#events), [Themes and accessibility](docs/SDK-GUIDE.md#themes-and-accessibility), [Validation and errors](docs/SDK-GUIDE.md#validation-and-errors) |
+| Create documents, evaluate frames, or export SVG | [Quick start](docs/guides/sdk-guide.md#quick-start), [Core API](docs/guides/sdk-guide.md#core-api) |
+| Measure node content at a fixed width | [Content measurement](docs/guides/sdk-guide.md#measure-content-before-creating-a-document) |
+| Use a Vue component | [Vue integration](docs/guides/sdk-guide.md#vue-integration) |
+| Use a React component | [React integration](docs/guides/sdk-guide.md#react-integration) |
+| Integrate with a plain webpage or custom controls | [Native browser](docs/guides/sdk-guide.md#native-browser), [Player API](docs/guides/sdk-guide.md#player-api) |
+| Use a custom element or load a document URL | [Web Component](docs/guides/sdk-guide.md#web-component) |
+| Export PNG images | [Browser PNG and SVG backgrounds](docs/guides/sdk-guide.md#browser-png-and-svg-backgrounds), [Node PNG](docs/guides/sdk-guide.md#node-png-export) |
+| Export GIF bytes or enable player downloads | [Browser GIF export](docs/guides/sdk-guide.md#browser-gif-export), [Built-in GIF downloads](docs/guides/sdk-guide.md#built-in-gif-downloads) |
+| Generate offline HTML or export GIFs from Node | [Offline HTML](docs/guides/sdk-guide.md#offline-html-node-20), [Node GIF export](docs/guides/sdk-guide.md#node-gif-export-node-20) |
+| Write scenes and actions | [Documents and timelines](docs/guides/sdk-guide.md#documents-and-timelines) |
+| Handle events, errors, and themes | [Events](docs/guides/sdk-guide.md#events), [Themes and accessibility](docs/guides/sdk-guide.md#themes-and-accessibility), [Validation and errors](docs/guides/sdk-guide.md#validation-and-errors) |
 
 ## Requirements
 
@@ -170,108 +168,54 @@ The [SDK manual](docs/SDK-GUIDE.md) covers integrations, the document model, and
 | Develop this repository | Node.js 22.12+ and pnpm 10.12.1 |
 | Run the SDK core independently | Node.js 18+, or an environment supporting ES2022 ESM |
 | Browser player | A modern browser supporting SVG, ES Modules, and `requestAnimationFrame` |
+| Browser PNG export | Canvas 2D, image decoding and local system fonts |
 | Browser GIF export | Canvas 2D, image decoding, Blob workers and a content security policy that permits them |
 | Node HTML generation / CLI | Node.js 20+; HTML generation needs no browser |
-| Node GIF export | Node.js 20+, preinstalled Chromium, system libraries and fonts |
+| Node PNG/GIF export | Node.js 20+, preinstalled Chromium, system libraries and fonts |
 | Vue / React integration | Vue 3.5+ / React 18+; install only the framework you use |
 
 The Vue/React examples use Vite 7, so repository development requires a newer Node.js version than the SDK core alone. The package provides ESM entries only.
 
 ## Development
 
-Install dependencies and build the SDK from the repository root:
+Run from the repository root with Node.js 22.12+ and pnpm 10.12.1:
 
 ```sh
 pnpm install --frozen-lockfile
 pnpm build
-```
-
-Build all three independent static sites in order (SDK, shared author output, then native/React/Vue):
-
-```sh
-pnpm build:examples
-SHOWCASE_SOURCE=dist/acceptance.js SHOWCASE_BASE=/showcase/ pnpm build:examples
-```
-
-The first command builds the formal catalog; the second explicitly selects acceptance input and a subpath. Serve each app's `dist/` separately at its configured base. See [showcase delivery and verification](docs/SHOWCASE-VERIFICATION.md) for resource boundaries and rebuild rules.
-
-### Run the Vue example
-
-```sh
-pnpm --filter flowsvg-vue-example dev
-```
-
-Open the local URL printed in the terminal. For the React example, run:
-
-```sh
-pnpm --filter flowsvg-react-example dev
-```
-
-### Run the native browser example
-
-```sh
 pnpm --filter flowsvg-native-example dev
 ```
 
-Open the address printed by Vite. Native, React and Vue consume the same private author catalog and session rules through their public SDK adapters. Their controls share rounded neutral styling, clear interaction states and a responsive playback toolbar. The formal catalog opens **请求与响应** (`request-response`): an order flow with uniform curved edges and default SDK styling. The second example, **RAG：从资料到答案** (`rag-workflow`), demonstrates fictional document ingestion, retrieval, optional reranking from five candidates to two chunks, and cited answer generation, using a compact three-row layout, rounded orthogonal routes and capsule tags. The third example, **FlowSVG：图解如何运行** (`project-architecture`), explains document evaluation, shared playback/adapters, optional export paths and the private showcase boundary. The fourth example, **vllm-metal：分层推理架构** (`vllm-metal-stack`), adapts the [upstream architecture figure](https://raw.githubusercontent.com/vllm-project/vllm-metal/main/docs/assets/architecture.svg) into a layered story with nested ownership panels and explicit hardware/configuration conditions. Visual controls preserve the operation-time frame and speed while pausing; example changes preserve visual preferences and reset time/rate. Loop mode defaults off and persists across in-page example, visual-setting and history changes. It is excluded from share URLs and diagram JSON. Each replacement cancels old GIF work. Every app’s `dev` / `build` prepares the shared author output first; `preview` serves its existing static output. Rebuild the SDK with `pnpm build` after SDK changes; restart development after author changes. See [native](apps/native-example/README.md), [React](apps/react-example/README.md), [Vue](apps/vue-example/README.md) and [shared authoring](packages/showcase/README.md) for isolated acceptance input and explicit deployment bases.
+Open the URL printed in the terminal. For React or Vue, replace `flowsvg-native-example` with `flowsvg-react-example` or `flowsvg-vue-example`. Rebuild the SDK after changing its source.
 
-The additional stories are **后台任务生命周期** (`job-lifecycle`), **订单事件：从采集到指标** (`order-event-pipeline`), **Web 服务：双副本部署** (`web-service-deployment`), and **缓存未命中：查询与回填** (`cache-aside-sequence`). They demonstrate a single current task state, conserved event counts and amounts, nested deployment boundaries, and seven ordered message rows. Task event transitions use moving solid dots with `highlightParticipants: false`, so only the explicitly selected current state is highlighted. All eight use SDK default styling. The sequence story uses straight messages; RAG, project architecture, task states, order data flow and deployment use orthogonal routes with SDK-rounded bends; request-response and vllm-metal use curved edges. All data is self-contained teaching data. Catalog durations come from the compiled SDK schedule: each single-transfer beat lasts for its movement plus a 500 ms post-arrival interval, replacing the authored duration. Use separate no-flow beats for longer reading time.
+The shared catalog includes request/response, RAG, architecture, task lifecycle, data flow, deployment and sequence diagrams. Examples use self-contained teaching data. See the [native](apps/native-example/README.md), [React](apps/react-example/README.md) and [Vue](apps/vue-example/README.md) guides for controls and build options. A [background task example](packages/flowsvg/README.md#example-background-task-lifecycle) is also included in the npm package.
 
-Formal examples use compact node geometry. Task lifecycle, order data, deployment, RAG, project architecture and vllm-metal measure explicit content versions through the SDK before creating documents. RAG fits the current content and updates heights and affected row positions together at content changes, keeping 50-unit row gaps. It enables `viewport.fitHeight: { padding: 24 }` so the live canvas and standalone SVG shrink to current content at the same authored width. GIF retains the authored viewport dimensions for a stable animation size and scale. Other examples retain fixed playback geometry; order data, deployment, project architecture and vllm-metal retain authored minimum heights.
-
-Example navigation now shows six populated categories in order: **业务流程**, **系统架构**, **状态转换**, **数据流**, **部署拓扑** and **交互时序**. The first two retain their two examples each; the remaining categories each have one new story. Classification is showcase metadata and does not enter diagram JSON.
-
-“Share current view” copies a saved example/time/visual snapshot without interrupting playback. Links and Back/Forward restore paused at example default speed; invalid parameters are diagnosed, unrelated query bytes are preserved, and clipboard failure exposes a manual URL.
-
-Maintainers: run `pnpm release` to verify, pack and preview the SDK independently of example builds. Run `pnpm release:publish` to repeat the checks and upload the verified tarball. See the [npm release guide](docs/RELEASING.md) for login and publication details.
-
-```text
-packages/flowsvg/                   SDK source, types, styles, tests, and published files
-packages/flowsvg/src/core/          SDK core model, validation, evaluation and core contract tests
-packages/flowsvg/src/browser/       Player, DOM, controls, input, lifecycle and browser tests
-packages/flowsvg/src/adapters/      React, Vue and Web Component implementations and tests
-packages/flowsvg/src/export/        Browser GIF planning, rasterization and inline worker
-packages/flowsvg/src/node/          Node HTML/GIF tools and CLI
-packages/flowsvg/src/portable/      Standalone browser bundle entries
-packages/flowsvg/tests/integration/ Shared scenarios across the four hosts
-packages/flowsvg/tests/             Real-browser acceptance pages and HTML/GIF tests
-packages/showcase/                  Private shared author source, session transitions and generated JSON
-apps/native-example/                Native Vite single-page showcase
-apps/vue-example/                   Vue single-page showcase
-apps/react-example/                 React single-page showcase
-docs/adr/                           Architecture decisions
-GLOSSARY.md                         Domain terminology
-```
+Build all three example sites with `pnpm build:examples`. For static hosting and GitHub Pages, see [showcase delivery](docs/verification/showcase-verification.md) and [Pages deployment](docs/development/github-pages.md).
 
 ### Verification
 
-Prepare Chromium and required fonts using the [release guide](docs/RELEASING.md#浏览器与最低运行时准备). Replace the executable path below with the prepared browser, then run type checks, tests and the release preview from the repository root:
-
 ```sh
-export FLOWSVG_CHROMIUM_PATH=/absolute/path/to/chromium
 pnpm typecheck
 pnpm test
-pnpm release --dry-run
 ```
 
-On macOS with Google Chrome installed, run the release preview with its path set for that command:
+Additional checks:
 
-```sh
-FLOWSVG_CHROMIUM_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" pnpm release
-```
+| Scope | Command | Details |
+| --- | --- | --- |
+| SDK browser behavior | `pnpm --filter flowsvg test:browser` | [SDK verification](docs/verification/sdk-verification.md) |
+| Built examples and static delivery | `pnpm test:examples` | [Showcase verification](docs/verification/showcase-verification.md) |
+| Package and installed consumers | `pnpm release` | [Release guide](docs/development/releasing.md) |
 
-Chromium runs the packaged GIF and offline HTML checks before publication. Uploading to npm itself does not require a browser. An `export` lasts only for the current terminal session; restarting VS Code does not preserve it. For persistent zsh setup and troubleshooting, see the [browser preparation instructions](docs/RELEASING.md#浏览器与最低运行时准备).
+Browser checks require a prepared Chromium browser and fonts. Follow the [browser setup instructions](docs/development/releasing.md#浏览器与最低运行时准备). `pnpm release` verifies and previews publication; uploading requires the separate `pnpm release:publish` command.
 
-Example verification and combined repository verification are explicit:
+For project conventions, see the [glossary](GLOSSARY.md), [architecture decisions](docs/adr/) and [implementation patterns](PATTERNS.md). SDK release notes are in the [package changelog](packages/flowsvg/CHANGELOG.md).
 
-```sh
-pnpm test:examples
-pnpm test:all
-```
+## Related Skill
 
-`test:examples` builds and checks shared contracts, all real host suites and copied-artifact root/subpath delivery. `test:all` runs SDK types/tests/tarball verification, then examples. SDK-only commands above remain independent. Details and narrower commands are in [showcase verification](docs/SHOWCASE-VERIFICATION.md).
+Flow SVG Diagram is an executable diagram Skill for explaining systems and processes: author once, then play, embed, inspect, and export. Its separate `flow-svg-diagram-skills` project owns authoring, layout plans, validation workflows, reviews, and delivery reports. It consumes the public `flowsvg@0.2.2` package without this checkout.
 
-`FLOWSVG_NODE20_PATH` optionally selects a prepared Node 20 executable for tool verification; `FLOWSVG_NODE18_PATH` enables the existing SDK minimum-runtime check. Tests never download a browser. Release verification installs the real tarball, then copies complete tools and the pinned automation runtime outside the package for offline HTML/GIF acceptance.
+See [repository boundaries](docs/development/repository-split.md) for the SDK integration boundary. SDK installation, development, tests, release verification and examples are self-contained.
 
 ## License
 

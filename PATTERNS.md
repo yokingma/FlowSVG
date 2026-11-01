@@ -1,12 +1,20 @@
 # Workspace patterns
 
+## SDK and repository boundaries
+
+- Keep SDK validation, rendering, playback, exports, release inputs, and host examples in this repository. The independently versioned Flow SVG Diagram Skill consumes public npm entries; SDK commands never require the Skill checkout. See [repository boundaries](docs/development/repository-split.md).
+- Change the Skill SDK baseline only in the Skill repository after independent acceptance. Do not add sibling-directory imports, old-path fallbacks, or floating runtime resolution here.
+- Preserve source identity and historical evidence when moving ownership. Run the independent Skill acceptance before cutover, then run SDK, package-consumer, showcase, and host checks. File generation, programmatic checks, actual visual inspection, and unexecuted CI are distinct evidence.
+
+## SDK and showcase maintenance
+
 - Keep runnable SDK README examples self-contained in the npm package. Verify the JSON and preview through the explicit release allowlist; refresh checked-in teaching snapshots at authoring time so SDK release remains independent of the showcase build.
 
 - Keep brand wordmark geometry in `docs/brand/flowsvg-wordmark.html`. Use the same closed path for the frame and SMIL motion, with the loop seam at the open corner marker. Center rendered glyph bounds before generating light/dark static SVGs and the shared package GIF. Use a cropped viewport around the frame and sample paused SVG times at exact 20 ms intervals (50 fps) with 2× pixel density, preserving the 4.8-second cycle without a duplicate endpoint frame. Set the same compact display width in all four READMEs.
 
 - Record prepared SDK versions separately from npm latest. Verify the exact versioned tarball through `pnpm release`; only the explicit publish command uploads it. Keep version changes, final release notes and timing migration guidance together.
 
-- Publish the formal Native showcase through `.github/workflows/pages.yml`. Build the SDK before the host, select `dist/formal.js` explicitly, set the repository-name deployment base, and upload only the host artifact. Skip deployment for private repositories. Keep Pages permissions in the deployment job and keep SDK npm releases independent. After making this repository public, enable Pages and manually run the workflow; visibility changes alone do not trigger deployment. Confirm live deployment separately from build success.
+- Publish the formal Native showcase through `.github/workflows/pages.yml`. Build the SDK before the host, select `dist/formal.js` explicitly, set the repository-name deployment base, and upload only the host artifact. Skip deployment for private repositories. Keep Pages permissions in the deployment job and keep SDK npm releases independent. Enable Pages before the first deployment and use a manual run when needed; visibility changes alone do not trigger deployment. Confirm live deployment separately from build success.
 
 - Fit optional canvas height in the SDK camera, retaining authored width and origin. Include painted geometry and labels, reject unrepresentable bounds, and keep explicit focus semantics. GIF uses the authored fixed viewport for stable dimensions and scale; never stretch each fitted SVG into a fixed GIF frame.
 

@@ -2,39 +2,49 @@
   <img src="packages/flowsvg/docs/images/flowsvg-wordmark.gif" alt="FlowSVG" width="280">
 </p>
 
-<p align="center">用 SVG 动画演示逻辑与架构。</p>
+<p align="center">面向系统和流程解释的可执行图表。</p>
 
 <p align="center"><a href="README.md">English</a> | 简体中文</p>
 
 <p align="center">
+  <a href="#独立-skill">Skill</a> ·
   <a href="#快速开始">快速开始</a> ·
   <a href="#集成与-api">API</a> ·
   <a href="apps/native-example/README.md">示例</a>
 </p>
 
-用可序列化的图解文档描述节点、连线和讲解步骤，在网页中播放，并在任意时间点导出静态 SVG。
+**FlowSVG SDK：面向系统和流程解释的可执行图表运行能力。支持渲染、播放、嵌入和导出。**
+
+用同一份可编辑的 JSON 或 TypeScript 文档描述节点、连线、场景和节拍。用静态图解释结构，用动画展示流程推进和状态变化。这份文档可复用于交互式播放器、单文件离线 HTML、SVG、PNG 和 GIF。
+
+本仓库维护 SDK、共享 showcase，以及原生浏览器、React、Vue 集成示例。独立的 [Flow SVG Diagram Skill](#独立-skill) 负责图解创作与复核。
 
 核心使用 TypeScript，运行时不依赖 DOM、网络或浏览器时钟。原生浏览器、Vue、React 和 Web Component 接入复用同一套时间线与渲染结果。
 
-原生展示站已准备 GitHub Pages 部署配置，目标地址为 `https://yokingma.github.io/FlowSVG/`。首次发布仍需解除仓库的 Pages 套餐限制。[站点部署说明](docs/GITHUB-PAGES.md)记录工作流、本地构建和发布验证步骤。
+## 应用场景
 
-npm 包内提供完整的[后台任务生命周期示例](packages/flowsvg/README.zh-CN.md#典型示例后台任务生命周期)，包含动态预览、图解 JSON 和离线播放器生成命令。
+| 场景 | 典型用途 |
+| --- | --- |
+| 演示文稿素材 | 为架构、流程和状态变化制作 SVG/PNG 图解或 GIF 动画 |
+| 网页文档与产品讲解 | 嵌入支持播放、暂停和跳转的播放器 |
+| 技术教学与新人培训 | 分步解释请求过程、数据流和任务生命周期 |
+| 方案评审与故障复盘 | 先展示结构全貌，再演示相关交互或故障过程 |
+
+同一份图解文档可复用于静态 SVG/PNG、GIF 动画和交互式或离线 HTML。演示文稿使用导出的素材；FlowSVG 不生成 PPTX 文件或 PowerPoint 原生形状。SVG/PNG/GIF 的支持情况取决于演示软件。
 
 ## 能做什么
 
-- 绘制矩形、圆角矩形、椭圆、圆柱体和分组，计算直线、正交与曲线连线；曲线和正交入线自动错开同侧箭头，正交路径默认使用圆角转弯，并按线宽预留直线末段；SVG、流动标记与命中检测共用圆角路径几何。支持正反向圆点传递与水平文字胶囊。单条传递按目标 180 图解单位/秒移动，最短移动 400ms，到达后统一停留 500ms；多条传递仍同步到达。单条传递的接收端在到达后用 200ms 渐变填充色和描边色，在 500ms 到达区间内完成。节点和连线的自动高亮随后保持 100ms，再用 200ms 渐出。显式高亮保留作者时机，减少动画模式跳过渐变。
-- 在固定尺寸的矩形、圆角矩形和圆柱内组合标题、段落、含圆角或胶囊标签及状态的列表、弱化说明和混合样式片段，设置受控样式，并按内容安全区裁剪、报告宽高不足警告。
-- 用场景、节拍和动作组织讲解，控制显隐、高亮、位置、样式与镜头聚焦，并在多条连线上同步表达正向或反向传递。
-- 给定节点宽度，测量一份或多份显式内容版本，写入共用固定高度，并检查未解决的溢出诊断。
-- 在节拍起点整体替换节点内容、切换普通标签或清空文字，结果继承到后续节拍与场景。
-- 播放、暂停、调速、逐步前后移动、切换场景和拖动进度。Loop 控件可开启整张图循环播放，默认关闭。场景和速度使用支持键盘选择的自定义菜单；可用 `flowsvg-compact` 启用小尺寸控件。
-- 悬停节点形状、普通标签或结构化内容时默认只高亮边框；可通过 `hoverFill` / `hover-fill` 选择背景高亮。
-- 精确跳转并查询画面、命中对象，导出相同时间点的静态 SVG。
-- 浅色与深色主题均使用中性细边、灰色连线和蓝色强调，并提供键盘操作、说明文字播报和减少动画支持。
-- 在加载时报告带字段路径的文档错误，在布局时报告文字溢出警告。
-- 生成单文件离线 HTML，在浏览器或 Node 中导出 GIF，并按需启用下载控件、进度和取消。
+- 绘制节点、嵌套分组，以及直线、正交或曲线有向连线。
+- 在节点中组合标题、段落、列表、标签和混合样式文字，并在设定尺寸前测量内容。
+- 统一配置文档级节点、边标签和传递标记字号，用于播放器与导出。
+- 用场景和节拍演示显隐、高亮、位置、内容及镜头变化。
+- 通过内置控件播放、暂停、跳转、逐步切换、调速和循环。
+- 查询指定时点的画面、命中对象，并导出静态 SVG。
+- 生成单文件离线 HTML，导出支持进度与取消的 GIF。
+- 使用浅色/深色主题、键盘操作和减少动画模式。
+- 校验文档，报告字段级错误和文字溢出警告；按需检查几何遮挡风险。
 
-节点的位置和尺寸由作者指定。项目面向图解展示与讲解；拖拽编辑、自动布局和复杂全局布线不在当前范围内。
+节点位置和尺寸由作者指定。FlowSVG 面向图解展示与播放；拖拽编辑和语义自动布局不在当前范围内。创作与确定性布局计划工具由独立 Skill 维护。
 
 ## 安装
 
@@ -44,7 +54,7 @@ npm 包内提供完整的[后台任务生命周期示例](packages/flowsvg/READM
 pnpm add flowsvg
 ```
 
-包提供 ESM 与 TypeScript 类型。核心和原生播放器不依赖框架，完整接入说明见 [SDK 手册](docs/SDK-GUIDE.zh-CN.md)。
+包提供 ESM 与 TypeScript 类型。核心和原生播放器不依赖框架，完整接入说明见 [SDK 手册](docs/guides/sdk-guide.zh-CN.md)。
 
 ## 快速开始
 
@@ -114,7 +124,9 @@ console.log(svg);
 
 `svg` 是完整 SVG 字符串，可保存到文件或用于预览。反复求值或导出时，复用已编译的 `diagram`。
 
-浏览器 GIF 导出使用独立 [`flowsvg/export` 入口](docs/SDK-GUIDE.zh-CN.md#浏览器-gif-导出)，返回 GIF 字节并支持说明文字、进度和取消。编码在内嵌 worker 中执行。
+浏览器 GIF 导出使用独立 [`flowsvg/export` 入口](docs/guides/sdk-guide.zh-CN.md#浏览器-gif-导出)，返回 GIF 字节并支持说明文字、进度和取消。编码在内嵌 worker 中执行。
+
+浏览器 SDK 还可生成可控像素尺寸的 PNG，SVG/PNG 支持透明背景。参见[浏览器 PNG 与 SVG 背景](docs/guides/sdk-guide.zh-CN.md#浏览器-png-与-svg-背景)。
 
 ## 离线 HTML
 
@@ -127,42 +139,27 @@ import { writeFile } from "node:fs/promises";
 await writeFile("diagram.html", await renderHtml(diagramDocument, { theme: "dark" }));
 ```
 
-也可以把文档保存为 JSON，从仓库根目录调用构建后的 CLI：
-
-```sh
-node packages/flowsvg/dist/node/cli.js diagram.json --output diagram.html --format html
-```
-
-按需使用 `--theme light|dark`、`--autoplay`、`--no-controls`、`--gif-export` 和 `--overwrite`。默认保留已有文件。生成 HTML 无需启动 Chromium。设置 `gifExport: true` 或 `--gif-export` 后，HTML 同时内嵌同版本导出器与 worker，接收者可离线下载 GIF、查看进度并取消；默认 HTML 不含编码器。`controls: false` 隐藏全部控件。
-
-构建还会生成 `packages/flowsvg/dist/portable/`，包含播放器、样式、版本清单和许可证。复制完整 SDK `dist/` 目录及含 `{"type":"module"}` 的 `package.json` 后，可在目标目录运行 `node dist/node/cli.js`，无需源码或 `node_modules`。分发时保留附带许可证，生成工具会自动读取匹配的资产。
-
-## Node GIF 导出
-
-从 `flowsvg/node` 导入的 `exportGif` 要求 Node 20+，并在隔离的离线 Chromium 页面中复用浏览器导出器。断网前须准备 Chromium、系统库和字体；安装包和调用导出都不自动下载浏览器。可用 `executablePath` 指定已安装的浏览器，也可传入已连接的 Playwright `browser`；调用者提供的浏览器会保留。完整接口见 [Node GIF 导出](docs/SDK-GUIDE.zh-CN.md#node-gif-导出node-20)。
-
-```sh
-node packages/flowsvg/dist/node/cli.js diagram.json --output diagram.gif --format gif --executable-path /path/to/chromium --fps 15 --loop-count 1
-```
-
-可配置时间区间、速度、尺寸、说明文字、循环次数、末帧停留和减少动画。HTML/GIF 均在完整生成后原子写入，默认不覆盖；CLI 收到 SIGINT/SIGTERM 时取消并以非零状态退出。复制后的 GIF 工具须在 `dist/` 旁安装 `playwright-core@1.58.2`；复制后的 HTML 生成工具无需安装依赖。
+命令行用法、可选 GIF 下载和可复制工具见[离线 HTML](docs/guides/sdk-guide.zh-CN.md#离线-htmlnode-20)。Node GIF 导出另需已准备的 Chromium 浏览器，详见 [Node GIF 导出](docs/guides/sdk-guide.zh-CN.md#node-gif-导出node-20)。
 
 ## 集成与 API
 
-[SDK 使用手册](docs/SDK-GUIDE.zh-CN.md) 是集成方式、文档模型和公开 API 的说明入口，npm 包 README 仅保留核心使用流程。
+按读者和任务查找文档，见[文档地图](docs/README.md)。
+
+[SDK 使用手册](docs/guides/sdk-guide.zh-CN.md) 说明集成方式、文档模型和公开 API。
 
 | 需要做什么 | 阅读位置 |
 | --- | --- |
-| 创建文档、求值或导出 SVG | [快速开始](docs/SDK-GUIDE.zh-CN.md#快速开始)、[核心 API](docs/SDK-GUIDE.zh-CN.md#核心-api) |
-| 在固定宽度下测量节点内容 | [内容尺寸测量](docs/SDK-GUIDE.zh-CN.md#生成文档前测量节点内容) |
-| 在 Vue 组件中使用 | [Vue 集成](docs/SDK-GUIDE.zh-CN.md#vue-集成) |
-| 在 React 组件中使用 | [React 集成](docs/SDK-GUIDE.zh-CN.md#react-集成) |
-| 接入普通网页或自定义控件 | [原生浏览器](docs/SDK-GUIDE.zh-CN.md#原生浏览器)、[播放器 API](docs/SDK-GUIDE.zh-CN.md#播放器-api) |
-| 使用自定义元素或 URL 文档 | [Web Component](docs/SDK-GUIDE.zh-CN.md#web-component) |
-| 导出 GIF 字节或启用播放器下载 | [浏览器 GIF 导出](docs/SDK-GUIDE.zh-CN.md#浏览器-gif-导出)、[内置 GIF 下载](docs/SDK-GUIDE.zh-CN.md#内置-gif-下载) |
-| 生成离线 HTML 或通过 Node 导出 GIF | [离线 HTML](docs/SDK-GUIDE.zh-CN.md#离线-htmlnode-20)、[Node GIF 导出](docs/SDK-GUIDE.zh-CN.md#node-gif-导出node-20) |
-| 编写场景与动作 | [文档与时间线](docs/SDK-GUIDE.zh-CN.md#文档与时间线) |
-| 监听事件、处理错误和主题 | [事件](docs/SDK-GUIDE.zh-CN.md#事件)、[主题与无障碍](docs/SDK-GUIDE.zh-CN.md#主题与无障碍)、[校验与错误](docs/SDK-GUIDE.zh-CN.md#校验与错误) |
+| 创建文档、求值或导出 SVG | [快速开始](docs/guides/sdk-guide.zh-CN.md#快速开始)、[核心 API](docs/guides/sdk-guide.zh-CN.md#核心-api) |
+| 在固定宽度下测量节点内容 | [内容尺寸测量](docs/guides/sdk-guide.zh-CN.md#生成文档前测量节点内容) |
+| 在 Vue 组件中使用 | [Vue 集成](docs/guides/sdk-guide.zh-CN.md#vue-集成) |
+| 在 React 组件中使用 | [React 集成](docs/guides/sdk-guide.zh-CN.md#react-集成) |
+| 接入普通网页或自定义控件 | [原生浏览器](docs/guides/sdk-guide.zh-CN.md#原生浏览器)、[播放器 API](docs/guides/sdk-guide.zh-CN.md#播放器-api) |
+| 使用自定义元素或 URL 文档 | [Web Component](docs/guides/sdk-guide.zh-CN.md#web-component) |
+| 导出 PNG 图片 | [浏览器 PNG 与 SVG 背景](docs/guides/sdk-guide.zh-CN.md#浏览器-png-与-svg-背景)、[Node PNG](docs/guides/sdk-guide.zh-CN.md#node-png-导出) |
+| 导出 GIF 字节或启用播放器下载 | [浏览器 GIF 导出](docs/guides/sdk-guide.zh-CN.md#浏览器-gif-导出)、[内置 GIF 下载](docs/guides/sdk-guide.zh-CN.md#内置-gif-下载) |
+| 生成离线 HTML 或通过 Node 导出 GIF | [离线 HTML](docs/guides/sdk-guide.zh-CN.md#离线-htmlnode-20)、[Node GIF 导出](docs/guides/sdk-guide.zh-CN.md#node-gif-导出node-20) |
+| 编写场景与动作 | [文档与时间线](docs/guides/sdk-guide.zh-CN.md#文档与时间线) |
+| 监听事件、处理错误和主题 | [事件](docs/guides/sdk-guide.zh-CN.md#事件)、[主题与无障碍](docs/guides/sdk-guide.zh-CN.md#主题与无障碍)、[校验与错误](docs/guides/sdk-guide.zh-CN.md#校验与错误) |
 
 ## 环境要求
 
@@ -171,109 +168,55 @@ node packages/flowsvg/dist/node/cli.js diagram.json --output diagram.gif --forma
 | 开发本仓库 | Node.js 22.12+、pnpm 10.12.1 |
 | 单独运行 SDK 核心 | Node.js 18+，或支持 ES2022 ESM 的运行环境 |
 | 浏览器播放器 | 支持 SVG、ES Modules、`requestAnimationFrame` 的现代浏览器 |
+| 浏览器 PNG 导出 | Canvas 2D、图像解码和本地系统字体 |
 | 浏览器 GIF 导出 | Canvas 2D、图像解码、Blob worker，且宿主内容安全策略允许使用这些能力 |
 | Node HTML 生成 / CLI | Node.js 20+；生成 HTML 无需浏览器 |
-| Node GIF 导出 | Node.js 20+、预装 Chromium、系统库和字体 |
+| Node PNG/GIF 导出 | Node.js 20+、预装 Chromium、系统库和字体 |
 | Vue / React 接入 | Vue 3.5+ / React 18+；按需安装对应框架 |
 
 仓库的 Vue/React 示例使用 Vite 7，因此开发环境要求高于单独运行 SDK 核心的要求。包仅提供 ESM 入口。
 
 ## 开发
 
-在仓库根目录安装依赖并构建 SDK：
+使用 Node.js 22.12+ 和 pnpm 10.12.1，在仓库根目录运行：
 
 ```sh
 pnpm install --frozen-lockfile
 pnpm build
-```
-
-按 SDK、共享作者产物、原生/React/Vue 的顺序构建三个独立静态站点：
-
-```sh
-pnpm build:examples
-SHOWCASE_SOURCE=dist/acceptance.js SHOWCASE_BASE=/showcase/ pnpm build:examples
-```
-
-第一条命令使用正式目录；第二条显式选择验收输入和子路径。各 app 的 `dist/` 须分别托管在其配置的基础路径。资源边界和重建规则见[展示交付与验收](docs/SHOWCASE-VERIFICATION.md)。
-
-### 运行 Vue 示例
-
-```sh
-pnpm --filter flowsvg-vue-example dev
-```
-
-打开终端显示的本地地址。React 示例使用：
-
-```sh
-pnpm --filter flowsvg-react-example dev
-```
-
-### 运行原生浏览器示例
-
-```sh
 pnpm --filter flowsvg-native-example dev
 ```
 
-打开 Vite 输出的本地地址。原生、React、Vue 通过各自公开 SDK adapter 消费同一私有作者目录和会话规则。三站点采用统一的圆角中性控件、交互反馈和响应式播放工具栏。正式目录默认打开「请求与响应」（`request-response`）：订单流程，连线统一使用曲线，保留 SDK 默认风格。第二个示例「RAG：从资料到答案」（`rag-workflow`）演示虚构资料入库、检索、可选重排（5 个候选保留 2 段）及带来源的答案生成，采用紧凑三行布局、圆角正交折线与胶囊标签，不调用真实服务。第三个示例「FlowSVG：图解如何运行」（`project-architecture`）讲解文档求值、共享播放器与适配器、可选导出路径和私有展示工程边界。第四个示例「vllm-metal：分层推理架构」（`vllm-metal-stack`）参考[官方架构图](https://raw.githubusercontent.com/vllm-project/vllm-metal/main/docs/assets/architecture.svg)，展示四层结构、嵌套职责分区和硬件／配置条件。视觉设置保留操作时刻与倍率并暂停；切换示例保留视觉选择、重置时间与倍率。循环默认关闭；页内切换示例、视觉设置及前进后退时保留循环选择，分享链接和图解 JSON 不保存该选择。播放器替换时取消旧 GIF 任务。各 app 的 `dev` / `build` 会先生成共享作者产物，`preview` 仅服务已有静态产物。修改 SDK 后重新执行 `pnpm build`，修改共享作者源后重启开发命令。隔离验收目录、子路径配置及材料归属见[原生说明](apps/native-example/README.md)、[React 说明](apps/react-example/README.md)、[Vue 说明](apps/vue-example/README.md)和[共享作者说明](packages/showcase/README.md)。
+打开终端显示的地址。运行 React 或 Vue 示例时，将 `flowsvg-native-example` 替换为 `flowsvg-react-example` 或 `flowsvg-vue-example`。修改 SDK 源码后需要重新构建。
 
-正式示例使用紧凑节点布局。后台任务、订单数据流、部署拓扑、RAG、项目架构和 vllm-metal 作者在创建文档前，通过 SDK 测量显式内容版本。RAG 按当前内容确定高度，内容切换时同步更新高度与受影响的行位置，保持 50 单位行距。RAG 启用 `viewport.fitHeight: { padding: 24 }`，让网页画布和独立 SVG 在保持作者宽度的同时，随当前内容收缩高度。GIF 使用作者设定的固定视口尺寸，保持动画尺寸和图形比例稳定。其他示例在播放时保持几何稳定；订单数据流、部署拓扑、项目架构和 vllm-metal 保留作者设定的最小高度。
+共享示例目录包含请求响应、RAG、架构、任务生命周期、数据流、部署和交互时序，使用自包含的教学数据。控件及构建配置见[原生浏览器](apps/native-example/README.md)、[React](apps/react-example/README.md) 和 [Vue](apps/vue-example/README.md) 示例说明。npm 包中也包含完整的[后台任务示例](packages/flowsvg/README.zh-CN.md#示例后台任务生命周期)。
 
-新增「后台任务生命周期」（`job-lifecycle`）、「订单事件：从采集到指标」（`order-event-pipeline`）、「Web 服务：双副本部署」（`web-service-deployment`）和「缓存未命中：查询与回填」（`cache-aside-sequence`），分别展示唯一当前状态、事件计数与金额守恒、嵌套部署边界、七行消息先后。后台任务的事件转换使用移动实心圆点，并设置 `highlightParticipants: false`，仅保留显式指定的当前状态高亮。八例统一使用 SDK 默认风格；时序示例用直线消息；RAG、项目架构、状态转换、订单数据流、双副本部署使用圆角正交折线；请求与响应、vllm-metal 使用曲线。正交路由在箭头空间允许时将跨接线段居中，同向端口优先使用单一外侧通道，并为各自分组边框留出空间。数据均为自包含教学样本。目录时长以 SDK 编译后时序为准：单条传递的节拍时长为移动时间加 500ms 到达区间，替代作者时长。较长的阅读时间使用独立的无传递节拍。
-
-示例导航依次显示六个已填充大类：「业务流程」「系统架构」「状态转换」「数据流」「部署拓扑」「交互时序」。前两类各保留两个示例，其余各新增一个示例。每例只选一个主类；分类属于展示元数据，不写入图解 JSON。
-
-“Share current view” 保存并复制示例、时间和视觉设置，分享不打断播放。链接与前进后退按已保存快照暂停恢复，倍率采用目标示例默认值；非法参数有诊断，无关查询原文保留，复制失败可手动复制地址。
-
-维护者运行 `pnpm release` 独立完成 SDK 验证、打包与发布预演，无需构建示例工程。运行 `pnpm release:publish` 会重新验证并上传已验证的 tarball。账号登录与发布步骤见 [npm 发布指南](docs/RELEASING.md)。
-
-```text
-packages/flowsvg/                   SDK 源码、类型、样式、测试和发布文件
-packages/flowsvg/src/core/          核心模型、文档校验、图解求值与核心契约测试
-packages/flowsvg/src/browser/       播放器、DOM、控件、输入、生命周期及浏览器测试
-packages/flowsvg/src/adapters/      React、Vue、Web Component 实现与测试
-packages/flowsvg/src/export/        浏览器 GIF 规划、栅格化与内嵌 worker
-packages/flowsvg/src/node/          Node HTML/GIF 工具与 CLI
-packages/flowsvg/src/portable/      独立浏览器构建入口
-packages/flowsvg/tests/integration/ 四种宿主共用的集成场景
-packages/flowsvg/tests/             真实浏览器验收页面与 HTML/GIF 测试
-packages/showcase/                  私有共享作者源、会话转换与生成 JSON
-apps/native-example/                Vite 原生单页展示
-apps/vue-example/                   Vue 单页展示
-apps/react-example/                 React 单页展示
-docs/adr/                           架构决策
-GLOSSARY.md                         领域术语
-```
+运行 `pnpm build:examples` 构建三个示例站点。静态托管和 GitHub Pages 配置见[展示交付](docs/verification/showcase-verification.md)及 [Pages 部署](docs/development/github-pages.md)。
 
 ### 验证
 
-先按[发布指南](docs/RELEASING.md#浏览器与最低运行时准备)准备 Chromium 和字体。把下方路径替换为本机已准备的浏览器，再在仓库根目录运行类型检查、测试和发布预演：
-
 ```sh
-export FLOWSVG_CHROMIUM_PATH=/absolute/path/to/chromium
 pnpm typecheck
 pnpm test
-pnpm release --dry-run
 ```
 
-macOS 已安装 Google Chrome 时，可用单行命令指定路径并运行发布预演：
+其他检查：
 
-```sh
-FLOWSVG_CHROMIUM_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" pnpm release
-```
+| 范围 | 命令 | 说明 |
+| --- | --- | --- |
+| SDK 浏览器行为 | `pnpm --filter flowsvg test:browser` | [SDK 验证](docs/verification/sdk-verification.md) |
+| 构建后的示例与静态交付 | `pnpm test:examples` | [展示验证](docs/verification/showcase-verification.md) |
+| 打包及安装后的使用方式 | `pnpm release` | [发布指南](docs/development/releasing.md) |
 
-浏览器用于发布前的 GIF 与离线 HTML 真实产物检查；上传 npm 本身不需要浏览器。`export` 只在当前终端会话中保留，重启 VS Code 不会保存临时设置。zsh 持久配置和排错步骤见[浏览器准备说明](docs/RELEASING.md#浏览器与最低运行时准备)。
+浏览器检查需要已准备的 Chromium 和字体，配置见[浏览器准备说明](docs/development/releasing.md#浏览器与最低运行时准备)。`pnpm release` 执行验证和发布预演；上传 npm 需要单独执行 `pnpm release:publish`。
 
-示例验收与仓库总体验收使用显式入口：
+项目约定见[术语表](GLOSSARY.md)、[架构决策](docs/adr/)和[实现约定](PATTERNS.md)。SDK 版本说明见[包变更记录](packages/flowsvg/CHANGELOG.md)。
 
-```sh
-pnpm test:examples
-pnpm test:all
-```
+## 独立 Skill
 
-`test:examples` 构建并检查共享契约、三个真实宿主及复制产物的根路径/子路径交付。`test:all` 先运行 SDK 类型、测试和真实 tarball 验证，再运行示例流程。上方 SDK 命令继续独立于展示工程。细分入口见[展示验收说明](docs/SHOWCASE-VERIFICATION.md)。
+Flow SVG Diagram：面向系统和流程解释的可执行图表 Skill。一次编写，支持播放、嵌入、检查和导出。独立的 `flow-svg-diagram-skills` 项目负责创作、布局计划、校验流程、复核与交付报告，通过公开 `flowsvg@0.2.2` 包运行，无需本仓源码。
 
-`FLOWSVG_NODE20_PATH` 可选择已准备的 Node 20 可执行文件验收工具，`FLOWSVG_NODE18_PATH` 启用既有 SDK 的最低运行时检查。测试不下载浏览器。发布验收安装真实 tarball，再把完整工具与固定版本的自动化运行时复制到包外，断网验证 HTML/GIF。
+SDK 与独立创作工具的职责见[仓库边界](docs/development/repository-split.md)。SDK 安装、开发、测试、发布验收和示例均可独立运行。
 
-## License
+## 许可证
 
 [MIT](packages/flowsvg/LICENSE)。使用、修改和分发时，请保留许可证及版权声明。

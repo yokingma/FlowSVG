@@ -170,6 +170,7 @@ it("rejects an early worker startup failure, releases task resources and permits
 it("renders parallel Chinese flow capsules, focused cameras and both opaque themes against the public SVG frame", async () => {
   const story: DiagramDocument = {
     version: 1, viewport: { width: 400, height: 200 }, title: "并行传递",
+    typography: { nodeLabel: 24, edgeLabel: 20, flowLabel: 24 },
     nodes: [
       { id: "a", kind: "rect", x: 20, y: 20, width: 90, height: 60, label: "客户端" },
       { id: "b", kind: "rect", x: 280, y: 20, width: 90, height: 60, label: "服务端" },

@@ -19,6 +19,11 @@ tmp/
 temp/
 .playwright-mcp/
 
+
+# FlowSVG history captures are reproducible evidence; keep large preview surfaces out of Git
+.diagrams/.history/**/previews/
+.diagrams/.history/**/artifact-evidence/
+
 # Local environment files
 .env
 .env.*

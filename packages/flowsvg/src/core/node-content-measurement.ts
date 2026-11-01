@@ -1,6 +1,7 @@
 /** Author-time content measurement shares deterministic core layout and never reads browser font metrics. */
 import { layoutNodeContentWithMetrics, supportsNodeContent, validateNodeContent, type NodeContent } from "./node-content.js";
-import type { ValidationIssue } from "./model.js";
+import { resolveTypography, validateTypography } from "./typography.js";
+import type { DiagramTypography, ValidationIssue } from "./model.js";
 import { DiagramValidationError } from "./validation.js";
 import { resolveThemePalette } from "./theme.js";
 
@@ -9,6 +10,8 @@ export interface NodeContentMeasurementInput {
   kind: "rect" | "roundedRect" | "cylinder";
   /** Positive finite node width in diagram units. */
   width: number;
+  /** Same document-level typography context; omitted roles use 16/14/12 defaults. Explicit content sizes are preserved. */
+  typography?: DiagramTypography;
   /** One content version or a nonempty collection; caller-owned objects and arrays are never mutated. */
   content: NodeContent | readonly NodeContent[];
 }
@@ -41,12 +44,13 @@ export interface NodeContentMeasurement {
 export function measureNodeContent(input: NodeContentMeasurementInput): NodeContentMeasurement {
   const issues = validateMeasurementInput(input);
   if (issues.length > 0) throw new DiagramValidationError(issues);
+  const typography = resolveTypography(input.typography);
   const versions = isContentVersions(input.content) ? input.content : [input.content];
   const diagnostics: NodeContentMeasurementDiagnostic[] = [];
   const heights = versions.map((content, versionIndex) => {
     // Saturate shape clearance once. Any nonempty cylinder needs more height than its capped end reserves.
     const { contentHeight, layout, overflows } = layoutNodeContentWithMetrics(content,
-      { x: 0, y: 0, width: input.width, height: Number.MAX_VALUE }, resolveThemePalette(undefined), input.kind);
+      { x: 0, y: 0, width: input.width, height: Number.MAX_VALUE }, resolveThemePalette(undefined), input.kind, typography.contentScale);
     // Append separately so overflowing block counts cannot exceed the engine's function-argument limit.
     for (const { blockIndex, dimension } of overflows) {
       diagnostics.push({ versionIndex, path: `content[${versionIndex}].blocks[${blockIndex}]`, dimension,
@@ -76,7 +80,7 @@ function validateMeasurementInput(input: unknown): ValidationIssue[] {
   }
   const issues: ValidationIssue[] = [];
   for (const field of Object.keys(input)) {
-    if (!["kind", "width", "content"].includes(field)) issues.push({ path: field, message: "unknown field" });
+    if (!["kind", "width", "content", "typography"].includes(field)) issues.push({ path: field, message: "unknown field" });
   }
   if (!("kind" in input) || !supportsNodeContent(input.kind)) {
     issues.push({ path: "kind", message: "must be rect, roundedRect or cylinder" });
@@ -84,6 +88,7 @@ function validateMeasurementInput(input: unknown): ValidationIssue[] {
   if (!("width" in input) || typeof input.width !== "number" || !Number.isFinite(input.width) || input.width <= 0) {
     issues.push({ path: "width", message: "must be a finite number greater than zero" });
   }
+  validateTypography("typography" in input ? input.typography : undefined, issues);
   const content: unknown = "content" in input ? input.content : undefined;
   const versions: unknown[] = Array.isArray(content) ? content : [content];
   if (versions.length === 0) issues.push({ path: "content", message: "must contain at least one content version" });

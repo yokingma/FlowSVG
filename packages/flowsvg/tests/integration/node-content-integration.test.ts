@@ -8,7 +8,7 @@ import { FlowPlayer as ReactPlayer, type FlowPlayerHandle } from "../../src/reac
 import { FlowPlayer as VuePlayer } from "../../src/vue.js";
 import { defineFlowPlayer, type FlowPlayerElement } from "../../src/web-component.js";
 import { contentStoryDocument } from "../fixtures/content-timeline.js";
-import { createDiagram, validateDocument } from "../../src/index.js";
+import { createDiagram, validateDocument, type DiagramDocument } from "../../src/index.js";
 
 describe("SDK content timeline", () => {
   it("replaces the complete content at the boundary and persists its display mode across scenes", () => {
@@ -65,29 +65,44 @@ function requireHandle(handle: FlowPlayerHandle | null): FlowPlayerHandle {
   if (!handle) throw new Error("Expected mounted framework handle");
   return handle;
 }
-function mountStory(entry: HostEntry, host: HTMLElement, options: PlayerOptions) {
+function mountStory(entry: HostEntry, host: HTMLElement, options: PlayerOptions, model: DiagramDocument = contentStoryDocument) {
   if (entry === "browser") {
-    const player = createPlayer(host, contentStoryDocument, options);
-    return { player, cleanup: () => player.destroy() };
+    const player = createPlayer(host, model, options);
+    return { player, reload: (model: DiagramDocument) => player.load(model), cleanup: () => player.destroy() };
   }
   if (entry === "web-component") {
     const player = document.createElement("flowsvg-player") as FlowPlayerElement;
-    Object.assign(player, options, { document: contentStoryDocument });
+    Object.assign(player, options, { document: model });
     host.append(player);
-    return { player, cleanup: () => player.remove() };
+    return { player, reload: (model: DiagramDocument) => { player.document = model; }, cleanup: () => player.remove() };
   }
   if (entry === "react") {
     const root = createRoot(host);
     const handle = { current: null as FlowPlayerHandle | null };
-    act(() => root.render(createElement(ReactPlayer, { ...options, document: contentStoryDocument, ref: handle })));
-    return { player: requireHandle(handle.current), cleanup: () => act(() => root.unmount()) };
+    act(() => root.render(createElement(ReactPlayer, { ...options, document: model, ref: handle })));
+    return { player: requireHandle(handle.current), reload: (model: DiagramDocument) => requireHandle(handle.current).load(model), cleanup: () => act(() => root.unmount()) };
   }
   const handle = ref<FlowPlayerHandle | null>(null);
-  const app = createApp({ render: () => h(VuePlayer, { ...options, document: contentStoryDocument, ref: handle }) });
+  const app = createApp({ render: () => h(VuePlayer, { ...options, document: model, ref: handle }) });
   app.mount(host);
-  return { player: requireHandle(handle.value), cleanup: () => app.unmount() };
+  return { player: requireHandle(handle.value), reload: (model: DiagramDocument) => requireHandle(handle.value).load(model), cleanup: () => app.unmount() };
 }
 describe.each<HostEntry>(["browser", "web-component", "react", "vue"])("shared content through %s", (entry) => {
+  it("consumes document typography through the same core frame and reloads its size context", () => {
+    const model: DiagramDocument = { ...contentStoryDocument, typography: { nodeLabel: 32, edgeLabel: 24, flowLabel: 20 } };
+    const host = document.createElement("div"); document.body.append(host);
+    const { player, reload, cleanup } = mountStory(entry, host, { controls: false, reducedMotion: false }, model);
+    try {
+      for (const time of [0, 1000, 2500, 3000, 4000]) {
+        player.seek(time);
+        expect(player.getState()?.frame).toEqual(createDiagram(model).evaluateAt(time, { reducedMotion: false }));
+        expect(host.querySelector("svg text[font-size='32'], svg tspan[font-size='40']")).not.toBeNull();
+      }
+      reload({ ...model, typography: { nodeLabel: 20 } });
+      expect(player.getState()?.frame).toEqual(createDiagram({ ...model, typography: { nodeLabel: 20 } }).evaluateAt(0));
+      expect(host.querySelector("svg tspan[font-size='25']")).not.toBeNull();
+    } finally { cleanup(); host.remove(); }
+  });
   it.each<PlayerOptions>([
     { theme: "light", reducedMotion: false }, { theme: "dark", reducedMotion: false },
     { theme: "light", reducedMotion: true }, { theme: "dark", reducedMotion: true }

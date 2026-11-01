@@ -21,6 +21,27 @@ const document: DiagramDocument = {
 };
 
 describe("default visual style", () => {
+  it.each(["light", "dark"] as const)("rounds group borders by default in %s, including small nested groups", (theme) => {
+    const diagram = createDiagram({
+      version: 1, viewport: { width: 320, height: 240 },
+      nodes: [
+        { id: "outer", kind: "group", x: 20, y: 20, width: 280, height: 200, style: { dashed: true } },
+        { id: "inner", kind: "group", parentId: "outer", x: 20, y: 40, width: 16, height: 12 },
+        { id: "plain", kind: "rect", x: 100, y: 100, width: 80, height: 60 }
+      ],
+      edges: [], scenes: []
+    });
+    const svg = new DOMParser().parseFromString(diagram.renderSvg(0, { theme }), "image/svg+xml");
+    const outer = svg.querySelector('[data-id="outer"]')!;
+    const inner = svg.querySelector('[data-id="inner"]')!;
+    expect(outer.getAttribute("rx")).toBe("8");
+    expect(outer.getAttribute("stroke-dasharray")).toBe("10 7");
+    expect(inner.getAttribute("rx")).toBe("3");
+    expect(inner.getAttribute("x")).toBe("40");
+    expect(inner.getAttribute("y")).toBe("60");
+    expect(svg.querySelector('[data-id="plain"]')!.getAttribute("rx")).toBeNull();
+  });
+
   it.each(["light", "dark"] as const)("keeps %s node labels plain and edge labels isolated while preserving authored styles", (theme) => {
     const styled: DiagramDocument = { ...document, scenes: [], nodes: document.nodes.map((node) => node.id === "source"
       ? { ...node, style: { fill: "#abc123", stroke: "#456789", strokeWidth: 3, textColor: "#123456" } } : node) };

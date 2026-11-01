@@ -20,8 +20,9 @@ const model = {
 };
 const results = [];
 function assert(condition, message) { if (!condition) throw new Error(message); }
-const diagram = createDiagram(model);
-for (const [theme, reducedMotion, beatIndex] of [["light", false, 0], ["dark", false, 1], ["light", false, 2], ["dark", true, 0]]) {
+for (const [theme, reducedMotion, beatIndex, typography] of [["light", false, 0], ["dark", false, 1], ["light", false, 2], ["dark", true, 0], ["light", false, 0, { nodeLabel: 32, edgeLabel: 24, flowLabel: 24 }]]) {
+  const documentModel = { ...model, ...(typography ? { typography } : {}) };
+  const diagram = createDiagram(documentModel);
   const beat = diagram.beats[beatIndex];
   const time = beat.startMs + (beat.endMs - beat.startMs) / 4;
   const card = document.createElement("section"); card.className = "case";
@@ -29,7 +30,7 @@ for (const [theme, reducedMotion, beatIndex] of [["light", false, 0], ["dark", f
   document.querySelector("main").append(card);
   const host = card.querySelector(".host");
   const options = { theme, reducedMotion, controls: false };
-  const player = createPlayer(host, model, options);
+  const player = createPlayer(host, documentModel, options);
   try {
     const samples = diagram.beats.flatMap((beat) => [beat.startMs, beat.startMs + (beat.endMs - beat.startMs) / 2, beat.endMs - 1]);
     for (const seekTime of [...samples, diagram.totalDuration, ...[...samples].reverse()]) {
@@ -47,6 +48,7 @@ for (const [theme, reducedMotion, beatIndex] of [["light", false, 0], ["dark", f
       assert(!marker.querySelector("script,textPath") && !marker.querySelector("[transform]"), "message is safe and horizontal");
       if (beatIndex < 2) {
         const text = marker.querySelector("text"); const capsule = marker.querySelector("rect");
+        assert(text.getAttribute("font-size") === String(typography?.flowLabel ?? 12), "capsule consumes effective font size");
         const textBox = text.getBBox(); const capsuleBox = capsule.getBBox();
         assert(textBox.x >= capsuleBox.x && textBox.x + textBox.width <= capsuleBox.x + capsuleBox.width, "capsule contains text width");
         assert(textBox.y >= capsuleBox.y && textBox.y + textBox.height <= capsuleBox.y + capsuleBox.height, "capsule contains text height");

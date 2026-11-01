@@ -2,8 +2,8 @@ import type { Browser, BrowserContext, Page } from "playwright-core";
 import { access, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, expect, it, vi } from "vitest";
-import { createNodeGifRuntime, type NodeGifRuntime } from "./gif-runtime.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { createNodeGifRuntime, createNodePngRuntime, type NodeGifRuntime } from "./gif-runtime.js";
 import { GifExportError } from "../export/types.js";
 
 vi.mock("node:fs/promises", async (importOriginal) => {
@@ -20,6 +20,7 @@ const documentInput = {
   scenes: []
 } as const;
 
+for (const [format, createRuntime] of [["gif", createNodeGifRuntime], ["png", createNodePngRuntime]] as const) describe(`${format} runtime ownership`, () => {
 const runtimes: NodeGifRuntime[] = [];
 afterEach(async () => { await Promise.all(runtimes.splice(0).map((runtime) => runtime.dispose())); });
 
@@ -49,7 +50,7 @@ it("runs the portable exporter and releases its task context without closing a c
     void fixture.page.progress({ phase: "sampling", completed: 1, total: 1 });
     return { bytes: [1, 2, 3] };
   });
-  const runtime = createNodeGifRuntime({ browser: fixture.browser, onProgress: (progress) => phases.push(progress.phase), portableExportScript: "" });
+  const runtime = createRuntime({ browser: fixture.browser, onProgress: (progress) => phases.push(progress.phase), portableExportScript: "" });
   runtimes.push(runtime);
   await expect(runtime.run(documentInput, {})).resolves.toEqual(new Uint8Array([1, 2, 3]));
   await runtime.dispose();
@@ -59,7 +60,7 @@ it("runs the portable exporter and releases its task context without closing a c
 
 it("preserves exporter failures while still allowing deterministic cleanup", async () => {
   const fixture = browserFixture(() => ({ error: { code: "encoding", message: "encoder failed" } }));
-  const runtime = createNodeGifRuntime({ browser: fixture.browser, portableExportScript: "" });
+  const runtime = createRuntime({ browser: fixture.browser, portableExportScript: "" });
   runtimes.push(runtime);
   await expect(runtime.run(documentInput, {})).rejects.toMatchObject({ code: "encoding", message: "encoder failed" });
   expect(fixture.context.closeCount).toBe(0);
@@ -71,7 +72,7 @@ it("interrupts a pending page evaluation when cancelled", async () => {
   let rejectEvaluation!: (error: unknown) => void;
   const fixture = browserFixture(() => new Promise<never>((_, reject) => { rejectEvaluation = reject; }));
   const controller = new AbortController();
-  const runtime = createNodeGifRuntime({ browser: fixture.browser, signal: controller.signal, portableExportScript: "" });
+  const runtime = createRuntime({ browser: fixture.browser, signal: controller.signal, portableExportScript: "" });
   runtimes.push(runtime);
   const pending = runtime.run(documentInput, {});
   for (let attempt = 0; attempt < 20 && !rejectEvaluation; attempt += 1) await new Promise((resolve) => setTimeout(resolve, 1));
@@ -95,7 +96,7 @@ it("interrupts a pending page load when cancelled", async () => {
     async close() {}
   } as unknown as BrowserContext;
   const browser = { async newContext() { return context; }, async close() {} } as unknown as Browser;
-  const runtime = createNodeGifRuntime({ browser, signal: controller.signal, portableExportScript: "" });
+  const runtime = createRuntime({ browser, signal: controller.signal, portableExportScript: "" });
   const pending = runtime.run(documentInput, {});
   for (let attempt = 0; attempt < 20 && !resolveLoad; attempt += 1) await new Promise((resolve) => setTimeout(resolve, 1));
   expect(resolveLoad).toBeTypeOf("function");
@@ -110,7 +111,7 @@ it.each(["signal", "runtime"])("closes a browser that finishes launching after %
   let resolveLaunch!: (browser: Browser) => void;
   let closeCount = 0;
   const browser = { async close() { closeCount += 1; } } as Browser;
-  const runtime = createNodeGifRuntime({
+  const runtime = createRuntime({
     signal: controller.signal,
     portableExportScript: "",
     launchBrowser: () => new Promise<Browser>((resolve) => { resolveLaunch = resolve; })
@@ -136,7 +137,7 @@ it("releases a caller-owned browser's context that arrives after cancellation an
   const contextReady = deferred<BrowserContext>();
   let closeCount = 0;
   const browser = { newContext: () => contextReady.promise, close: vi.fn() } as unknown as Browser;
-  const runtime = createNodeGifRuntime({ browser, portableExportScript: "" });
+  const runtime = createRuntime({ browser, portableExportScript: "" });
   const pending = runtime.run(documentInput, {});
   runtime.abort();
   await expect(pending).rejects.toMatchObject({ code: "cancelled" });
@@ -154,7 +155,7 @@ it("releases a page that arrives after its context was cancelled and disposed", 
   const context = { newPage, close: contextClose } as unknown as BrowserContext;
   const browser = { async newContext() { return context; }, close: vi.fn() } as unknown as Browser;
   const controller = new AbortController();
-  const runtime = createNodeGifRuntime({ browser, signal: controller.signal, portableExportScript: "" });
+  const runtime = createRuntime({ browser, signal: controller.signal, portableExportScript: "" });
   const pending = runtime.run(documentInput, {});
   await vi.waitFor(() => expect(newPage).toHaveBeenCalledOnce());
   controller.abort();
@@ -171,7 +172,7 @@ it("removes a temporary directory that arrives after cancellation and disposal",
   const directoryReady = deferred<string>();
   const createDirectory = vi.mocked(mkdtemp).mockClear().mockImplementationOnce(() => directoryReady.promise);
   const fixture = browserFixture(() => ({ bytes: [1] }));
-  const runtime = createNodeGifRuntime({ browser: fixture.browser, portableExportScript: "" });
+  const runtime = createRuntime({ browser: fixture.browser, portableExportScript: "" });
   try {
     const pending = runtime.run(documentInput, {});
     await vi.waitFor(() => expect(createDirectory).toHaveBeenCalledOnce());
@@ -185,4 +186,6 @@ it("removes a temporary directory that arrives after cancellation and disposal",
     await runtime.dispose();
     await rm(directory, { recursive: true, force: true });
   }
+});
+
 });

@@ -1,5 +1,13 @@
 # Patterns
 
+- Node PNG preflights with the browser planner before resource allocation. GIF and PNG share the offline runtime ownership state machine; contexts and late resources are task-owned, while supplied browsers remain caller-owned.
+
+- Plan PNG from its real selected frame before DOM allocation. Snapshot inputs before awaiting browser services, retain fitHeight/focus, and validate rounded pixel dimensions independently of GIF. Share only SVG decoding/image-URL cleanup; PNG encoding owns its cancellation and canvas, while GIF remains opaque.
+
+- Keep SVG background selection separate from frame evaluation. Remove only the whole-diagram background rectangle; preserve object paint and label contrast.
+
+- Render group borders with the shared rounded-rectangle radius, bounded by one quarter of each dimension. Apply this in core SVG serialization so all hosts and exports share the default; retain group-relative coordinates, dashed styles and unclipped children.
+
 - Reuse one internal frame evaluation per browser update or GIF sample for SVG, captions and hit testing. Static caption preflight consumes the first sampled frame, including an absent title represented as an empty caption; do not trigger fallback evaluation for that case. Keep evaluated resources local to the current player or sample and preserve the public `Diagram` interface.
 
 - Keep Node GIF orchestration separate from a single internal runtime seam. The orchestration owns validation, progress, cancellation and error mapping; the runtime owns Playwright launch/attachment, task context/page, portable exporter loading and temporary files. Caller-owned browsers remain open. Register acquired resources before racing cancellation; close late browser/context/page results and remove late temporary directories even after disposal returns. Test the seam with deterministic runtimes and retain real Chromium checks for the installed artifact.
@@ -173,3 +181,15 @@
 
 - Compile `flow.highlightParticipants` with default true. Apply this policy only to temporary endpoint highlights; keep explicit node highlights, temporary edge highlights and marker evaluation independent. State-machine stories can then animate event transfers while retaining one current state. Reduced motion suppresses markers and retains configured highlights.
 - Keep one internal `DiagramFrameEvaluation` per browser update or GIF sample. Resolve timeline, layout, routes and camera once, then pass that result to SVG serialization and hit testing. Reuse the player’s current result for pointer hover/click so interaction never re-evaluates an unchanged time and visual option. Keep this seam internal and preserve the public `Diagram` methods.
+
+- Resolve document typography in one core module before frame evaluation. Share effective role metrics with SVG, hit testing, fitting and content measurement. Scale only omitted structured-content role sizes; preserve explicit sizes, node geometry and compiled timing.
+
+## On-demand geometry diagnostics
+
+`Diagram.diagnoseAt` consumes one evaluated frame. Pair checks remain outside evaluation, SVG rendering and playback. The internal diagnostic geometry module owns visible-paint intersections; no public sampler is exposed.
+
+Filled-node diagnostics use analytic unions of rectangles and ellipses after camera clipping. Curved outline paint uses 256 contour intervals per revolution; rectangle strokes keep square miters. One logical content line retains separate visible span rectangles, clipped by both safeArea and camera, so transparent gaps cannot create paint. Source descriptors retain role, field and line position. Canonical versioned array keys sort label pairs but preserve path/label-to-node direction. Keep message text and caller context out of warning identity; the caller binds source/SDK/time/options separately. New diagnostic types form a discriminated LayoutWarning union; frame.warnings still contains only text overflow.
+
+- An ordinary multiline edge label is one SVG text element with a shared decorative background halo. For pairs of lines from that exact label field and owner, compare foreground text regions; halo-only self-intersections are legal. Compare complete halo regions against different owners/fields and node paint. This exception does not merge line identities or exclude structured lines owned by the same node.
+
+- Before painting or exposing structured content in a frame, validate numeric layout values and the accumulated final line-box height. Individually finite scaled roles can overflow across many lines, list items or blocks. Diagram queries report this as `typography.nodeLabel`; author-time measurement retains its per-version `content[index]` error paths. Visit numeric values lazily rather than spreading large layouts into function arguments.

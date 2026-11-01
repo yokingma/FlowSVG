@@ -28,6 +28,8 @@ const DARK_PALETTE = {
 
 export const DEFAULT_NODE_STROKE_WIDTH = 1.2;
 export const NODE_CORNER_RADIUS = 8;
+/** Maximum cylinder cap radius; smaller nodes use one quarter of their height. */
+export const CYLINDER_CAP_RADIUS = 14;
 export const DIAGRAM_FONT_FAMILY = 'system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif';
 
 /** Select a palette without consulting browser preferences. */

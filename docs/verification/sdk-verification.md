@@ -1,6 +1,6 @@
 # SDK verification
 
-SDK runtime, build, tests and npm package verification use SDK-owned inputs. They require no showcase or app build. Prepare Chromium, system fonts and minimum runtimes as described in the [release guide](RELEASING.md).
+SDK runtime, build, tests and npm package verification use SDK-owned inputs. They require no showcase or app build. Prepare Chromium, system fonts and minimum runtimes as described in the [release guide](../development/releasing.md).
 
 ## Commands
 
@@ -33,6 +33,6 @@ Keep feature-specific boundary and invalid-input cases with the corresponding SD
 
 ## Example verification
 
-Formal showcase narratives and host sites have their own inputs and verification. Use the [showcase verification guide](SHOWCASE-VERIFICATION.md) for those commands. `pnpm test:all` combines SDK and formal example verification explicitly.
+Formal showcase narratives and host sites have their own inputs and verification. Use the [showcase verification guide](showcase-verification.md) for those commands. `pnpm test:all` combines SDK and formal example verification explicitly.
 
 Record the actual environment, executed commands, failures and skipped runtime checks for each verification run. A workflow definition or an older passing run does not establish a new platform result. Keep transient logs, screenshots and task reports outside version control.

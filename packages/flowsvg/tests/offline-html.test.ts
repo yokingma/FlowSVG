@@ -102,7 +102,7 @@ it.each([false, true])("copied GIF=%s assets generate offline playback with iner
   await writeFile(join(copiedRoot, "package.json"), '{"type":"module"}');
   const hostileText = "中文 </script><script>globalThis.flowSvgInjected=true</script>&<>\"'\u2028\u2029";
   const hostileDocument = {
-    ...document, title: hostileText,
+    ...document, title: hostileText, typography: { nodeLabel: 32, edgeLabel: 24, flowLabel: 20 },
     nodes: [{ ...document.nodes[0], label: hostileText }],
     scenes: [{ ...document.scenes[0], beats: [
       { durationMs: 1000, caption: hostileText, actions: [] },
@@ -129,6 +129,7 @@ it.each([false, true])("copied GIF=%s assets generate offline playback with iner
     expect(await page.evaluate(() => "flowSvgInjected" in globalThis)).toBe(false);
     expect(await page.locator(".flowsvg-caption").textContent()).toBe(hostileText);
     expect(await page.locator(".flowsvg-canvas").textContent()).toContain("中文");
+    expect(await page.locator("svg text[font-size='32']").count()).toBeGreaterThan(0);
     expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe("0");
     await page.getByRole("button", { name: "Play", exact: true }).click();
     await page.waitForFunction(() => Number((document.querySelector('[aria-label="Progress"]') as HTMLInputElement).value) > 0);

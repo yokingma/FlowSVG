@@ -1,4 +1,12 @@
-## Agent skills
+## Repository instructions
+
+### Repository scope
+
+This repository maintains the FlowSVG SDK, shared showcase, and native browser, React, and Vue examples. Keep development, tests, builds, and release workflows self-contained.
+
+### Implementation conventions
+
+Before changing implementation, builds, or tests, read the root `PATTERNS.md` and any affected package/app `PATTERNS.md`.
 
 ### Source documentation
 
@@ -15,19 +23,20 @@ When writing or editing technical documentation or source comments, apply these 
 
 ### Documentation sync
 
-For every code or feature change, review the root `README.md`, affected package/app READMEs, and documentation covering the changed behavior, API, integration, or development workflow before declaring the task complete.
+For executable code, implementation logic, or code structure changes, review the root and affected package/app READMEs in both languages, plus documentation covering the affected behavior, API, integration, or development workflow.
 
-- Update affected documentation in the same task so descriptions, examples, commands, and links match the final implementation; verify any changed examples, commands, and links.
+- Update affected `CHANGELOG.md`, `PATTERNS.md`, and documentation in the same task. Keep bilingual task coverage aligned and verify changed examples, commands, and links.
+- Documentation-only, planning, and data changes do not require changelog or pattern updates.
 - In the completion report, identify the documentation updated, or explain why the reviewed documentation needs no changes.
 
 ### Issue tracker
 
-Issues and specs are tracked as local Markdown files under `.scratch/`. See `docs/agents/issue-tracker.md`.
+When creating, fetching, or updating specs and tickets under `.scratch/`, follow `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
-Triage uses the five default status names. See `docs/agents/triage-labels.md`.
+When assigning triage labels, use the mappings in `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
-Single-context layout: root `GLOSSARY.md` and `docs/adr/`. See `docs/agents/domain.md`.
+Before exploring a domain or changing its contracts, follow `docs/agents/domain.md`: read the root `GLOSSARY.md` and relevant decisions in `docs/adr/`.

@@ -10,7 +10,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseGIF, decompressFrames } from "gifuct-js";
 import { chromium } from "playwright-core";
-import { renderHtml, exportGif } from "flowsvg/node";
+import { renderHtml, exportGif, exportPng } from "flowsvg/node";
 
 const ROOT = process.cwd();
 const PACKAGE = join(ROOT, "node_modules/flowsvg");
@@ -64,13 +64,13 @@ function verifyImportsAndRuntimes() {
     if (!createDiagram(doc).renderSvg(0).includes("<svg") || typeof createPlayer !== "function" || defineFlowPlayer() !== undefined) throw Error("legacy SDK import failed");`;
   for (const node of new Set([NODE20, ...(NODE18 ? [NODE18] : [])])) run(node, ["--experimental-loader", loader, "--input-type=module", "--eval", smoke]);
   run(NODE20, ["--experimental-loader", loader, "--input-type=module", "--eval", `
-    import { renderHtml } from "flowsvg/node"; import { exportGif } from "flowsvg/export";
-    if (typeof exportGif !== "function" || !(await renderHtml(${JSON.stringify(document)})).includes("<!doctype html>")) throw Error("lazy export boundary failed");
+    import { renderHtml } from "flowsvg/node"; import { exportGif, exportPng } from "flowsvg/export";
+    if (typeof exportPng !== "function" || typeof exportGif !== "function" || !(await renderHtml(${JSON.stringify(document)})).includes("<!doctype html>")) throw Error("lazy export boundary failed");
   `]);
   if (!NODE18) console.log("Node 18 executable not provided; set FLOWSVG_NODE18_PATH for the minimum-runtime gate.");
   if (!NODE18) return;
-  run(NODE18, ["--input-type=module", "--eval", `import { renderHtml, exportGif } from "flowsvg/node";
-    for (const operation of [renderHtml, exportGif]) {
+  run(NODE18, ["--input-type=module", "--eval", `import { renderHtml, exportGif, exportPng } from "flowsvg/node";
+    for (const operation of [renderHtml, exportGif, exportPng]) {
       try { await operation(${JSON.stringify(document)}); throw Error("unexpected success"); }
       catch (error) { if (!/Node 20/.test(error.message)) throw error; }
     }`]);
@@ -116,6 +116,40 @@ async function verifyNode(browser) {
   console.log("packed Node GIF: range, speed, fps, captions, pixels, loops, limits, motion, cancellation and environment errors passed");
 }
 
+async function verifyNodePng(browser) {
+  const contexts = browser.contexts().length;
+  const source = structuredClone(document);
+  const options = { browser, timeMs: 500, width: 480, background: "transparent" };
+  const pending = exportPng(source, options);
+  source.viewport.width = 12; source.nodes[0].style.fill = "#00ff00";
+  options.width = 12; options.timeMs = 0; options.background = "theme";
+  const bytes = await pending;
+  assert.deepEqual(Array.from(bytes.slice(0, 8)), [137, 80, 78, 71, 13, 10, 26, 10]);
+  assert.equal(browser.contexts().length, contexts); assert.ok(browser.isConnected());
+  const context = await browser.newContext({ offline: true });
+  try {
+    const page = await context.newPage();
+    const pixels = await page.evaluate(async (bytes) => {
+      const bitmap = await createImageBitmap(new Blob([Uint8Array.from(bytes)], { type: "image/png" }));
+      const canvas = document.createElement("canvas"); canvas.width = bitmap.width; canvas.height = bitmap.height;
+      const ctx = canvas.getContext("2d"); ctx.drawImage(bitmap, 0, 0); bitmap.close();
+      return { size: [canvas.width, canvas.height], corner: Array.from(ctx.getImageData(0, 0, 1, 1).data), node: Array.from(ctx.getImageData(180, 100, 1, 1).data) };
+    }, Array.from(bytes));
+    assert.deepEqual(pixels, { size: [480, 240], corner: [0, 0, 0, 0], node: [255, 0, 0, 255] });
+  } finally { await context.close(); }
+  const owned = await exportPng(document, { executablePath: CHROMIUM, width: 120 });
+  assert.ok(owned.length > 100);
+  await assert.rejects(exportPng(document, { executablePath: "/missing/Chromium" }), (error) => error.code === "environment");
+  for (const options of [{ width: 9000 }, { timeMs: Infinity }, { browser, executablePath: CHROMIUM }]) {
+    await assert.rejects(exportPng(document, { browser, ...options }), (error) => ["limit", "options"].includes(error.code));
+  }
+  const controller = new AbortController();
+  const cancelled = exportPng(document, { browser, signal: controller.signal }); controller.abort();
+  await assert.rejects(cancelled, (error) => error.code === "cancelled");
+  assert.equal(browser.contexts().length, contexts); assert.ok(browser.isConnected());
+  console.log("packed Node PNG: offline pixels, snapshot, external browser ownership, owned browser, preflight, missing browser and cancellation passed");
+}
+
 function prepareDetachedTools() {
   const detached = join(ROOT, "detached"); mkdirSync(detached);
   cpSync(join(PACKAGE, "dist"), join(detached, "dist"), { recursive: true });
@@ -132,6 +166,26 @@ function prepareDetachedTools() {
   const result = decode(readFileSync(join(detached, "cli.gif")));
   assert.deepEqual([result.parsed.lsd.width, result.parsed.lsd.height, result.ticks, result.loop], [240, 120, 25, undefined]);
   return detached;
+}
+
+async function verifyBrowserPng(browser) {
+  const context = await browser.newContext({ offline: true });
+  const page = await context.newPage();
+  try {
+    await page.addScriptTag({ content: readFileSync(join(PACKAGE, "dist/portable/export.js"), "utf8") });
+    const result = await page.evaluate(async (document) => {
+      const bytes = await globalThis.FlowSVGExport.exportPng(document, { timeMs: 500, width: 480, background: "transparent" });
+      const bitmap = await createImageBitmap(new Blob([bytes], { type: "image/png" }));
+      const canvas = globalThis.document.createElement("canvas"); canvas.width = bitmap.width; canvas.height = bitmap.height;
+      const context = canvas.getContext("2d"); context.drawImage(bitmap, 0, 0); bitmap.close();
+      return { dimensions: [canvas.width, canvas.height], corner: Array.from(context.getImageData(0, 0, 1, 1).data), node: Array.from(context.getImageData(180, 100, 1, 1).data), header: Array.from(bytes.slice(0, 8)) };
+    }, document);
+    assert.deepEqual(result.dimensions, [480, 240]);
+    assert.deepEqual(result.corner, [0, 0, 0, 0]);
+    assert.deepEqual(result.node, [255, 0, 0, 255]);
+    assert.deepEqual(result.header, [137, 80, 78, 71, 13, 10, 26, 10]);
+    console.log("packed portable browser PNG: complete bytes, selected time, dimensions and alpha passed");
+  } finally { await context.close(); }
 }
 
 async function verifyHtml(browser, detached) {
@@ -162,6 +216,7 @@ assert.ok(CHROMIUM, "Set FLOWSVG_CHROMIUM_PATH to prepared Chromium; release che
 const basic = await renderHtml(document);
 assert.doesNotMatch(basic, /GIF89a/);
 const browser = await chromium.launch({ executablePath: CHROMIUM });
-try { await verifyNode(browser); await verifyHtml(browser, prepareDetachedTools()); }
+try { await verifyNode(browser);
+  await verifyNodePng(browser); await verifyBrowserPng(browser); await verifyHtml(browser, prepareDetachedTools()); }
 finally { await browser.close(); }
 console.log("packed portable consumer passed");
