@@ -3,6 +3,8 @@
 English | [简体中文](sdk-guide.zh-CN.md)
 
 > **Document status:** Current entry. The public types, implementation, and tests under `packages/flowsvg/` are the source of truth for behavior. This guide is the maintained English task path; verification guides describe reproducible checks and do not replace this contract.
+>
+> **Language parity:** The Chinese guide follows this guide's section order and public contract. Update both guides in the same change, including examples, defaults, limits, errors, and links.
 
 FlowSVG turns JSON or TypeScript documents into animated SVG diagrams. Define nodes, edges, scenes, and beats; play them in a browser, export SVG, PNG or GIF, or share a single offline HTML file.
 
@@ -483,26 +485,6 @@ Click **Export GIF** to download the complete timeline at 1× with the task's re
 
 Each player owns at most one task. A successful document load retains the old task's captured document/theme. Later input-object mutations cannot change that snapshot. Destroying the player, unmounting a component, or rebuilding an adapter for option changes cancels its task and prevents late downloads. Cancellation or failure permits retry. For custom settings and programmatic error handling, use the separate `exportGif` function below.
 
-## Node PNG export
-
-```ts
-import { exportPng } from "flowsvg/node";
-import { writeFile } from "node:fs/promises";
-import { diagramDocument } from "./diagram.js";
-
-const png = await exportPng(diagramDocument, {
-  executablePath: "/path/to/installed/chromium",
-  timeMs: 0,
-  width: 1280,
-  background: "transparent"
-});
-await writeFile("diagram.png", png);
-```
-
-Node PNG uses the same browser exporter and image options as `flowsvg/export`. It requires Node 20+ and preinstalled Chrome/Chromium. Choose `executablePath` or an existing Playwright `browser`; the options are mutually exclusive. The SDK never downloads a browser and the export context is offline.
-
-The call snapshots the document and settings before asynchronous work. Invalid documents, options and pixel limits fail before browser allocation. Success, failure and cancellation close task contexts, owned browsers and temporary files, including resources acquired after cancellation. A supplied browser remains caller-owned and open. Launch, temporary-file and bridge failures use `PngExportError.code: "environment"`; browser rasterization, encoding and cancellation retain their distinct codes. The API returns bytes; saving them is the caller's responsibility. The SDK CLI has no PNG command.
-
 ## Browser PNG and SVG backgrounds
 
 Import `exportPng` from `flowsvg/export` for complete decodable `Uint8Array` bytes. The call does not download or change player state.
@@ -566,6 +548,26 @@ Limits: 120 effective animation seconds, 1800 samples, 1801 encoded frames inclu
 | `signal`, `onProgress` | AbortSignal cancels task-owned work and releases resources. The callback receives phase, completed and total counts; a cancelled task never reports complete. |
 
 Invalid runtime values, empty/out-of-range segments and computable resource limits fail before canvas allocation or sampling. Caption overflow uses `GifExportError.code === "caption-overflow"`; it never silently clips text or shrinks the font. GIF palette quantization and local system fonts can change pixels between environments.
+
+## Node PNG export
+
+```ts
+import { exportPng } from "flowsvg/node";
+import { writeFile } from "node:fs/promises";
+import { diagramDocument } from "./diagram.js";
+
+const png = await exportPng(diagramDocument, {
+  executablePath: "/path/to/installed/chromium",
+  timeMs: 0,
+  width: 1280,
+  background: "transparent"
+});
+await writeFile("diagram.png", png);
+```
+
+Node PNG uses the same browser exporter and image options as `flowsvg/export`. It requires Node 20+ and preinstalled Chrome/Chromium. Choose `executablePath` or an existing Playwright `browser`; the options are mutually exclusive. The SDK never downloads a browser and the export context is offline.
+
+The call snapshots the document and settings before asynchronous work. Invalid documents, options and pixel limits fail before browser allocation. Success, failure and cancellation close task contexts, owned browsers and temporary files, including resources acquired after cancellation. A supplied browser remains caller-owned and open. Launch, temporary-file and bridge failures use `PngExportError.code: "environment"`; browser rasterization, encoding and cancellation retain their distinct codes. The API returns bytes; saving them is the caller's responsibility. The SDK CLI has no PNG command.
 
 ## Node GIF export (Node 20+)
 
@@ -795,7 +797,7 @@ These documentation entries serve different readers and keep different levels of
 | [Host READMEs](../../apps/native-example/README.md), [React](../../apps/react-example/README.md), [Vue](../../apps/vue-example/README.md) | Host lifecycle, development commands, build/deploy behavior, and host-specific failure handling | Summarize the compiled timeline and link back here for shared SDK rules |
 | Flow SVG Diagram Skill (independent project) | Authoring-tool commands, layout plans, reports, revision history, and review/export workflow | Bundles the execution references for its exact SDK baseline; SDK users can use this guide without installing the Skill. See [repository boundaries](../development/repository-split.md) |
 
-When a description conflicts with behavior, use the public types, implementation, and tests as the fact source. The English and Chinese SDK guides keep the same task coverage, defaults, limits, and error behavior; wording may differ for readability.
+When a description conflicts with behavior, use the public types, implementation, and tests as the fact source. The [documentation map](../README.md) records the language and ownership policy.
 
 ## License
 

@@ -145,7 +145,7 @@ await writeFile("diagram.html", await renderHtml(diagramDocument, { theme: "dark
 
 ## 集成与 API
 
-按读者和任务查找文档，见[文档地图](docs/README.md)。
+按读者和任务查找文档，见[中文文档地图](docs/README.zh-CN.md)。
 
 [SDK 使用手册](docs/guides/sdk-guide.zh-CN.md) 说明集成方式、文档模型和公开 API。
 

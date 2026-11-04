@@ -3,6 +3,8 @@
 [English](sdk-guide.md) | 简体中文
 
 > **文档状态：当前入口。** `packages/flowsvg/` 下的公开类型、实现与测试是行为事实来源。本手册是维护中的中文任务路径；验证说明描述可重现的检查方法，不替代当前契约。
+>
+> **语言同步：** 本手册与英文手册保持相同的章节顺序和公共契约。修改时同步更新两份手册，包括示例、默认值、限制、错误行为和链接。
 
 FlowSVG（流形）将 JSON 或 TypeScript 文档转换为 SVG 动画图解。定义节点、连线、场景与节拍，即可在浏览器播放、导出 SVG、PNG 或 GIF，或分享一个离线 HTML 文件。
 
@@ -795,7 +797,7 @@ const svg = diagram.renderSvg(1000, { theme: "dark", reducedMotion: true });
 | [宿主 README](../../apps/native-example/README.md)、[React](../../apps/react-example/README.md)、[Vue](../../apps/vue-example/README.md) | 宿主生命周期、开发命令、构建／部署行为和宿主特有的失败处理 | 只摘要编译后时间线，并回链本手册的共同 SDK 规则 |
 | Flow SVG Diagram Skill（独立项目） | 创作命令、布局计划、报告、版本修订和复核／导出工作流 | 安装单元自带精确 SDK 基线所需的执行资料；SDK 用户无需安装 Skill 即可使用本手册。见[仓库边界](../development/repository-split.md) |
 
-如果文字与行为冲突，以公开类型、实现和测试为事实来源。中英文 SDK 手册保持相同的任务覆盖、默认值、限制和错误行为；语言表达可以为了易读性调整。
+如果文字与行为冲突，以公开类型、实现和测试为事实来源。[文档地图](../README.zh-CN.md)记录语言和文档归属规则。
 
 ## License
 
