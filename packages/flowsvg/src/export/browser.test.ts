@@ -2,6 +2,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import { CompiledTimeline } from "../core/timeline.js";
 import type { DiagramDocument } from "../core/model.js";
 import { exportGif } from "./browser.js";
+import { GifExportError } from "./types.js";
 
 const documentInput: DiagramDocument = {
   version: 1,
@@ -37,6 +38,19 @@ function installBrowserServices(): string[] {
   });
   return captions;
 }
+
+it("wraps English GIF captions between complete words", async () => {
+  const captions = installBrowserServices();
+  await exportGif({ ...documentInput, title: "Task events" }, { width: 42, finalHoldMs: 0 });
+  expect(captions).toEqual(["Task", "events"]);
+});
+
+it("reports caption overflow when one complete word cannot fit", async () => {
+  const captions = installBrowserServices();
+  await expect(exportGif({ ...documentInput, title: "LongerThanTen" }, { width: 42, finalHoldMs: 0 }))
+    .rejects.toMatchObject({ name: "GifExportError", code: "caption-overflow" } satisfies Partial<GifExportError>);
+  expect(captions).toEqual([]);
+});
 
 it.each([
   { name: "untitled static", title: undefined, timed: false, includeCaptions: true, expectedCaptions: [""] },

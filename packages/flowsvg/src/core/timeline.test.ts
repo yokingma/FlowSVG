@@ -121,7 +121,7 @@ describe("updated geometry and routing", () => {
     ] }];
     const diagram = createDiagram(document);
     expect(diagram.evaluateAt(0).edges[0]?.path).toBe("M 120 130 L 290 130");
-    expect(diagram.evaluateAt(200).nodes[3]).toMatchObject({ x: 350, y: 150, width: 80, height: 45, labelLines: ["Servic", "e name"] });
+    expect(diagram.evaluateAt(200).nodes[3]).toMatchObject({ x: 350, y: 150, width: 80, height: 45, labelLines: ["Service", "name"] });
     const middlePath = diagram.evaluateAt(200).edges[0]!.path;
     expect(middlePath).toMatch(/^M 120 130 L /);
     expect(middlePath.match(/ Q /g)).toHaveLength(2);

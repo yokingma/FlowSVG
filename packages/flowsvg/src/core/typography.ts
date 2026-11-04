@@ -10,6 +10,24 @@ export const CONTENT_LINE_HEIGHT_RATIO = 1.35;
 const MAX_CONTENT_FONT_RATIO = 20 / 16;
 const FLOW_CAPSULE_HEIGHT_RATIO = 2;
 const ROLE_DEFAULTS = { nodeLabel: DEFAULT_NODE_TYPOGRAPHY, edgeLabel: DEFAULT_EDGE_TYPOGRAPHY, flowLabel: DEFAULT_FLOW_TYPOGRAPHY };
+const LATIN_WORD_CHARACTER = /[\p{Script=Latin}\p{Mark}\p{Decimal_Number}_'’\-]/u;
+
+/** Share word boundaries between estimated diagram labels and measured GIF captions; overwide words stay intact. */
+export function findTextBreak(characters: readonly string[], maxCharacters: number): number {
+  const limit = Math.min(characters.length, Math.max(1, maxCharacters));
+  if (limit === characters.length) return limit;
+  const space = characters.slice(0, limit + 1).lastIndexOf(" ");
+  if (space > 0) return space;
+  let cut = limit;
+  if (LATIN_WORD_CHARACTER.test(characters[cut - 1]!) && LATIN_WORD_CHARACTER.test(characters[cut]!)) {
+    while (cut > 0 && LATIN_WORD_CHARACTER.test(characters[cut - 1]!)) cut -= 1;
+    if (cut === 0) {
+      cut = limit;
+      while (cut < characters.length && LATIN_WORD_CHARACTER.test(characters[cut]!)) cut += 1;
+    }
+  }
+  return cut;
+}
 
 /** Effective text context retained internally with each evaluated frame. */
 export interface ResolvedTypography {

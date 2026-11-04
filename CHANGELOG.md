@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Preserve complete English words in ordinary node and edge labels; keep vertical connection labels readable at the authored font size.
+
 - Use English throughout the formal demo catalog, downloadable diagrams and SDK lifecycle preview; preserve stable example IDs and bilingual documentation.
 - Center structured-content tag text inside its decorative background across core SVG and browser rendering.
 

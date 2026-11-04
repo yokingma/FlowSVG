@@ -11,7 +11,7 @@ import { CYLINDER_CAP_RADIUS, DEFAULT_NODE_STROKE_WIDTH, DIAGRAM_FONT_FAMILY, NO
 import { DiagramValidationError, validateDocument } from "./validation.js";
 import type { Viewport, DiagramNode, DiagramEdge, DiagramDocument, DiagramBeat, Beat, EvaluateOptions, SvgRenderOptions, TextLine, EvaluatedNode, EvaluatedEdge, EdgeFlowMarker, LayoutWarning, GeometryWarning, CameraState, HitObject, DiagramPoint, DiagramFrameState } from "./model.js";
 import { ARROW_MARKER_SIZE, emptyPathGeometry, isPointNearPath, routedTargetOffsets, pathLabelAnchor, routeEdge, type PathGeometry } from "./edge-geometry.js";
-import { DEFAULT_NODE_TYPOGRAPHY, EDGE_LABEL_HALO_RADIUS, textLineBounds, estimateTextWidth, flowCapsuleHeight, resolveTypography, type ResolvedTypography, type TextMetrics } from "./typography.js";
+import { DEFAULT_NODE_TYPOGRAPHY, EDGE_LABEL_HALO_RADIUS, textLineBounds, estimateTextWidth, findTextBreak, flowCapsuleHeight, resolveTypography, type ResolvedTypography, type TextMetrics } from "./typography.js";
 import { formatNumber } from "./svg-number.js";
 
 /**
@@ -216,7 +216,10 @@ class CompiledDiagram implements Diagram {
       const reverseOffset = hasReverseCurve ? 1 : 0;
       const geometry = from && to ? routeEdge({ ...edge, style }, from, to, nodes, { reverseOffset, targetOffset: targetOffsets.get(edge.id) ?? 0 }) : emptyPathGeometry();
       edgeGeometries.set(edge.id, geometry);
-      const labelLines = edge.label ? wrapText(edge.label, Math.max(1, geometry.length - TEXT_PADDING * 2), edgeTypography) : [];
+      // A vertical route's length is not its horizontal text budget. Reuse the narrower endpoint column.
+      const labelWidth = geometry.bounds.left === geometry.bounds.right && from && to
+        ? Math.min(from.width, to.width) : geometry.length;
+      const labelLines = edge.label ? wrapText(edge.label, Math.max(1, labelWidth - TEXT_PADDING * 2), edgeTypography) : [];
       const midpoint = pathLabelAnchor(geometry);
       const flow = activeFlow && visible && opacity > 0 && !options.reducedMotion ? {
         direction: activeFlow.direction,
@@ -274,8 +277,9 @@ const MIN_FLOW_MOVEMENT_MS = 400;
 const MILLISECONDS_PER_SECOND = 1000;
 
 /**
- * Estimate wrapping with fixed code-point widths, preserving explicit empty lines and preferring spaces as breaks.
- * No font/DOM measurement is used; this handles width only, while frame evaluation reports height overflow.
+ * Estimate wrapping with fixed code-point widths, preserving explicit empty lines and complete Latin words.
+ * An overwide word stays intact and can exceed maxWidth; other scripts retain code-point wrapping.
+ * No font/DOM measurement is used; frame evaluation reports ordinary node-label height overflow.
  */
 export function wrapText(label: string, maxWidth: number, typography: TextMetrics = DEFAULT_NODE_TYPOGRAPHY): string[] {
   const maxChars = Math.max(1, Math.floor(maxWidth / typography.charWidth));
@@ -288,13 +292,11 @@ export function wrapText(label: string, maxWidth: number, typography: TextMetric
     // Code-point slicing keeps surrogate pairs intact even when only one character fits.
     let remaining = Array.from(explicitLine);
     while (remaining.length > maxChars) {
-      const candidate = remaining.slice(0, maxChars + 1);
-      const breakAt = candidate.lastIndexOf(" ");
-      const cut = breakAt > 0 ? breakAt : maxChars;
+      const cut = findTextBreak(remaining, maxChars);
       lines.push(remaining.slice(0, cut).join(""));
       remaining = Array.from(remaining.slice(cut).join("").replace(/^\s+/, ""));
     }
-    lines.push(remaining.join(""));
+    if (remaining.length > 0) lines.push(remaining.join(""));
   }
   return lines;
 }

@@ -2,6 +2,8 @@
 
 ## Ownership
 
+- Keep complete Latin words in ordinary node and edge labels. Preserve authored font sizes; resolve label crowding through authored spacing rather than automatic font reduction.
+
 - Publish formal demo text in English. Keep stable story IDs, bilingual documentation and SDK multilingual rendering coverage.
 
 - Keep each published unit self-contained. SDK build, tests and release verification use SDK-owned inputs; shared showcase and host delivery have their own checks. Repository boundaries and independent versioning are defined in [repository boundaries](docs/development/repository-split.md).

@@ -453,6 +453,8 @@ Set `typography: { nodeLabel: 32, edgeLabel: 24, flowLabel: 20 }` on the documen
 
 **Validation:** values must be positive and finite. Unrepresentable derived text metrics throw `DiagramValidationError` with a `typography.<role>` path.
 
+Ordinary labels and `wrapText` keep Latin words intact. Overwide words can exceed the estimated line width; fonts do not shrink automatically. Purely vertical edge labels use the narrower endpoint width for horizontal wrapping. Increase authored spacing or node width if labels overlap.
+
 **Sizing and inheritance:**
 
 - Wrapping, drawing, node-label hits and `fitHeight` share effective sizes.

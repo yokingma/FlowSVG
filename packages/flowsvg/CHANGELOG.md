@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Preserve complete Latin words when wrapping ordinary labels. Allow overwide words to exceed the estimated width and use endpoint column widths for purely vertical edge labels without reducing font size. Keep complete Latin words in GIF captions and reject captions when an intact word exceeds the available width.
+
 - Ship the background task lifecycle example and README GIF with English labels and captions. Keep the standalone document and existing task transitions.
 - Center decorative tag text inside its rounded or pill background while preserving authored tag rows and dimensions.
 - Keep centered text in one SVG text chunk, including mixed-style tag spans. Use actual font advances for horizontal centering instead of estimated span positions.
