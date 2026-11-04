@@ -23,6 +23,17 @@ describe("Facts tags and status", () => {
     expect(radii).toEqual([3, 3, tags[2]!.height / 2]);
   });
 
+  it("centers tag text inside each tag background", () => {
+    const diagram = createDiagram(factsDocument([{ tags: [{ text: "Current", style: { shape: "pill" } }] }]));
+    const layout = diagram.evaluateAt(0).nodes[0]!.contentLayout!;
+    const tag = layout.tags[0]!;
+    const line = layout.lines.find(({ role }) => role === "tag")!;
+    expect(line.align).toBe("center");
+    expect(line.x).toBeCloseTo(tag.x + tag.width / 2);
+    expect(line.spans[0]!.x).toBeCloseTo(tag.x + (tag.width - line.width) / 2);
+    expect(line.y).toBeCloseTo(tag.y + 17.5);
+  });
+
   it.each([null, "circle", 10])("rejects an unsupported tag shape %s at its authored path", (shape) => {
     const document = factsDocument([]);
     const malformed = { ...document, nodes: [{ ...document.nodes[0], content: {

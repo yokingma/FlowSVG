@@ -31,7 +31,7 @@ export interface ContentTextSpan {
 /** Plain text or an ordered series of inline styled spans. No span creates an independent target. */
 export type ContentText = string | ContentTextSpan[];
 
-/** Controlled tag typography and optional background; tags remain left-aligned within the item. */
+/** Controlled tag typography and optional background; tag text is centered inside its background. */
 export interface ContentTagStyle extends ContentSpanStyle {
   fill?: string;
   /** Rounded corners by default; pill uses half the final tag height without changing text layout. */
@@ -445,9 +445,16 @@ function layoutContentTags(source: ContentTag[], area: ContentSafeArea, top: num
 function layoutContentTag(tag: ContentTag, area: ContentSafeArea, top: number, palette: ThemePalette,
   blockIndex: number, itemIndex: number, tagIndex: number, markerSize: number, defaultFontScale: number): ContentPartLayout {
   const textArea = { ...area, x: area.x + TAG_PADDING_X, width: Math.max(0, area.width - TAG_PADDING_X * 2) };
-  const result = layoutTextPart(tag.text, "tag", tag.style, textArea, top + TAG_PADDING_Y, palette, blockIndex, itemIndex, markerSize, defaultFontScale);
+  const result = layoutTextPart(tag.text, "tag", { ...tag.style, align: "center" }, textArea,
+    top + TAG_PADDING_Y, palette, blockIndex, itemIndex, markerSize, defaultFontScale);
+  const centeredLines = result.lines.map((line) => {
+    const lineHeight = Math.max(MIN_LINE_HEIGHT, line.fontSize * CONTENT_LINE_HEIGHT_RATIO);
+    const offset = (lineHeight - line.fontSize) / 2;
+    return { ...line, y: line.y + offset, tagIndex,
+      spans: line.spans.map((span) => ({ ...span, y: span.y + offset })) };
+  });
   return { ...result, widthOverflow: result.widthOverflow || area.width < TAG_PADDING_X * 2,
-    lines: result.lines.map((line) => ({ ...line, tagIndex })), bottom: result.bottom + TAG_PADDING_Y,
+    lines: centeredLines, bottom: result.bottom + TAG_PADDING_Y,
     tags: [{ x: area.x, y: top, width: area.width, height: result.bottom - top + TAG_PADDING_Y,
       fill: tag.style?.fill ?? palette.tagFill, explicitFill: tag.style?.fill !== undefined,
       ...(tag.style?.shape === undefined ? {} : { shape: tag.style.shape }), blockIndex, itemIndex, tagIndex }] };
