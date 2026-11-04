@@ -2,9 +2,11 @@
 
 > **Document status:** Supporting maintenance material. The image files, example JSON, SDK exporter, and the guide source are the maintained inputs. The PNG/GIF outputs are release artifacts and must be regenerated when the documented source or rendering defaults change; they do not define the SDK contract.
 
-The PNG files in `packages/flowsvg/docs/images/` show output from the code examples in the [English](../guides/sdk-guide.md) and [Chinese](../guides/sdk-guide.zh-CN.md) SDK guides. They were rendered with FlowSVG 0.1.1 and captured in Chrome at one CSS pixel per diagram unit. All eight PNG files are included in the npm tarball; this maintenance note is not packaged.
+The PNG files in `packages/flowsvg/docs/images/` show output from the code examples in the [English](../guides/sdk-guide.md) and [Chinese](../guides/sdk-guide.zh-CN.md) SDK guides. Capture them in Chrome at one CSS pixel per diagram unit using the render settings below. All eight PNG files are included in the npm tarball; this maintenance note is not packaged.
 
 The previews use the default neutral borders and blue emphasis. The quick-start shows pale blue active nodes and blue message capsules. Facts shows the corresponding light and dark palettes. Refresh all previews when the default theme or line metrics change.
+
+After centered-text changes, refresh the record-tag, Facts timeline and entity-graph previews as well as the lifecycle GIF. Check rendered text bounds against each tag's center in Chromium; estimated layout coordinates alone cannot verify alignment with actual font advances.
 
 ## Typical SDK example
 

@@ -32,6 +32,8 @@ describe("Facts tags and status", () => {
     expect(line.x).toBeCloseTo(tag.x + tag.width / 2);
     expect(line.spans[0]!.x).toBeCloseTo(tag.x + (tag.width - line.width) / 2);
     expect(line.y).toBeCloseTo(tag.y + 17.5);
+    expect(diagram.renderSvg()).toContain(`<tspan x="${line.x}" y="${line.y}"`);
+    expect(diagram.renderSvg()).toMatch(/<tspan[^>]*text-anchor="middle">Current<\/tspan>/);
   });
 
   it.each([null, "circle", 10])("rejects an unsupported tag shape %s at its authored path", (shape) => {

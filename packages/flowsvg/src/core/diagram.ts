@@ -353,7 +353,18 @@ function serializeNodeContent(node: EvaluatedNode, index: number): string {
   const clipId = `diagram-content-clip-${index}-${geometryKey}`;
   const clip = `<defs><clipPath id="${clipId}" clipPathUnits="userSpaceOnUse"><rect x="${formatNumber(safe.x)}" y="${formatNumber(safe.y)}" width="${formatNumber(safe.width)}" height="${formatNumber(safe.height)}"/></clipPath></defs>`;
   const tags = layout.tags.map((tag) => `<rect x="${formatNumber(tag.x)}" y="${formatNumber(tag.y)}" width="${formatNumber(tag.width)}" height="${formatNumber(tag.height)}" rx="${formatNumber(tag.shape === "pill" ? tag.height / 2 : CONTENT_TAG_CORNER_RADIUS)}" fill="${escapeAttribute(tag.fill)}"/>`).join("");
-  const lines = layout.lines.map((line) => `<text x="${formatNumber(line.x)}" y="${formatNumber(line.y)}" fill="${escapeAttribute(line.color)}" font-size="${line.fontSize}" font-weight="${line.fontWeight}" text-anchor="${line.align === "left" ? "start" : line.align === "right" ? "end" : "middle"}">${line.spans.map((span) => `<tspan x="${formatNumber(span.x)}" y="${formatNumber(span.y)}" fill="${escapeAttribute(span.color)}" font-size="${span.fontSize}" font-weight="${span.fontWeight}" text-anchor="start">${escapeText(span.text)}</tspan>`).join("")}</text>`).join("");
+  const lines = layout.lines.map((line) => {
+    const centered = line.align === "center";
+    const anchor = centered ? "middle" : line.align === "right" ? "end" : "start";
+    const spans = line.spans.map((span, spanIndex) => {
+      // Keep a centered line in one SVG text chunk, including mixed-style spans.
+      // Native font advances determine its visible center; estimated widths still own wrapping.
+      const position = centered && spanIndex > 0 ? ""
+        : ` x="${formatNumber(centered ? line.x : span.x)}" y="${formatNumber(span.y)}"`;
+      return `<tspan${position} fill="${escapeAttribute(span.color)}" font-size="${span.fontSize}" font-weight="${span.fontWeight}" text-anchor="${centered ? "middle" : "start"}">${escapeText(span.text)}</tspan>`;
+    }).join("");
+    return `<text x="${formatNumber(line.x)}" y="${formatNumber(line.y)}" fill="${escapeAttribute(line.color)}" font-size="${line.fontSize}" font-weight="${line.fontWeight}" text-anchor="${anchor}">${spans}</text>`;
+  }).join("");
   const graphs = (layout.graphs ?? []).map((graph) => `<g data-content-graph="${graph.blockIndex}" aria-hidden="true">${graph.edges.map((edge) => `<line x1="${formatNumber(edge.x1)}" y1="${formatNumber(edge.y1)}" x2="${formatNumber(edge.x2)}" y2="${formatNumber(edge.y2)}" stroke="${edge.color}"/>`).join("")}${graph.nodes.map((point) => `<circle cx="${formatNumber(point.x)}" cy="${formatNumber(point.y)}" r="${point.radius}" fill="${point.fill}"/>`).join("")}</g>`).join("");
   return `${clip}<g id="diagram-content-${index}" data-content-id="${escapeAttribute(node.id)}" clip-path="url(#${clipId})" opacity="${node.opacity}">${tags}${graphs}${lines}</g>`;
 }

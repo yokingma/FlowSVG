@@ -665,7 +665,7 @@ const steps: ContentBlock = { type: "list", marker: "number", style: { itemGap: 
 
 ![包含辅助文字和加粗保存文字的两个编号步骤](../../packages/flowsvg/docs/images/numbered-list.zh-CN.png)
 
-文字标签接受 `{ text, style?: { fontSize, fontWeight, color, fill, shape } }`，默认字号 11。`shape` 默认为 `rounded`；设为 `shape: "pill"` 时，圆角随标签最终高度形成胶囊。形状不改变文字排版或主题颜色。列表 `tagGap` 默认 6，须为非负有限数。状态靠右，使用 12 单位强调色；`statusStyle` 支持 `fontSize`、`fontWeight`、`color`。空间不足时，标签换行，状态移至下方。正文、辅助文字随后排列。
+文字标签接受 `{ text, style?: { fontSize, fontWeight, color, fill, shape } }`，默认字号 11。标签行从项目左侧开始排列；标签内每行文字根据实际渲染字体的排字宽度，在各自背景内水平居中。`shape` 默认为 `rounded`；设为 `shape: "pill"` 时，圆角随标签最终高度形成胶囊。形状不改变文字排版或主题颜色。列表 `tagGap` 默认 6，须为非负有限数。状态靠右，使用 12 单位强调色；`statusStyle` 支持 `fontSize`、`fontWeight`、`color`。空间不足时，标签换行，状态移至下方。正文、辅助文字随后排列。
 
 ```ts
 import type { ContentBlock } from "flowsvg";

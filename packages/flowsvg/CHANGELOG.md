@@ -4,6 +4,7 @@
 
 - Ship the background task lifecycle example and README GIF with English labels and captions. Keep the standalone document and existing task transitions.
 - Center decorative tag text inside its rounded or pill background while preserving authored tag rows and dimensions.
+- Keep centered text in one SVG text chunk, including mixed-style tag spans. Use actual font advances for horizontal centering instead of estimated span positions.
 
 ## 0.2.2 - 2026-10-28
 

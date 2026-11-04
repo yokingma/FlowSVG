@@ -57,6 +57,41 @@ async function withPage(run: (page: Page, errors: string[]) => Promise<void>): P
   try { await run(page, errors); } finally { await page.close(); }
 }
 
+it("centers rendered tag text using real font metrics, including styled spans and wrapping", async () => {
+  await withPage(async (page, errors) => {
+    await page.goto(`${origin}/tests/browser-controls.html`);
+    await page.addScriptTag({ type: "module", content: "import * as sdk from '/dist/index.js'; window.tagSdk = sdk;" });
+    await page.waitForFunction("Boolean(window.tagSdk)");
+    const offsets = await page.evaluate(async () => {
+      const sdk: typeof import("../src/index.js") = Reflect.get(window, "tagSdk");
+      const diagram = sdk.createDiagram({ version: 1, viewport: { width: 400, height: 400 },
+        nodes: [{ id: "tags", kind: "rect", x: 0, y: 0, width: 220, height: 380,
+          content: { blocks: [{ type: "list", items: [
+            { tags: [{ text: "Question vector", style: { shape: "pill", fontSize: 12 } }] },
+            { tags: [{ text: "After retrieval", style: { shape: "pill", fontSize: 12 } }] },
+            { tags: [{ text: [{ text: "Mixed " }, { text: "styles", style: { fontWeight: 700, color: "#123456" } }] }] },
+            { tags: [{ text: "A long label that wraps onto another line" }] }
+          ] }] } }], edges: [], scenes: [] });
+      const host = document.createElement("div");
+      document.body.append(host);
+      host.innerHTML = diagram.renderSvg();
+      await document.fonts.ready;
+      const layout = diagram.evaluateAt(0).nodes[0]!.contentLayout!;
+      const texts = host.querySelectorAll<SVGTextElement>('[data-content-id="tags"] text');
+      const result = layout.lines.map((line, index) => {
+        const tag = layout.tags.find((candidate) => candidate.itemIndex === line.itemIndex && candidate.tagIndex === line.tagIndex)!;
+        const box = texts[index]!.getBBox();
+        return { text: line.text, offset: box.x + box.width / 2 - (tag.x + tag.width / 2) };
+      });
+      host.remove();
+      return result;
+    });
+    expect(offsets.length).toBeGreaterThan(4);
+    for (const { text, offset } of offsets) expect(Math.abs(offset), text).toBeLessThan(1);
+    expect(errors).toEqual([]);
+  });
+});
+
 it.each(PAGES)("passes SDK-only %s browser regressions", async (name, resultKey) => {
   await withPage(async (page, errors) => {
     await page.goto(`${origin}/tests/browser-${name}.html`);

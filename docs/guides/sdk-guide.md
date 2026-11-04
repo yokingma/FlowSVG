@@ -665,7 +665,7 @@ The `steps` block rendered in a 300 × 180 rectangle with `content: { blocks: [s
 
 ![Two numbered steps with auxiliary text and bold Save text](../../packages/flowsvg/docs/images/numbered-list.png)
 
-Tags accept `{ text, style?: { fontSize, fontWeight, color, fill, shape } }`, with font size 11 by default. `shape` is `rounded` by default; set `shape: "pill"` for capsule corners based on the final tag height. Shape does not change text layout or theme colors. List `tagGap` defaults to 6 and must be finite and nonnegative. Status is right-aligned 12-unit accent text; `statusStyle` accepts `fontSize`, `fontWeight`, and `color`. When space is insufficient, tags wrap and status moves below. Body and auxiliary text follow.
+Tags accept `{ text, style?: { fontSize, fontWeight, color, fill, shape } }`, with font size 11 by default. Tag rows start at the item's left edge; each text line is centered inside its own tag background using the rendered font's advance width. `shape` is `rounded` by default; set `shape: "pill"` for capsule corners based on the final tag height. Shape does not change text layout or theme colors. List `tagGap` defaults to 6 and must be finite and nonnegative. Status is right-aligned 12-unit accent text; `statusStyle` accepts `fontSize`, `fontWeight`, and `color`. When space is insufficient, tags wrap and status moves below. Body and auxiliary text follow.
 
 ```ts
 import type { ContentBlock } from "flowsvg";
