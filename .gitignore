@@ -20,9 +20,9 @@ temp/
 .playwright-mcp/
 
 
-# FlowSVG history captures are reproducible evidence; keep large preview surfaces out of Git
-.diagrams/.history/**/previews/
-.diagrams/.history/**/artifact-evidence/
+# Local FlowSVG diagram working area: drafts, history captures and inspection frames
+# are reproducible artifacts; keep the whole tree out of Git
+/.diagrams/
 
 # Local environment files
 .env
@@ -36,3 +36,6 @@ Thumbs.db
 
 # Local plans, task records and screenshots
 /.scratch/
+
+# Local agent workspace: session memory and scratch state stay on the machine
+/.workbuddy/
