@@ -17,12 +17,12 @@ it("offers the layered stack as a fourth standalone example with the original de
     "request-response", "rag-workflow", "project-architecture", "vllm-metal-stack", "job-lifecycle", "order-event-pipeline", "web-service-deployment", "cache-aside-sequence"
   ]);
   expect(catalog.defaultId).toBe("request-response");
-  expect(example.name).toBe("vllm-metal：分层推理架构");
+  expect(example.name).toBe("vllm-metal: Layered inference architecture");
   expect(example.durationMs).toBe(createDiagram(example.document).totalDuration);
   expect(example.defaults).toEqual({ speed: 1, theme: "dark", reducedMotion: false });
   expect(JSON.parse(json.get(example.jsonPath)!)).toEqual(example.document);
-  expect(example.introduction).toContain("参考");
-  expect(example.introduction).toContain("不执行真实推理");
+  expect(example.introduction).toContain("official");
+  expect(example.introduction).toContain("not a live inference run");
 });
 
 it("keeps 50-unit layer gaps and two real nested ownership panels inside the runner", () => {
@@ -59,14 +59,14 @@ it("preserves the reference responsibilities and states optional execution condi
   expect(textFor("paged-attention")).toContain("q [total_q, H, D]");
   expect(textFor("paged-attention")).toContain("cu_seqlens");
   expect(textFor("nax-prefill")).toContain("Metal kernel");
-  expect(textFor("mtp")).toContain("运行时编排");
+  expect(textFor("mtp")).toContain("Runtime orchestration");
   expect(textFor("unified-memory")).toContain("paged KV");
   expect(diagram.evaluateAt(beatMiddle(diagram, 1)).caption).toContain("KV block IDs");
-  expect(diagram.evaluateAt(beatMiddle(diagram, 2)).caption).toContain("构建 cu_seqlens");
+  expect(diagram.evaluateAt(beatMiddle(diagram, 2)).caption).toContain("builds cu_seqlens");
   expect(diagram.evaluateAt(beatMiddle(diagram, 4)).caption).toContain("M5");
-  expect(diagram.evaluateAt(beatMiddle(diagram, 4)).caption).toContain("配置");
-  expect(diagram.evaluateAt(beatMiddle(diagram, 4)).caption).toContain("并非每次请求");
-  expect(diagram.evaluateAt(beatMiddle(diagram, 7)).caption).toContain("参考图");
+  expect(diagram.evaluateAt(beatMiddle(diagram, 4)).caption).toContain("configuration");
+  expect(diagram.evaluateAt(beatMiddle(diagram, 4)).caption).toContain("not used on every request");
+  expect(diagram.evaluateAt(beatMiddle(diagram, 7)).caption).toContain("Reference");
 });
 
 it("connects evaluated layer boundaries with correctly directed curved transfers", () => {

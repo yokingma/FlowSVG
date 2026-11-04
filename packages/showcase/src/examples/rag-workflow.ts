@@ -21,29 +21,29 @@ function createContent(title: string, stage: string, ...blocks: ContentBlock[]):
 
 // Reuse these explicit replacements for measurement and scene updates.
 const UPDATED_CONTENT = {
-  retriever: createContent("召回 5 段", "候选结果",
-    createPills("C3 年假余额", "C1 申请流程", "C5 办公地点", "C2 审批要求", "C4 费用报销"),
+  retriever: createContent("5 candidates", "Candidates",
+    createPills("C3 Balance", "C1 Apply", "C5 Office", "C2 Approve", "C4 Expenses"),
     { type: "paragraph", role: "auxiliary", text: "C1 §4.1 · C2 §4.2" }),
-  reranker: createContent("重排与筛选", "5 段 → 2 段",
+  reranker: createContent("Reranker", "5 chunks → 2 chunks",
     { type: "list", style: { itemGap: 6 }, items: [
-      { tags: [createPill("C1"), createPill("保留")], body: "申请流程 · §4.1" },
-      { tags: [createPill("C2"), createPill("保留")], body: "审批要求 · §4.2" }
+      { tags: [createPill("C1"), createPill("Keep")], body: "Application · §4.1" },
+      { tags: [createPill("C2"), createPill("Keep")], body: "Approval · §4.2" }
     ] },
-    createPills("排除 C3 C4 C5")),
-  context: createContent("上下文组装", "仅保留 2 段",
-    { type: "paragraph", text: "年假如何申请？" },
+    createPills("Exclude C3 C4 C5")),
+  context: createContent("Build context", "Keep 2 chunks",
+    { type: "paragraph", text: "How to apply?" },
     { type: "list", style: { itemGap: 6 }, items: [
-      { tags: [createPill("C1 §4.1")], body: "在 OA 申请" },
-      { tags: [createPill("C2 §4.2")], body: "负责人审批" }
+      { tags: [createPill("C1 §4.1")], body: "Use HR portal" },
+      { tags: [createPill("C2 §4.2")], body: "Manager approval" }
     ] },
-    { type: "paragraph", role: "auxiliary", text: "依据资料回答，并引用来源" }),
-  answer: createContent("示意答案", "带引用回答",
+    { type: "paragraph", role: "auxiliary", text: "Use sources · cite them" }),
+  answer: createContent("Example answer", "Cited answer",
     { type: "list", marker: "number", style: { itemGap: 6 }, items: [
-      { body: "在 OA 提交年假申请" },
-      { body: "直属负责人审批" }
+      { body: "Apply in HR portal" },
+      { body: "Manager approval" }
     ] },
     createPills("C1 §4.1", "C2 §4.2"),
-    { type: "paragraph", role: "auxiliary", text: "虚构内容 · 仅作流程演示" })
+    { type: "paragraph", role: "auxiliary", text: "Fictional example" })
 };
 
 const ROW_GAP = 50;
@@ -57,45 +57,45 @@ const ROW_IDS: readonly (readonly string[])[] = [
 type StageNode = DiagramNode & { kind: NodeContentMeasurementInput["kind"]; content: NodeContent };
 const INITIAL_NODES: Omit<StageNode, "y" | "height">[] = [
   { id: "handbook", kind: "roundedRect", x: 24, width: 200,
-    content: createContent("员工手册", "资料入库",
-      { type: "paragraph", text: "年假申请与审批" },
-      { type: "paragraph", role: "auxiliary", text: "资料入库 · 虚构演示" }) },
+    content: createContent("Handbook", "Ingestion",
+      { type: "paragraph", text: "Leave and approval" },
+      { type: "paragraph", role: "auxiliary", text: "Fictional demo" }) },
   { id: "splitter", kind: "roundedRect", x: 274, width: 190,
-    content: createContent("解析与切分", "保留来源",
-      { type: "paragraph", text: "文档 → 文本片段" },
-      { type: "paragraph", role: "auxiliary", text: "保留片段编号与章节" }) },
+    content: createContent("Split text", "Keep sources",
+      { type: "paragraph", text: "Document → chunks" },
+      { type: "paragraph", role: "auxiliary", text: "Keep IDs and sections" }) },
   { id: "embedding", kind: "roundedRect", x: 514, width: 220,
-    content: createContent("共享嵌入模型", "同一模型",
-      { type: "paragraph", text: "片段与问题 → 向量" },
-      { type: "paragraph", role: "auxiliary", text: "两段流程使用同一模型" }) },
+    content: createContent("Embedder", "Shared model",
+      { type: "paragraph", text: "Text → vectors" },
+      { type: "paragraph", role: "auxiliary", text: "One model for both paths" }) },
   { id: "knowledge-index", kind: "cylinder", x: 784, width: 200,
-    content: createContent("知识索引", "入库一次",
-      { type: "paragraph", text: "向量 · 文本 · 来源" },
-      { type: "paragraph", role: "auxiliary", text: "入库一次，后续复用" }) },
+    content: createContent("Index", "Ingest once",
+      { type: "paragraph", text: "Text · vectors" },
+      { type: "paragraph", role: "auxiliary", text: "Reuse stored data" }) },
   { id: "question", kind: "roundedRect", x: 24, width: 200,
-    content: createContent("用户问题", "在线问答",
-      { type: "paragraph", text: "年假如何申请？" },
-      { type: "paragraph", role: "auxiliary", text: "在线问答 · 演示问题" }) },
+    content: createContent("User question", "Online queries",
+      { type: "paragraph", text: "How to apply?" },
+      { type: "paragraph", role: "auxiliary", text: "Demo question" }) },
   { id: "retriever", kind: "roundedRect", x: 604, width: 220,
-    content: createContent("检索器", "问题向量",
-      { type: "paragraph", text: "按问题向量查找片段" },
-      { type: "paragraph", role: "auxiliary", text: "等待知识索引返回候选" }) },
+    content: createContent("Retriever", "Question vector",
+      { type: "paragraph", text: "Search by vector" },
+      { type: "paragraph", role: "auxiliary", text: "Await candidates" }) },
   { id: "reranker", kind: "roundedRect", x: 284, width: 220,
-    content: createContent("重排与筛选", "召回后优化",
-      { type: "paragraph", text: "原始问题 + 候选文本" },
-      { type: "paragraph", role: "auxiliary", text: "按相关性排序并筛选" }) },
+    content: createContent("Reranker", "After retrieval",
+      { type: "paragraph", text: "Question + candidates" },
+      { type: "paragraph", role: "auxiliary", text: "Rank by relevance" }) },
   { id: "context", kind: "roundedRect", x: 24, width: 240,
-    content: createContent("上下文组装", "问题 + 资料",
-      { type: "paragraph", text: "问题 + 筛选后的资料" },
-      { type: "paragraph", role: "auxiliary", text: "要求依据资料回答并引用" }) },
+    content: createContent("Build context", "Question + sources",
+      { type: "paragraph", text: "Question + sources" },
+      { type: "paragraph", role: "auxiliary", text: "Answer with sources" }) },
   { id: "language-model", kind: "roundedRect", x: 324, width: 220,
-    content: createContent("大语言模型", "上下文生成",
-      { type: "paragraph", text: "依据上下文生成回答" },
-      { type: "paragraph", role: "auxiliary", text: "仅演示数据流，不调用模型" }) },
+    content: createContent("Language model", "From context",
+      { type: "paragraph", text: "Generate an answer" },
+      { type: "paragraph", role: "auxiliary", text: "Demo · no model call" }) },
   { id: "answer", kind: "roundedRect", x: 604, width: 220,
-    content: createContent("示意答案", "等待生成",
-      { type: "paragraph", text: "申请步骤与手册引用" },
-      { type: "paragraph", role: "auxiliary", text: "等待上下文与生成结果" }) }
+    content: createContent("Example answer", "Await generation",
+      { type: "paragraph", text: "Steps + citations" },
+      { type: "paragraph", role: "auxiliary", text: "Await generated answer" }) }
 ];
 
 /** Measure one current-content stage and center its cards within rows separated by exactly 50 units. */
@@ -139,7 +139,7 @@ function createStageActions(previous: readonly StageNode[], next: readonly Stage
 
 const document: DiagramDocument = {
   version: 1,
-  title: "RAG：从资料到答案",
+  title: "RAG: From sources to answers",
   // Keep the fullest authored height for GIF export; live playback and SVG fit the current stage.
   viewport: { width: 1120, height: VIEWPORT_HEIGHT, fitHeight: { padding: BOTTOM_INSET } },
   nodes: INITIAL_STAGE,
@@ -162,72 +162,72 @@ const document: DiagramDocument = {
   ],
   scenes: [
     {
-      id: "parse", label: "解析与切分", beats: [{ durationMs: 3000,
-        caption: "资料入库（演示一次）：将虚构员工手册切分为片段，并保留手册章节来源。C1 是申请流程，C2 是审批要求。",
-        actions: [{ type: "flow", target: "parse-handbook", direction: "forward", text: "手册 §4" }]
+      id: "parse", label: "Parse and split", beats: [{ durationMs: 3000,
+        caption: "Ingestion, shown once: split a fictional employee handbook into chunks and retain section sources. C1 describes applications; C2 describes approval.",
+        actions: [{ type: "flow", target: "parse-handbook", direction: "forward", text: "Handbook §4" }]
       }]
     },
     {
-      id: "ingest", label: "向量化与入库", beats: [
-        { durationMs: 1500, caption: "资料入库：同一嵌入模型将片段文本转成向量；C1 对应手册 §4.1，C2 对应 §4.2。",
+      id: "ingest", label: "Embed and index", beats: [
+        { durationMs: 1500, caption: "Ingestion: the shared embedding model converts chunk text to vectors. C1 refers to handbook §4.1; C2 refers to §4.2.",
           actions: [{ type: "flow", target: "embed-chunks", direction: "forward", text: "C1–C5" }] },
-        { durationMs: 1500, caption: "资料入库完成：知识索引保存片段文本、向量和来源。后续提问复用索引，无需重新处理全部资料。",
-          actions: [{ type: "flow", target: "store-chunks", direction: "forward", text: "片段 + 来源" }] }
+        { durationMs: 1500, caption: "Ingestion complete: the index stores chunk text, vectors and sources. Later questions reuse it without processing the entire handbook again.",
+          actions: [{ type: "flow", target: "store-chunks", direction: "forward", text: "Chunks + sources" }] }
       ]
     },
     {
-      id: "ask", label: "提交问题", beats: [{ durationMs: 2000,
-        caption: "用户问答：用户提出演示问题“年假如何申请？”，复用资料入库时的嵌入模型生成问题向量；这不是模型训练。",
-        actions: [{ type: "flow", target: "embed-question", direction: "forward", text: "问题" }]
+      id: "ask", label: "Submit a question", beats: [{ durationMs: 2000,
+        caption: "The user asks the demo question, How do I request leave? The same embedding model used for ingestion produces the question vector. This is not model training.",
+        actions: [{ type: "flow", target: "embed-question", direction: "forward", text: "Question" }]
       }]
     },
     {
-      id: "retrieve", label: "召回候选片段", beats: [
-        { durationMs: 1000, caption: "用户问答：检索器接收问题向量。",
-          actions: [{ type: "flow", target: "query-vector", direction: "forward", text: "问题向量" }] },
-        { durationMs: 1000, caption: "用户问答：检索器用问题向量查询已建立的知识索引。",
-          actions: [{ type: "flow", target: "search-index", direction: "forward", text: "查询" }] },
-        { durationMs: 1000, transitionMs: 0, caption: "召回候选 C3/C1/C5/C2/C4：余额、申请流程、地点、审批要求、报销；每段携带手册来源。",
+      id: "retrieve", label: "Retrieve candidate chunks", beats: [
+        { durationMs: 1000, caption: "Online query: the retriever receives the question vector.",
+          actions: [{ type: "flow", target: "query-vector", direction: "forward", text: "Question vector" }] },
+        { durationMs: 1000, caption: "Online query: the retriever searches the existing knowledge index with the question vector.",
+          actions: [{ type: "flow", target: "search-index", direction: "forward", text: "Search" }] },
+        { durationMs: 1000, transitionMs: 0, caption: "Retrieve C3/C1/C5/C2/C4: leave balance, application, location, approval and expenses. Each candidate retains its handbook source.",
           actions: [
-            { type: "flow", target: "search-index", direction: "reverse", text: "5 段 + 来源" },
+            { type: "flow", target: "search-index", direction: "reverse", text: "5 chunks + sources" },
             ...createStageActions(INITIAL_STAGE, RETRIEVED_STAGE)
           ] }
       ]
     },
     {
-      id: "rerank", label: "重排与筛选", beats: [{ durationMs: 3000, transitionMs: 0,
-        caption: "重排同时读取原始问题与候选文本：C1/C2 优先，保留申请流程与审批要求，排除弱相关 C3/C4/C5。重排是本例选用的优化。",
+      id: "rerank", label: "Rerank and filter", beats: [{ durationMs: 3000, transitionMs: 0,
+        caption: "Reranking reads the original question and candidates. Keep C1/C2 for application and approval; exclude weaker matches C3/C4/C5. Reranking is an optional optimization in this example.",
         actions: [
-          { type: "flow", target: "candidate-texts", direction: "forward", text: "候选文本" },
+          { type: "flow", target: "candidate-texts", direction: "forward", text: "Candidate text" },
           ...createStageActions(RETRIEVED_STAGE, RERANKED_STAGE),
-          { type: "flow", target: "rerank-question", direction: "forward", text: "原始问题" }
+          { type: "flow", target: "rerank-question", direction: "forward", text: "Original question" }
         ]
       }]
     },
     {
-      id: "context", label: "组装上下文", beats: [{ durationMs: 3000, transitionMs: 0,
-        caption: "组装原始问题、C1“在 OA 申请”（§4.1）、C2“负责人审批”（§4.2），要求依据资料回答并引用来源。仅这两段进入上下文。",
+      id: "context", label: "Assemble context", beats: [{ durationMs: 3000, transitionMs: 0,
+        caption: "Combine the question, C1 Apply in the HR portal (§4.1), and C2 Manager approval (§4.2). Require a grounded answer with citations. Only these two chunks enter the context.",
         actions: [
           { type: "flow", target: "selected-chunks", direction: "forward", text: "C1 + C2" },
           ...createStageActions(RERANKED_STAGE, CONTEXT_STAGE),
-          { type: "flow", target: "context-question", direction: "forward", text: "原始问题" }
+          { type: "flow", target: "context-question", direction: "forward", text: "Original question" }
         ]
       }]
     },
     {
-      id: "generate", label: "生成带引用的答案", beats: [
-        { durationMs: 1500, caption: "将问题、筛选后的资料和回答要求交给大语言模型；引用来源随上下文传递。",
-          actions: [{ type: "flow", target: "model-context", direction: "forward", text: "上下文" }] },
-        { durationMs: 1500, transitionMs: 0, caption: "示意答案：在 OA 提交年假申请，由直属负责人审批。[C1：员工手册 §4.1；C2：§4.2]",
+      id: "generate", label: "Generate a cited answer", beats: [
+        { durationMs: 1500, caption: "Send the question, selected sources and answer instructions to the language model. Source references travel with the context.",
+          actions: [{ type: "flow", target: "model-context", direction: "forward", text: "Context" }] },
+        { durationMs: 1500, transitionMs: 0, caption: "Example answer: request leave in the HR portal for direct manager approval. [C1: Employee handbook §4.1; C2: §4.2]",
           actions: [
-            { type: "flow", target: "cited-answer", direction: "forward", text: "答案 + 引用" },
+            { type: "flow", target: "cited-answer", direction: "forward", text: "Answer + citations" },
             ...createStageActions(CONTEXT_STAGE, ANSWER_STAGE)
           ] }
       ]
     },
     {
-      id: "complete", label: "完成", beats: [{ durationMs: 1000,
-        caption: "完成：在 OA 提交年假申请，由直属负责人审批。[C1：员工手册 §4.1；C2：§4.2] 入库一次，后续问答复用索引。",
+      id: "complete", label: "Complete", beats: [{ durationMs: 1000,
+        caption: "Complete: request leave in the HR portal for direct manager approval. [C1: Employee handbook §4.1; C2: §4.2] Ingest once; reuse the index for later questions.",
         actions: []
       }]
     }
@@ -238,8 +238,8 @@ const document: DiagramDocument = {
 export const ragWorkflowExample: ShowcaseAuthorDefinition = {
   id: "rag-workflow",
   category: "workflow",
-  name: "RAG：从资料到答案",
-  introduction: "演示 RAG 的资料入库与用户问答：复用嵌入模型，召回 5 个候选片段，经可选重排保留 2 个，再生成带来源的答案。员工手册、问题和答案均为虚构教学内容，不连接真实模型或数据库；片段数量不代表推荐参数。",
+  name: "RAG: From sources to answers",
+  introduction: "Explore RAG ingestion and online queries: share an embedding model, retrieve five candidates, optionally rerank to keep two, and generate a cited answer. The handbook, question and answer are fictional. No live model or database is used; chunk counts are teaching choices.",
   document,
   defaults: { speed: 1, theme: "dark", reducedMotion: false }
 };

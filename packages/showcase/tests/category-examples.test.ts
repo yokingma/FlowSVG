@@ -66,10 +66,10 @@ it("keeps exactly one current task state and separates successful, exhausted and
     const time = diagram.beats[index]!.startMs;
     const frame = diagram.evaluateAt(time);
     expect(frame.nodes.filter(({ highlighted }) => highlighted).map(({ id }) => id)).toEqual([state]);
-    expect(frame.caption).toContain(`任务 ${task}`);
+    expect(frame.caption).toContain(`Task ${task}`);
   }
   expect(example.document.edges.filter(({ from }) => ["completed", "failed", "cancelled"].includes(from))).toEqual([]);
-  expect(diagram.evaluateAt(diagram.beats[6]!.startMs).caption).toContain("上限");
+  expect(diagram.evaluateAt(diagram.beats[6]!.startMs).caption).toContain("retry limit");
 });
 
 it("conserves order events through deduplication, quarantine and aggregation", () => {
@@ -77,11 +77,11 @@ it("conserves order events through deduplication, quarantine and aggregation", (
   const textAt = (time: number, id: string) => diagram.evaluateAt(time).nodes.find((node) => node.id === id)!
     .contentLayout!.lines.map(({ text }) => text).join(" ");
   expect(textAt(0, "events")).toContain("E1 / E2 / E1 / E3");
-  expect(textAt(9000, "validation")).toContain("2 有效 · 1 重复 · 1 无效");
-  expect(textAt(12_000, "details")).toContain("O101 ¥120 · O102 ¥80");
-  expect(textAt(12_000, "quarantine")).toContain("E3 缺少金额");
-  expect(textAt(18_000, "dashboard")).toContain("2 笔 · ¥200");
-  expect(diagram.evaluateAt(18_000).caption).toContain("人民币");
+  expect(textAt(9000, "validation")).toContain("2 valid · 1 dup · 1 invalid");
+  expect(textAt(12_000, "details")).toContain("O101 CNY 120 · O102 CNY 80");
+  expect(textAt(12_000, "quarantine")).toContain("E3 has no amount");
+  expect(textAt(18_000, "dashboard")).toContain("2 orders · CNY 200");
+  expect(diagram.evaluateAt(18_000).caption).toContain("CNY");
 });
 
 it("expresses deployment boundaries, read-only replication and traffic after an unhealthy replica", () => {
@@ -94,9 +94,9 @@ it("expresses deployment boundaries, read-only replication and traffic after an 
   expect(nodes.get("replica")?.parentId).toBe("data");
   expect(example.document.edges.find(({ id }) => id === "replication")).toMatchObject({ from: "primary", to: "replica" });
   const final = diagram.evaluateAt(diagram.beats.at(-1)!.startMs);
-  expect(final.caption).toContain("副本 B");
+  expect(final.caption).toContain("replica B");
   expect(final.edges.filter(({ flow }) => flow).map(({ id }) => id)).toEqual(["route-b"]);
-  expect(final.nodes.find(({ id }) => id === "app-a")!.contentLayout!.lines.map(({ text }) => text).join(" ")).toContain("不健康");
+  expect(final.nodes.find(({ id }) => id === "app-a")!.contentLayout!.lines.map(({ text }) => text).join(" ")).toContain("Unhealthy");
 });
 
 it("places cache-aside messages on increasing time rows and preserves response directions", () => {
@@ -115,8 +115,8 @@ it("places cache-aside messages on increasing time rows and preserves response d
     return from.y;
   });
   expect(rows.every((row, index) => index === 0 || row > rows[index - 1]!)).toBe(true);
-  expect(diagram.evaluateAt(diagram.beats[2]!.startMs).caption).toContain("未命中");
-  expect(diagram.evaluateAt(diagram.beats[4]!.startMs).caption).toContain("存在记录");
+  expect(diagram.evaluateAt(diagram.beats[2]!.startMs).caption).toContain("miss");
+  expect(diagram.evaluateAt(diagram.beats[4]!.startMs).caption).toContain("contains the record");
 });
 
 it("separates the task error and retry event labels", () => {

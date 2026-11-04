@@ -10,12 +10,23 @@ function getRequestResponse() {
   return { ...compiled, example };
 }
 
+it("publishes English formal navigation, story text and standalone downloads", () => {
+  const { catalog, json } = compileCatalog(catalogSource);
+  for (const group of catalog.groups) {
+    expect(group.label).not.toMatch(/\p{Script=Han}/u);
+  }
+  for (const example of catalog.entries) {
+    expect(`${example.name}\n${example.introduction}`, example.id).not.toMatch(/\p{Script=Han}/u);
+    expect(json.get(example.jsonPath), `${example.id} download`).not.toMatch(/\p{Script=Han}/u);
+  }
+});
+
 it("opens the selected formal story with SDK defaults and downloadable standalone data", () => {
   const { catalog, json, example } = getRequestResponse();
   expect(catalog.entries.map(({ id }) => id)).toEqual(["request-response", "rag-workflow", "project-architecture", "vllm-metal-stack", "job-lifecycle", "order-event-pipeline", "web-service-deployment", "cache-aside-sequence"]);
   expect(catalog.defaultId).toBe("request-response");
-  expect(example.name).toBe("请求与响应");
-  expect(example.introduction).toContain("并行");
+  expect(example.name).toBe("Request and response");
+  expect(example.introduction).toContain("parallel");
   expect(example.defaults).toEqual({ speed: 1, theme: "dark", reducedMotion: false });
   expect(JSON.parse(json.get(example.jsonPath)!)).toEqual(example.document);
   expect(example.durationMs).toBe(10_000);
@@ -49,11 +60,11 @@ it("shows parallel checks, order processing and reverse responses before clearin
   expect(flowsAt(1500).map(({ direction, text }) => ({ direction, text }))).toEqual([
     { direction: "forward", text: undefined },
     { direction: "forward", text: "Token" },
-    { direction: "reverse", text: "预检" }
+    { direction: "reverse", text: "Preflight" }
   ]);
   expect(flowsAt(3000)).toHaveLength(2);
-  expect(flowsAt(4500).map(({ text }) => text)).toEqual(["创建订单", undefined]);
-  expect(flowsAt(7500).map(({ text }) => text)).toEqual(["订单号", "201 Created"]);
+  expect(flowsAt(4500).map(({ text }) => text)).toEqual(["Create order", undefined]);
+  expect(flowsAt(7500).map(({ text }) => text)).toEqual(["Order ID", "201 Created"]);
   expect(diagram.evaluateAt(7500).nodes.some(({ highlighted }) => highlighted)).toBe(true);
   const reduced = diagram.evaluateAt(1500, { reducedMotion: true });
   expect(reduced.edges.every(({ flow }) => flow === undefined)).toBe(true);
@@ -99,13 +110,13 @@ it("offers a standalone RAG story with SDK-compiled timing after the default req
   const { catalog, json } = compileCatalog(catalogSource);
   const example = catalog.get("rag-workflow");
   expect(example, "RAG must be a selectable formal example").toBeDefined();
-  expect(example?.name).toBe("RAG：从资料到答案");
+  expect(example?.name).toBe("RAG: From sources to answers");
   expect(example?.durationMs).toBeCloseTo(22_543.151, 3);
   expect(example?.defaults).toEqual({ speed: 1, theme: "dark", reducedMotion: false });
   expect(JSON.parse(json.get(example!.jsonPath)!)).toEqual(example?.document);
   expect(example?.document.scenes.map(({ label }) => label)).toEqual([
-    "解析与切分", "向量化与入库", "提交问题", "召回候选片段",
-    "重排与筛选", "组装上下文", "生成带引用的答案", "完成"
+    "Parse and split", "Embed and index", "Submit a question", "Retrieve candidate chunks",
+    "Rerank and filter", "Assemble context", "Generate a cited answer", "Complete"
   ]);
 });
 

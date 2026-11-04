@@ -8,33 +8,33 @@ const TOP_ROW_Y = 60;
 const ROW_GAP = 50;
 const BOTTOM_MARGIN = 24;
 const STATES = [
-  { id: "queued", title: "待执行", detail: "等待调度 · 可取消", x: 24, row: 0 },
-  { id: "running", title: "执行中", detail: "执行任务 · 等待结果", x: 324, row: 0 },
-  { id: "retry", title: "等待重试", detail: "暂时错误 · 定时重试", x: 624, row: 0 },
-  { id: "completed", title: "已完成", detail: "终态 · 不再迁移", x: 324, row: 1 },
-  { id: "failed", title: "已失败", detail: "终态 · 不再迁移", x: 624, row: 1 },
-  { id: "cancelled", title: "已取消", detail: "终态 · 不再迁移", x: 24, row: 1 }
+  { id: "queued", title: "Queued", detail: "Queued · cancellable", x: 24, row: 0 },
+  { id: "running", title: "Running", detail: "Run task · await result", x: 324, row: 0 },
+  { id: "retry", title: "Awaiting retry", detail: "Temp error · retry timer", x: 624, row: 0 },
+  { id: "completed", title: "Completed", detail: "Terminal · no transitions", x: 324, row: 1 },
+  { id: "failed", title: "Failed", detail: "Terminal · no transitions", x: 624, row: 1 },
+  { id: "cancelled", title: "Cancelled", detail: "Terminal · no transitions", x: 24, row: 1 }
 ] as const;
 const EVENTS = ["schedule", "temporary-error", "retry-timer", "success", "exhausted", "cancel"];
 
 // Author the versions before the document: measurement does not inspect scenes or playback state.
 const CONTENT_STAGES = [
-  { target: "queued", task: "A", retries: "重试 0 / 2" },
-  { target: "running", task: "A", retries: "重试 0 / 2", event: "schedule" },
-  { target: "retry", task: "A", retries: "重试 0 / 2", event: "temporary-error" },
-  { target: "running", task: "A", retries: "重试 1 / 2", event: "retry-timer" },
-  { target: "completed", task: "A", retries: "重试 1 / 2", event: "success" },
-  { target: "running", task: "B", retries: "重试 2 / 2" },
-  { target: "failed", task: "B", retries: "重试 2 / 2", event: "exhausted" },
-  { target: "queued", task: "C", retries: "重试 0 / 2" },
-  { target: "cancelled", task: "C", retries: "重试 0 / 2", event: "cancel" }
+  { target: "queued", task: "A", retries: "Retries 0 / 2" },
+  { target: "running", task: "A", retries: "Retries 0 / 2", event: "schedule" },
+  { target: "retry", task: "A", retries: "Retries 0 / 2", event: "temporary-error" },
+  { target: "running", task: "A", retries: "Retries 1 / 2", event: "retry-timer" },
+  { target: "completed", task: "A", retries: "Retries 1 / 2", event: "success" },
+  { target: "running", task: "B", retries: "Retries 2 / 2" },
+  { target: "failed", task: "B", retries: "Retries 2 / 2", event: "exhausted" },
+  { target: "queued", task: "C", retries: "Retries 0 / 2" },
+  { target: "cancelled", task: "C", retries: "Retries 0 / 2", event: "cancel" }
 ];
 const STATE_CONTENT = STATES.map((state) => ({
   ...state,
-  initial: createExampleContent(state.title, "可达状态", "事件触发迁移", state.detail),
+  initial: createExampleContent(state.title, "Possible state", "Event-driven changes", state.detail),
   versions: CONTENT_STAGES.map(({ target, task, retries }) => createExampleContent(state.title,
-    state.id === target ? `当前 · 任务 ${task}` : "可达状态",
-    state.id === target ? retries : "事件触发迁移", state.detail))
+    state.id === target ? `Current · Task ${task}` : "Possible state",
+    state.id === target ? retries : "Event-driven changes", state.detail))
 }));
 const measurement = measureNodeContent({ kind: "roundedRect", width: CARD_WIDTH,
   content: STATE_CONTENT.flatMap(({ initial, versions }) => [initial, ...versions]) });
@@ -58,44 +58,44 @@ function enterState(stageIndex: number): Action[] {
 }
 
 const document: DiagramDocument = {
-  version: 1, title: "后台任务生命周期", viewport: { width: 868, height: BOTTOM_ROW_Y + CARD_HEIGHT + BOTTOM_MARGIN },
+  version: 1, title: "Background task lifecycle", viewport: { width: 868, height: BOTTOM_ROW_Y + CARD_HEIGHT + BOTTOM_MARGIN },
   nodes: STATE_CONTENT.map(({ id, x, row, initial }) => ({ id, kind: "roundedRect", x,
     y: row === 0 ? TOP_ROW_Y : BOTTOM_ROW_Y, width: CARD_WIDTH, height: CARD_HEIGHT, content: initial })),
   edges: [
-    { id: "schedule", from: "queued", to: "running", route: "orthogonal", fromPort: "right", toPort: "left", label: "调度" },
-    { id: "temporary-error", from: "running", to: "retry", route: "orthogonal", fromPort: "right", toPort: "left", label: "暂时错误" },
+    { id: "schedule", from: "queued", to: "running", route: "orthogonal", fromPort: "right", toPort: "left", label: "Schedule" },
+    { id: "temporary-error", from: "running", to: "retry", route: "orthogonal", fromPort: "right", toPort: "left", label: "Temp error" },
     // Route retry above the state row so opposing event labels cannot overlap in a short gap.
-    { id: "retry-timer", from: "retry", to: "running", route: "orthogonal", fromPort: "top", toPort: "top", label: "定时重试" },
-    { id: "success", from: "running", to: "completed", route: "orthogonal", fromPort: "bottom", toPort: "top", label: "成功" },
-    { id: "exhausted", from: "running", to: "failed", route: "orthogonal", fromPort: "bottom", toPort: "top", label: "达到上限" },
-    { id: "cancel", from: "queued", to: "cancelled", route: "orthogonal", fromPort: "bottom", toPort: "top", label: "取消" }
+    { id: "retry-timer", from: "retry", to: "running", route: "orthogonal", fromPort: "top", toPort: "top", label: "Retry timer" },
+    { id: "success", from: "running", to: "completed", route: "orthogonal", fromPort: "bottom", toPort: "top", label: "Success" },
+    { id: "exhausted", from: "running", to: "failed", route: "orthogonal", fromPort: "bottom", toPort: "top", label: "Retry limit" },
+    { id: "cancel", from: "queued", to: "cancelled", route: "orthogonal", fromPort: "bottom", toPort: "top", label: "Cancel" }
   ],
   scenes: [
-    { id: "submit", label: "提交任务 A", beats: [{ durationMs: 2000, transitionMs: 0,
-      caption: "任务 A 已提交，当前为待执行。蓝色节点与“当前”标签共同标记唯一状态；箭头文字表示迁移事件。",
+    { id: "submit", label: "Submit task A", beats: [{ durationMs: 2000, transitionMs: 0,
+      caption: "Task A is queued. The blue node and Current tag identify the only active state. Arrow labels identify transition events.",
       actions: enterState(0) }] },
-    { id: "execute", label: "执行与暂时错误", beats: [
-      { durationMs: 2000, transitionMs: 0, caption: "任务 A 被调度，进入执行中。示例允许最多重试 2 次，这不是推荐配置。",
+    { id: "execute", label: "Execution and temporary error", beats: [
+      { durationMs: 2000, transitionMs: 0, caption: "Task A is scheduled and starts running. This example allows two retries; that limit is a teaching choice, not a recommendation.",
         actions: enterState(1) },
-      { durationMs: 2000, transitionMs: 0, caption: "任务 A 遇到暂时错误，进入等待重试；任务没有同时处于执行中。",
+      { durationMs: 2000, transitionMs: 0, caption: "Task A encounters a temporary error and waits for retry. It is no longer in the Running state.",
         actions: enterState(2) }
     ] },
-    { id: "recover", label: "重试后完成", beats: [
-      { durationMs: 2000, transitionMs: 0, caption: "任务 A 的重试定时器触发，开始第 1 次重试，重新进入执行中。",
+    { id: "recover", label: "Complete after retry", beats: [
+      { durationMs: 2000, transitionMs: 0, caption: "Task A starts its first retry when the retry timer fires, returning to Running.",
         actions: enterState(3) },
-      { durationMs: 2000, transitionMs: 0, caption: "任务 A 执行成功，进入已完成终态。终态没有出边，不会继续变成失败或取消。",
+      { durationMs: 2000, transitionMs: 0, caption: "Task A succeeds and enters the Completed terminal state. Terminal states have no outgoing edges, so this task cannot later become failed or cancelled.",
         actions: enterState(4) }
     ] },
-    { id: "exhaust", label: "另一任务 B 达到上限", beats: [
-      { durationMs: 2000, transitionMs: 0, caption: "切换到另一项任务 B：它已经进入第 2 次重试的执行阶段。这是独立案例，不是任务 A 的后续。",
+    { id: "exhaust", label: "Independent task B hits its limit", beats: [
+      { durationMs: 2000, transitionMs: 0, caption: "Task B is independent, already running its second retry. This is a separate case, not a continuation of task A.",
         actions: enterState(5) },
-      { durationMs: 2000, transitionMs: 0, caption: "任务 B 再次失败且达到示例重试上限，进入已失败终态。",
+      { durationMs: 2000, transitionMs: 0, caption: "Task B fails again at the example retry limit and enters the Failed terminal state.",
         actions: enterState(6) }
     ] },
-    { id: "cancel", label: "另一任务 C 主动取消", beats: [
-      { durationMs: 2000, transitionMs: 0, caption: "切换到另一项任务 C：当前待执行，用户仍可取消。此例没有演示运行中取消。",
+    { id: "cancel", label: "Independent task C is cancelled", beats: [
+      { durationMs: 2000, transitionMs: 0, caption: "Task C is independent, currently queued and still cancellable. This case does not demonstrate cancellation during execution.",
         actions: enterState(7) },
-      { durationMs: 2000, transitionMs: 0, caption: "用户取消任务 C，进入已取消终态。本图演示允许的状态迁移，不调用真实任务系统。",
+      { durationMs: 2000, transitionMs: 0, caption: "Task C is cancelled by the user and enters the Cancelled terminal state. This diagram illustrates allowed transitions without calling a live task system.",
         actions: enterState(8) }
     ] }
   ]
@@ -103,7 +103,7 @@ const document: DiagramDocument = {
 
 /** A fixed-state graph with three explicitly separated task outcomes. */
 export const jobLifecycleExample: ShowcaseAuthorDefinition = {
-  id: "job-lifecycle", category: "state", name: "后台任务生命周期",
-  introduction: "观察后台任务的事件与状态迁移：任务 A 重试后完成，独立任务 B 达到重试上限，任务 C 在待执行时取消。当前状态始终唯一；重试次数是教学设定，不执行真实任务。",
+  id: "job-lifecycle", category: "state", name: "Background task lifecycle",
+  introduction: "Watch task events and state transitions: A completes after retry, independent B reaches its retry limit, and C is cancelled while queued. Exactly one state is current. Retry counts are teaching choices; no live tasks run.",
   document, defaults: { speed: 1, theme: "dark", reducedMotion: false }
 };

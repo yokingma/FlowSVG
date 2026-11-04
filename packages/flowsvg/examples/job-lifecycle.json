@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "title": "后台任务生命周期",
+  "title": "Background task lifecycle",
   "viewport": {
     "width": 868,
     "height": 416
@@ -21,7 +21,7 @@
         "blocks": [
           {
             "type": "title",
-            "text": "待执行"
+            "text": "Queued"
           },
           {
             "type": "list",
@@ -29,7 +29,7 @@
               {
                 "tags": [
                   {
-                    "text": "可达状态",
+                    "text": "Possible state",
                     "style": {
                       "shape": "pill",
                       "fontSize": 12
@@ -41,12 +41,12 @@
           },
           {
             "type": "paragraph",
-            "text": "事件触发迁移"
+            "text": "Event-driven changes"
           },
           {
             "type": "paragraph",
             "role": "auxiliary",
-            "text": "等待调度 · 可取消"
+            "text": "Queued · cancellable"
           }
         ]
       }
@@ -66,7 +66,7 @@
         "blocks": [
           {
             "type": "title",
-            "text": "执行中"
+            "text": "Running"
           },
           {
             "type": "list",
@@ -74,7 +74,7 @@
               {
                 "tags": [
                   {
-                    "text": "可达状态",
+                    "text": "Possible state",
                     "style": {
                       "shape": "pill",
                       "fontSize": 12
@@ -86,12 +86,12 @@
           },
           {
             "type": "paragraph",
-            "text": "事件触发迁移"
+            "text": "Event-driven changes"
           },
           {
             "type": "paragraph",
             "role": "auxiliary",
-            "text": "执行任务 · 等待结果"
+            "text": "Run task · await result"
           }
         ]
       }
@@ -111,7 +111,7 @@
         "blocks": [
           {
             "type": "title",
-            "text": "等待重试"
+            "text": "Awaiting retry"
           },
           {
             "type": "list",
@@ -119,7 +119,7 @@
               {
                 "tags": [
                   {
-                    "text": "可达状态",
+                    "text": "Possible state",
                     "style": {
                       "shape": "pill",
                       "fontSize": 12
@@ -131,12 +131,12 @@
           },
           {
             "type": "paragraph",
-            "text": "事件触发迁移"
+            "text": "Event-driven changes"
           },
           {
             "type": "paragraph",
             "role": "auxiliary",
-            "text": "暂时错误 · 定时重试"
+            "text": "Temp error · retry timer"
           }
         ]
       }
@@ -156,7 +156,7 @@
         "blocks": [
           {
             "type": "title",
-            "text": "已完成"
+            "text": "Completed"
           },
           {
             "type": "list",
@@ -164,7 +164,7 @@
               {
                 "tags": [
                   {
-                    "text": "可达状态",
+                    "text": "Possible state",
                     "style": {
                       "shape": "pill",
                       "fontSize": 12
@@ -176,12 +176,12 @@
           },
           {
             "type": "paragraph",
-            "text": "事件触发迁移"
+            "text": "Event-driven changes"
           },
           {
             "type": "paragraph",
             "role": "auxiliary",
-            "text": "终态 · 不再迁移"
+            "text": "Terminal · no transitions"
           }
         ]
       }
@@ -201,7 +201,7 @@
         "blocks": [
           {
             "type": "title",
-            "text": "已失败"
+            "text": "Failed"
           },
           {
             "type": "list",
@@ -209,7 +209,7 @@
               {
                 "tags": [
                   {
-                    "text": "可达状态",
+                    "text": "Possible state",
                     "style": {
                       "shape": "pill",
                       "fontSize": 12
@@ -221,12 +221,12 @@
           },
           {
             "type": "paragraph",
-            "text": "事件触发迁移"
+            "text": "Event-driven changes"
           },
           {
             "type": "paragraph",
             "role": "auxiliary",
-            "text": "终态 · 不再迁移"
+            "text": "Terminal · no transitions"
           }
         ]
       }
@@ -246,7 +246,7 @@
         "blocks": [
           {
             "type": "title",
-            "text": "已取消"
+            "text": "Cancelled"
           },
           {
             "type": "list",
@@ -254,7 +254,7 @@
               {
                 "tags": [
                   {
-                    "text": "可达状态",
+                    "text": "Possible state",
                     "style": {
                       "shape": "pill",
                       "fontSize": 12
@@ -266,12 +266,12 @@
           },
           {
             "type": "paragraph",
-            "text": "事件触发迁移"
+            "text": "Event-driven changes"
           },
           {
             "type": "paragraph",
             "role": "auxiliary",
-            "text": "终态 · 不再迁移"
+            "text": "Terminal · no transitions"
           }
         ]
       }
@@ -285,7 +285,7 @@
       "route": "orthogonal",
       "fromPort": "right",
       "toPort": "left",
-      "label": "调度"
+      "label": "Schedule"
     },
     {
       "id": "temporary-error",
@@ -294,7 +294,7 @@
       "route": "orthogonal",
       "fromPort": "right",
       "toPort": "left",
-      "label": "暂时错误"
+      "label": "Temp error"
     },
     {
       "id": "retry-timer",
@@ -303,7 +303,7 @@
       "route": "orthogonal",
       "fromPort": "top",
       "toPort": "top",
-      "label": "定时重试"
+      "label": "Retry timer"
     },
     {
       "id": "success",
@@ -312,7 +312,7 @@
       "route": "orthogonal",
       "fromPort": "bottom",
       "toPort": "top",
-      "label": "成功"
+      "label": "Success"
     },
     {
       "id": "exhausted",
@@ -321,7 +321,7 @@
       "route": "orthogonal",
       "fromPort": "bottom",
       "toPort": "top",
-      "label": "达到上限"
+      "label": "Retry limit"
     },
     {
       "id": "cancel",
@@ -330,18 +330,18 @@
       "route": "orthogonal",
       "fromPort": "bottom",
       "toPort": "top",
-      "label": "取消"
+      "label": "Cancel"
     }
   ],
   "scenes": [
     {
       "id": "submit",
-      "label": "提交任务 A",
+      "label": "Submit task A",
       "beats": [
         {
           "durationMs": 2000,
           "transitionMs": 0,
-          "caption": "任务 A 已提交，当前为待执行。蓝色节点与“当前”标签共同标记唯一状态；箭头文字表示迁移事件。",
+          "caption": "Task A is queued. The blue node and Current tag identify the only active state. Arrow labels identify transition events.",
           "actions": [
             {
               "type": "highlight",
@@ -359,7 +359,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "待执行"
+                      "text": "Queued"
                     },
                     {
                       "type": "list",
@@ -367,7 +367,7 @@
                         {
                           "tags": [
                             {
-                              "text": "当前 · 任务 A",
+                              "text": "Current · Task A",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -379,12 +379,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "重试 0 / 2"
+                      "text": "Retries 0 / 2"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "等待调度 · 可取消"
+                      "text": "Queued · cancellable"
                     }
                   ]
                 }
@@ -406,7 +406,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "执行中"
+                      "text": "Running"
                     },
                     {
                       "type": "list",
@@ -414,7 +414,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -426,12 +426,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "执行任务 · 等待结果"
+                      "text": "Run task · await result"
                     }
                   ]
                 }
@@ -453,7 +453,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "等待重试"
+                      "text": "Awaiting retry"
                     },
                     {
                       "type": "list",
@@ -461,7 +461,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -473,12 +473,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "暂时错误 · 定时重试"
+                      "text": "Temp error · retry timer"
                     }
                   ]
                 }
@@ -500,7 +500,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已完成"
+                      "text": "Completed"
                     },
                     {
                       "type": "list",
@@ -508,7 +508,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -520,12 +520,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -547,7 +547,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已失败"
+                      "text": "Failed"
                     },
                     {
                       "type": "list",
@@ -555,7 +555,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -567,12 +567,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -594,7 +594,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已取消"
+                      "text": "Cancelled"
                     },
                     {
                       "type": "list",
@@ -602,7 +602,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -614,12 +614,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -655,12 +655,12 @@
     },
     {
       "id": "execute",
-      "label": "执行与暂时错误",
+      "label": "Execution and temporary error",
       "beats": [
         {
           "durationMs": 2000,
           "transitionMs": 0,
-          "caption": "任务 A 被调度，进入执行中。示例允许最多重试 2 次，这不是推荐配置。",
+          "caption": "Task A is scheduled and starts running. This example allows two retries; that limit is a teaching choice, not a recommendation.",
           "actions": [
             {
               "type": "unhighlight",
@@ -678,7 +678,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "待执行"
+                      "text": "Queued"
                     },
                     {
                       "type": "list",
@@ -686,7 +686,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -698,12 +698,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "等待调度 · 可取消"
+                      "text": "Queued · cancellable"
                     }
                   ]
                 }
@@ -725,7 +725,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "执行中"
+                      "text": "Running"
                     },
                     {
                       "type": "list",
@@ -733,7 +733,7 @@
                         {
                           "tags": [
                             {
-                              "text": "当前 · 任务 A",
+                              "text": "Current · Task A",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -745,12 +745,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "重试 0 / 2"
+                      "text": "Retries 0 / 2"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "执行任务 · 等待结果"
+                      "text": "Run task · await result"
                     }
                   ]
                 }
@@ -772,7 +772,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "等待重试"
+                      "text": "Awaiting retry"
                     },
                     {
                       "type": "list",
@@ -780,7 +780,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -792,12 +792,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "暂时错误 · 定时重试"
+                      "text": "Temp error · retry timer"
                     }
                   ]
                 }
@@ -819,7 +819,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已完成"
+                      "text": "Completed"
                     },
                     {
                       "type": "list",
@@ -827,7 +827,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -839,12 +839,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -866,7 +866,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已失败"
+                      "text": "Failed"
                     },
                     {
                       "type": "list",
@@ -874,7 +874,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -886,12 +886,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -913,7 +913,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已取消"
+                      "text": "Cancelled"
                     },
                     {
                       "type": "list",
@@ -921,7 +921,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -933,12 +933,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -979,7 +979,7 @@
         {
           "durationMs": 2000,
           "transitionMs": 0,
-          "caption": "任务 A 遇到暂时错误，进入等待重试；任务没有同时处于执行中。",
+          "caption": "Task A encounters a temporary error and waits for retry. It is no longer in the Running state.",
           "actions": [
             {
               "type": "unhighlight",
@@ -997,7 +997,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "待执行"
+                      "text": "Queued"
                     },
                     {
                       "type": "list",
@@ -1005,7 +1005,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -1017,12 +1017,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "等待调度 · 可取消"
+                      "text": "Queued · cancellable"
                     }
                   ]
                 }
@@ -1044,7 +1044,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "执行中"
+                      "text": "Running"
                     },
                     {
                       "type": "list",
@@ -1052,7 +1052,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -1064,12 +1064,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "执行任务 · 等待结果"
+                      "text": "Run task · await result"
                     }
                   ]
                 }
@@ -1091,7 +1091,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "等待重试"
+                      "text": "Awaiting retry"
                     },
                     {
                       "type": "list",
@@ -1099,7 +1099,7 @@
                         {
                           "tags": [
                             {
-                              "text": "当前 · 任务 A",
+                              "text": "Current · Task A",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -1111,12 +1111,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "重试 0 / 2"
+                      "text": "Retries 0 / 2"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "暂时错误 · 定时重试"
+                      "text": "Temp error · retry timer"
                     }
                   ]
                 }
@@ -1138,7 +1138,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已完成"
+                      "text": "Completed"
                     },
                     {
                       "type": "list",
@@ -1146,7 +1146,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -1158,12 +1158,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -1185,7 +1185,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已失败"
+                      "text": "Failed"
                     },
                     {
                       "type": "list",
@@ -1193,7 +1193,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -1205,12 +1205,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -1232,7 +1232,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已取消"
+                      "text": "Cancelled"
                     },
                     {
                       "type": "list",
@@ -1240,7 +1240,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -1252,12 +1252,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -1299,12 +1299,12 @@
     },
     {
       "id": "recover",
-      "label": "重试后完成",
+      "label": "Complete after retry",
       "beats": [
         {
           "durationMs": 2000,
           "transitionMs": 0,
-          "caption": "任务 A 的重试定时器触发，开始第 1 次重试，重新进入执行中。",
+          "caption": "Task A starts its first retry when the retry timer fires, returning to Running.",
           "actions": [
             {
               "type": "unhighlight",
@@ -1322,7 +1322,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "待执行"
+                      "text": "Queued"
                     },
                     {
                       "type": "list",
@@ -1330,7 +1330,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -1342,12 +1342,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "等待调度 · 可取消"
+                      "text": "Queued · cancellable"
                     }
                   ]
                 }
@@ -1369,7 +1369,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "执行中"
+                      "text": "Running"
                     },
                     {
                       "type": "list",
@@ -1377,7 +1377,7 @@
                         {
                           "tags": [
                             {
-                              "text": "当前 · 任务 A",
+                              "text": "Current · Task A",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -1389,12 +1389,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "重试 1 / 2"
+                      "text": "Retries 1 / 2"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "执行任务 · 等待结果"
+                      "text": "Run task · await result"
                     }
                   ]
                 }
@@ -1416,7 +1416,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "等待重试"
+                      "text": "Awaiting retry"
                     },
                     {
                       "type": "list",
@@ -1424,7 +1424,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -1436,12 +1436,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "暂时错误 · 定时重试"
+                      "text": "Temp error · retry timer"
                     }
                   ]
                 }
@@ -1463,7 +1463,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已完成"
+                      "text": "Completed"
                     },
                     {
                       "type": "list",
@@ -1471,7 +1471,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -1483,12 +1483,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -1510,7 +1510,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已失败"
+                      "text": "Failed"
                     },
                     {
                       "type": "list",
@@ -1518,7 +1518,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -1530,12 +1530,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -1557,7 +1557,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已取消"
+                      "text": "Cancelled"
                     },
                     {
                       "type": "list",
@@ -1565,7 +1565,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -1577,12 +1577,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -1623,7 +1623,7 @@
         {
           "durationMs": 2000,
           "transitionMs": 0,
-          "caption": "任务 A 执行成功，进入已完成终态。终态没有出边，不会继续变成失败或取消。",
+          "caption": "Task A succeeds and enters the Completed terminal state. Terminal states have no outgoing edges, so this task cannot later become failed or cancelled.",
           "actions": [
             {
               "type": "unhighlight",
@@ -1641,7 +1641,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "待执行"
+                      "text": "Queued"
                     },
                     {
                       "type": "list",
@@ -1649,7 +1649,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -1661,12 +1661,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "等待调度 · 可取消"
+                      "text": "Queued · cancellable"
                     }
                   ]
                 }
@@ -1688,7 +1688,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "执行中"
+                      "text": "Running"
                     },
                     {
                       "type": "list",
@@ -1696,7 +1696,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -1708,12 +1708,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "执行任务 · 等待结果"
+                      "text": "Run task · await result"
                     }
                   ]
                 }
@@ -1735,7 +1735,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "等待重试"
+                      "text": "Awaiting retry"
                     },
                     {
                       "type": "list",
@@ -1743,7 +1743,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -1755,12 +1755,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "暂时错误 · 定时重试"
+                      "text": "Temp error · retry timer"
                     }
                   ]
                 }
@@ -1782,7 +1782,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已完成"
+                      "text": "Completed"
                     },
                     {
                       "type": "list",
@@ -1790,7 +1790,7 @@
                         {
                           "tags": [
                             {
-                              "text": "当前 · 任务 A",
+                              "text": "Current · Task A",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -1802,12 +1802,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "重试 1 / 2"
+                      "text": "Retries 1 / 2"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -1829,7 +1829,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已失败"
+                      "text": "Failed"
                     },
                     {
                       "type": "list",
@@ -1837,7 +1837,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -1849,12 +1849,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -1876,7 +1876,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已取消"
+                      "text": "Cancelled"
                     },
                     {
                       "type": "list",
@@ -1884,7 +1884,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -1896,12 +1896,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -1943,12 +1943,12 @@
     },
     {
       "id": "exhaust",
-      "label": "另一任务 B 达到上限",
+      "label": "Independent task B hits its limit",
       "beats": [
         {
           "durationMs": 2000,
           "transitionMs": 0,
-          "caption": "切换到另一项任务 B：它已经进入第 2 次重试的执行阶段。这是独立案例，不是任务 A 的后续。",
+          "caption": "Task B is independent, already running its second retry. This is a separate case, not a continuation of task A.",
           "actions": [
             {
               "type": "unhighlight",
@@ -1966,7 +1966,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "待执行"
+                      "text": "Queued"
                     },
                     {
                       "type": "list",
@@ -1974,7 +1974,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -1986,12 +1986,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "等待调度 · 可取消"
+                      "text": "Queued · cancellable"
                     }
                   ]
                 }
@@ -2013,7 +2013,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "执行中"
+                      "text": "Running"
                     },
                     {
                       "type": "list",
@@ -2021,7 +2021,7 @@
                         {
                           "tags": [
                             {
-                              "text": "当前 · 任务 B",
+                              "text": "Current · Task B",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -2033,12 +2033,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "重试 2 / 2"
+                      "text": "Retries 2 / 2"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "执行任务 · 等待结果"
+                      "text": "Run task · await result"
                     }
                   ]
                 }
@@ -2060,7 +2060,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "等待重试"
+                      "text": "Awaiting retry"
                     },
                     {
                       "type": "list",
@@ -2068,7 +2068,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -2080,12 +2080,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "暂时错误 · 定时重试"
+                      "text": "Temp error · retry timer"
                     }
                   ]
                 }
@@ -2107,7 +2107,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已完成"
+                      "text": "Completed"
                     },
                     {
                       "type": "list",
@@ -2115,7 +2115,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -2127,12 +2127,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -2154,7 +2154,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已失败"
+                      "text": "Failed"
                     },
                     {
                       "type": "list",
@@ -2162,7 +2162,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -2174,12 +2174,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -2201,7 +2201,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已取消"
+                      "text": "Cancelled"
                     },
                     {
                       "type": "list",
@@ -2209,7 +2209,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -2221,12 +2221,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -2261,7 +2261,7 @@
         {
           "durationMs": 2000,
           "transitionMs": 0,
-          "caption": "任务 B 再次失败且达到示例重试上限，进入已失败终态。",
+          "caption": "Task B fails again at the example retry limit and enters the Failed terminal state.",
           "actions": [
             {
               "type": "unhighlight",
@@ -2279,7 +2279,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "待执行"
+                      "text": "Queued"
                     },
                     {
                       "type": "list",
@@ -2287,7 +2287,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -2299,12 +2299,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "等待调度 · 可取消"
+                      "text": "Queued · cancellable"
                     }
                   ]
                 }
@@ -2326,7 +2326,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "执行中"
+                      "text": "Running"
                     },
                     {
                       "type": "list",
@@ -2334,7 +2334,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -2346,12 +2346,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "执行任务 · 等待结果"
+                      "text": "Run task · await result"
                     }
                   ]
                 }
@@ -2373,7 +2373,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "等待重试"
+                      "text": "Awaiting retry"
                     },
                     {
                       "type": "list",
@@ -2381,7 +2381,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -2393,12 +2393,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "暂时错误 · 定时重试"
+                      "text": "Temp error · retry timer"
                     }
                   ]
                 }
@@ -2420,7 +2420,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已完成"
+                      "text": "Completed"
                     },
                     {
                       "type": "list",
@@ -2428,7 +2428,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -2440,12 +2440,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -2467,7 +2467,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已失败"
+                      "text": "Failed"
                     },
                     {
                       "type": "list",
@@ -2475,7 +2475,7 @@
                         {
                           "tags": [
                             {
-                              "text": "当前 · 任务 B",
+                              "text": "Current · Task B",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -2487,12 +2487,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "重试 2 / 2"
+                      "text": "Retries 2 / 2"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -2514,7 +2514,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已取消"
+                      "text": "Cancelled"
                     },
                     {
                       "type": "list",
@@ -2522,7 +2522,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -2534,12 +2534,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -2581,12 +2581,12 @@
     },
     {
       "id": "cancel",
-      "label": "另一任务 C 主动取消",
+      "label": "Independent task C is cancelled",
       "beats": [
         {
           "durationMs": 2000,
           "transitionMs": 0,
-          "caption": "切换到另一项任务 C：当前待执行，用户仍可取消。此例没有演示运行中取消。",
+          "caption": "Task C is independent, currently queued and still cancellable. This case does not demonstrate cancellation during execution.",
           "actions": [
             {
               "type": "highlight",
@@ -2604,7 +2604,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "待执行"
+                      "text": "Queued"
                     },
                     {
                       "type": "list",
@@ -2612,7 +2612,7 @@
                         {
                           "tags": [
                             {
-                              "text": "当前 · 任务 C",
+                              "text": "Current · Task C",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -2624,12 +2624,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "重试 0 / 2"
+                      "text": "Retries 0 / 2"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "等待调度 · 可取消"
+                      "text": "Queued · cancellable"
                     }
                   ]
                 }
@@ -2651,7 +2651,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "执行中"
+                      "text": "Running"
                     },
                     {
                       "type": "list",
@@ -2659,7 +2659,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -2671,12 +2671,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "执行任务 · 等待结果"
+                      "text": "Run task · await result"
                     }
                   ]
                 }
@@ -2698,7 +2698,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "等待重试"
+                      "text": "Awaiting retry"
                     },
                     {
                       "type": "list",
@@ -2706,7 +2706,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -2718,12 +2718,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "暂时错误 · 定时重试"
+                      "text": "Temp error · retry timer"
                     }
                   ]
                 }
@@ -2745,7 +2745,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已完成"
+                      "text": "Completed"
                     },
                     {
                       "type": "list",
@@ -2753,7 +2753,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -2765,12 +2765,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -2792,7 +2792,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已失败"
+                      "text": "Failed"
                     },
                     {
                       "type": "list",
@@ -2800,7 +2800,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -2812,12 +2812,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -2839,7 +2839,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已取消"
+                      "text": "Cancelled"
                     },
                     {
                       "type": "list",
@@ -2847,7 +2847,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -2859,12 +2859,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -2899,7 +2899,7 @@
         {
           "durationMs": 2000,
           "transitionMs": 0,
-          "caption": "用户取消任务 C，进入已取消终态。本图演示允许的状态迁移，不调用真实任务系统。",
+          "caption": "Task C is cancelled by the user and enters the Cancelled terminal state. This diagram illustrates allowed transitions without calling a live task system.",
           "actions": [
             {
               "type": "unhighlight",
@@ -2917,7 +2917,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "待执行"
+                      "text": "Queued"
                     },
                     {
                       "type": "list",
@@ -2925,7 +2925,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -2937,12 +2937,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "等待调度 · 可取消"
+                      "text": "Queued · cancellable"
                     }
                   ]
                 }
@@ -2964,7 +2964,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "执行中"
+                      "text": "Running"
                     },
                     {
                       "type": "list",
@@ -2972,7 +2972,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -2984,12 +2984,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "执行任务 · 等待结果"
+                      "text": "Run task · await result"
                     }
                   ]
                 }
@@ -3011,7 +3011,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "等待重试"
+                      "text": "Awaiting retry"
                     },
                     {
                       "type": "list",
@@ -3019,7 +3019,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -3031,12 +3031,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "暂时错误 · 定时重试"
+                      "text": "Temp error · retry timer"
                     }
                   ]
                 }
@@ -3058,7 +3058,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已完成"
+                      "text": "Completed"
                     },
                     {
                       "type": "list",
@@ -3066,7 +3066,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -3078,12 +3078,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -3105,7 +3105,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已失败"
+                      "text": "Failed"
                     },
                     {
                       "type": "list",
@@ -3113,7 +3113,7 @@
                         {
                           "tags": [
                             {
-                              "text": "可达状态",
+                              "text": "Possible state",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -3125,12 +3125,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "事件触发迁移"
+                      "text": "Event-driven changes"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }
@@ -3152,7 +3152,7 @@
                   "blocks": [
                     {
                       "type": "title",
-                      "text": "已取消"
+                      "text": "Cancelled"
                     },
                     {
                       "type": "list",
@@ -3160,7 +3160,7 @@
                         {
                           "tags": [
                             {
-                              "text": "当前 · 任务 C",
+                              "text": "Current · Task C",
                               "style": {
                                 "shape": "pill",
                                 "fontSize": 12
@@ -3172,12 +3172,12 @@
                     },
                     {
                       "type": "paragraph",
-                      "text": "重试 0 / 2"
+                      "text": "Retries 0 / 2"
                     },
                     {
                       "type": "paragraph",
                       "role": "auxiliary",
-                      "text": "终态 · 不再迁移"
+                      "text": "Terminal · no transitions"
                     }
                   ]
                 }

@@ -5,31 +5,31 @@ import { createExampleContent, measureExampleNode } from "./example-content.js";
 
 const document: DiagramDocument = {
   version: 1,
-  title: "FlowSVG：图解如何运行",
+  title: "FlowSVG: How diagrams run",
   // Retain authored minimum heights; 50-unit row gaps leave room for calls and transfer capsules.
   viewport: { width: 980, height: 604 },
   nodes: [
     measureExampleNode({ id: "document", kind: "roundedRect", x: 24, y: 24, width: 290, height: 144,
-      content: createExampleContent("图解文档", "可序列化", "节点 · 连线 · 场景 · 节拍", "同一 DiagramDocument 供播放和导出") }),
+      content: createExampleContent("Diagram document", "Serializable", "Nodes · edges · scenes · beats", "DiagramDocument: play + export") }),
     measureExampleNode({ id: "core", kind: "roundedRect", x: 364, y: 24, width: 270, height: 144,
-      content: createExampleContent("平台无关核心", "纯 TypeScript", "校验 · 时间求值 · 几何 · SVG", "无 DOM、网络或浏览器时钟") }),
+      content: createExampleContent("Core engine", "Pure TypeScript", "Validate · time · SVG", "No DOM · no browser clock") }),
     measureExampleNode({ id: "svg", kind: "roundedRect", x: 684, y: 24, width: 270, height: 144,
-      content: createExampleContent("静态 SVG", "任意时刻", "renderSvg(t)", "核心输出；无需 DOM") }),
+      content: createExampleContent("Static SVG", "Any time", "renderSvg(t)", "Core output · no DOM") }),
     measureExampleNode({ id: "adapters", kind: "roundedRect", x: 24, y: 218, width: 290, height: 144,
-      content: createExampleContent("接入适配器", "可选接入", "React · Vue · Web Component", "复用浏览器播放器；管理组件生命周期") }),
+      content: createExampleContent("Host adapters", "Optional integration", "React · Vue · Web Component", "Reuse player · own lifecycle") }),
     measureExampleNode({ id: "browser", kind: "roundedRect", x: 364, y: 218, width: 270, height: 144,
-      content: createExampleContent("浏览器播放器", "DOM + 时钟", "播放 · 控件 · 交互", "创建、更新、销毁挂载资源") }),
+      content: createExampleContent("Browser player", "DOM + clock", "Playback · controls · input", "Mount · update · release") }),
     measureExampleNode({ id: "gif", kind: "roundedRect", x: 684, y: 218, width: 270, height: 144,
-      content: createExampleContent("GIF 导出", "按需 · Worker", "SVG → 栅格化 → 编码", "在浏览器执行，不录制实时播放") }),
+      content: createExampleContent("GIF export", "On demand · Worker", "SVG → rasterize → encode", "Browser export · not a recording") }),
     measureExampleNode({ id: "showcase", kind: "roundedRect", x: 24, y: 436, width: 290, height: 144,
-      content: createExampleContent("展示工程", "私有消费方", "作者与会话 · 三端页面", "@flowsvg/showcase；不被 SDK 依赖") }),
+      content: createExampleContent("Showcase apps", "Private consumer", "Authoring · sessions · hosts", "@flowsvg/showcase · SDK consumer") }),
     measureExampleNode({ id: "node-tools", kind: "roundedRect", x: 644, y: 412, width: 310, height: 168,
       content: { style: { padding: 12, blockGap: 6 }, blocks: [
-        { type: "title", text: "Node 工具" },
+        { type: "title", text: "Node tools" },
         { type: "list", items: [{ tags: [{ text: "Node 20+", style: { shape: "pill", fontSize: 12 } }] }] },
-        { type: "paragraph", text: "HTML：内嵌文档、播放器和样式" },
-        { type: "paragraph", text: "GIF：Chromium 调用浏览器导出器" },
-        { type: "paragraph", role: "auxiliary", text: "仅 GIF 需要 Chromium" }
+        { type: "paragraph", text: "HTML: data + player + CSS" },
+        { type: "paragraph", text: "GIF: Chromium exporter" },
+        { type: "paragraph", role: "auxiliary", text: "Only GIF requires Chromium" }
       ] } })
   ],
   edges: [
@@ -47,42 +47,42 @@ const document: DiagramDocument = {
     { id: "showcase-browser", from: "showcase", to: "browser", route: "orthogonal", fromPort: "right", toPort: "bottom" }
   ],
   scenes: [
-    { id: "define", label: "定义图解", beats: [{ durationMs: 3000,
-      caption: "作者用同一份可序列化 DiagramDocument 描述节点、连线、场景和节拍。连线表示数据传递或调用，不是完整的 npm 依赖树。",
-      actions: [{ type: "flow", target: "document-core", direction: "forward", text: "图解文档" }]
+    { id: "define", label: "Define a diagram", beats: [{ durationMs: 3000,
+      caption: "Authors describe nodes, edges, scenes and beats in one serializable DiagramDocument. Arrows represent data or calls, not a complete npm dependency tree.",
+      actions: [{ type: "flow", target: "document-core", direction: "forward", text: "Diagram document" }]
     }] },
-    { id: "evaluate", label: "核心求值", beats: [{ durationMs: 3000,
-      caption: "核心校验文档，按指定时刻计算时间线和几何，并输出 SVG。核心不读取 DOM、网络或浏览器时钟。",
+    { id: "evaluate", label: "Core evaluation", beats: [{ durationMs: 3000,
+      caption: "The core validates the document, evaluates its timeline and geometry at the requested time, and outputs SVG. It does not read the DOM, network or browser clock.",
       actions: [{ type: "flow", target: "core-svg", direction: "forward", text: "SVG(t)" }]
     }] },
-    { id: "integrate", label: "接入播放器", beats: [
-      { durationMs: 2000, caption: "React、Vue 和 Web Component 适配器复用浏览器播放器，管理各自的挂载与销毁；原生网页可直接创建播放器。",
-        actions: [{ type: "flow", target: "adapters-browser", direction: "forward", text: "挂载" }] },
-      { durationMs: 2000, caption: "浏览器播放器接收核心画面状态并更新 SVG DOM；各接入方式共享时间线与绘图逻辑。",
-        actions: [{ type: "flow", target: "core-browser", direction: "forward", text: "画面状态" }] }
+    { id: "integrate", label: "Integrate the player", beats: [
+      { durationMs: 2000, caption: "React, Vue and Web Component adapters reuse the browser player and own their mount/cleanup lifecycle. Native pages can create the player directly.",
+        actions: [{ type: "flow", target: "adapters-browser", direction: "forward", text: "Mount" }] },
+      { durationMs: 2000, caption: "The browser player receives core frame state and updates the SVG DOM. Every integration shares the same timeline and rendering logic.",
+        actions: [{ type: "flow", target: "core-browser", direction: "forward", text: "Frame state" }] }
     ] },
-    { id: "operate", label: "播放与控件", beats: [
-      { durationMs: 2000, caption: "播放器拥有浏览器时钟、播放控件和交互。播放、跳转或更换视觉设置时，播放器把时刻和设置交给核心；普通播放不加载 GIF 编码器。",
-        actions: [{ type: "flow", target: "browser-core", direction: "forward", text: "t + 设置" }] },
-      { durationMs: 2000, caption: "核心按指定时刻重新求值，播放器显示新画面；控件不维护另一套图解时间线。",
-        actions: [{ type: "flow", target: "core-browser", direction: "forward", text: "更新画面" }] }
+    { id: "operate", label: "Playback and controls", beats: [
+      { durationMs: 2000, caption: "The player owns the browser clock, playback controls and interaction. Playback, seeking and visual changes pass time and settings to the core. Normal playback does not load the GIF encoder.",
+        actions: [{ type: "flow", target: "browser-core", direction: "forward", text: "t + settings" }] },
+      { durationMs: 2000, caption: "The core evaluates the requested time again, and the player displays the new frame. Controls do not maintain a second diagram timeline.",
+        actions: [{ type: "flow", target: "core-browser", direction: "forward", text: "Update frame" }] }
     ] },
-    { id: "export", label: "导出与离线", beats: [
-      { durationMs: 2000, caption: "静态 SVG 可直接由核心导出。GIF 则按时间采样 SVG，在浏览器栅格化并交给 Worker 编码，不录制网页的实时播放状态。",
-        actions: [{ type: "flow", target: "svg-gif", direction: "forward", text: "逐帧 SVG" }] },
-      { durationMs: 2000, caption: "Node 将图解文档、构建好的播放器和样式内嵌为单文件离线 HTML；生成 HTML 不启动 Chromium。离线 HTML 可按需内嵌 GIF 导出资产。",
-        actions: [{ type: "flow", target: "browser-node", direction: "forward", text: "播放器资产" }] },
-      { durationMs: 2000, caption: "Node 导出 GIF 时，通过预装 Chromium 的隔离页面调用同一浏览器导出器。Chromium 只用于这条 Node GIF 路径；导出结束后释放任务资源。",
-        actions: [{ type: "flow", target: "node-gif", direction: "forward", text: "隔离页面" }] },
-      { durationMs: 2000, caption: "同一份图解文档支持播放、静态 SVG、GIF 和离线 HTML。各路径复用核心，浏览器与 Node 工具承担各自的运行环境工作。",
+    { id: "export", label: "Exports and offline playback", beats: [
+      { durationMs: 2000, caption: "The core can export static SVG directly. GIF samples SVG over time, rasterizes frames in the browser and encodes them in a Worker. It does not record live page playback.",
+        actions: [{ type: "flow", target: "svg-gif", direction: "forward", text: "SVG frames" }] },
+      { durationMs: 2000, caption: "Node embeds the document, built player and styles into one offline HTML file without launching Chromium. Offline HTML can optionally embed GIF export assets.",
+        actions: [{ type: "flow", target: "browser-node", direction: "forward", text: "Player assets" }] },
+      { durationMs: 2000, caption: "For Node GIF export, an isolated page in preinstalled Chromium runs the same browser exporter. Only this Node GIF path uses Chromium in this diagram; task resources are released after export.",
+        actions: [{ type: "flow", target: "node-gif", direction: "forward", text: "Isolated page" }] },
+      { durationMs: 2000, caption: "One diagram document supports playback, static SVG, GIF and offline HTML. All paths reuse the core; browser and Node tools handle their own runtime responsibilities.",
         actions: [{ type: "highlight", target: "svg" }, { type: "highlight", target: "gif" }, { type: "highlight", target: "node-tools" }] }
     ] },
-    { id: "boundary", label: "SDK 与展示工程", beats: [{ durationMs: 2000,
-      caption: "展示工程包含私有 @flowsvg/showcase 作者目录、会话规则和原生、React、Vue 三端 apps。它们消费公开 SDK；SDK 不依赖展示工程。",
+    { id: "boundary", label: "SDK and showcase workspace", beats: [{ durationMs: 2000,
+      caption: "The showcase workspace has the private @flowsvg/showcase author catalog, session rules and Native, React and Vue apps. They consume the public SDK; the SDK does not depend on them.",
       actions: [
         { type: "unhighlight", target: "svg" }, { type: "unhighlight", target: "gif" }, { type: "unhighlight", target: "node-tools" },
-        { type: "flow", target: "showcase-adapters", direction: "forward", text: "框架接入" },
-        { type: "flow", target: "showcase-browser", direction: "forward", text: "原生接入" }
+        { type: "flow", target: "showcase-adapters", direction: "forward", text: "Framework adapters" },
+        { type: "flow", target: "showcase-browser", direction: "forward", text: "Native integration" }
       ]
     }] }
   ]
@@ -92,8 +92,8 @@ const document: DiagramDocument = {
 export const projectArchitectureExample: ShowcaseAuthorDefinition = {
   id: "project-architecture",
   category: "architecture",
-  name: "FlowSVG：图解如何运行",
-  introduction: "了解 FlowSVG 自身架构：同一份图解文档经过平台无关核心求值，由浏览器播放器及适配器展示，并导出 SVG、GIF 或离线 HTML。区分可选导出、Node 运行条件与私有展示工程边界；箭头表示数据或调用。",
+  name: "FlowSVG: How diagrams run",
+  introduction: "Explore FlowSVG itself: one diagram document passes through a platform-independent core, plays through browser adapters, and exports to SVG, GIF or offline HTML. Captions explain optional exports, Node requirements and the private showcase boundary. Arrows represent data or calls.",
   document,
   defaults: { speed: 1, theme: "dark", reducedMotion: false }
 };

@@ -15,7 +15,7 @@ it("offers the architecture as a standalone third example with the original defa
   const { catalog, json, example } = getArchitecture();
   expect(catalog.entries.map(({ id }) => id)).toEqual(["request-response", "rag-workflow", "project-architecture", "vllm-metal-stack", "job-lifecycle", "order-event-pipeline", "web-service-deployment", "cache-aside-sequence"]);
   expect(catalog.defaultId).toBe("request-response");
-  expect(example.name).toBe("FlowSVG：图解如何运行");
+  expect(example.name).toBe("FlowSVG: How diagrams run");
   expect(example.durationMs).toBe(createDiagram(example.document).totalDuration);
   expect(example.defaults).toEqual({ speed: 1, theme: "dark", reducedMotion: false });
   expect(JSON.parse(json.get(example.jsonPath)!)).toEqual(example.document);
@@ -26,20 +26,20 @@ it("explains the core, shared player, optional exports and private consumer boun
   const textFor = (id: string) => diagram.evaluateAt(diagram.totalDuration).nodes.find((node) => node.id === id)!
     .contentLayout!.lines.map(({ text }) => text).join("");
   expect(textFor("document")).toContain("DiagramDocument");
-  expect(textFor("core")).toContain("无 DOM");
-  expect(textFor("core")).toContain("浏览器时钟");
+  expect(textFor("core")).toContain("No DOM");
+  expect(textFor("core")).toContain("browser clock");
   expect(textFor("adapters")).toContain("React · Vue · Web Component");
-  expect(textFor("browser")).toContain("控件");
+  expect(textFor("browser")).toContain("controls");
   expect(textFor("svg")).toContain("renderSvg(t)");
-  expect(textFor("gif")).toContain("按需");
+  expect(textFor("gif")).toContain("On demand");
   expect(textFor("gif")).toContain("Worker");
   expect(textFor("node-tools")).toContain("HTML");
-  expect(textFor("node-tools")).toContain("仅 GIF 需要 Chromium");
-  expect(textFor("showcase")).toContain("私有消费方");
-  expect(textFor("showcase")).toContain("不被 SDK 依赖");
-  expect(diagram.evaluateAt(beatMiddle(diagram, 7)).caption).toContain("不启动 Chromium");
-  expect(diagram.evaluateAt(beatMiddle(diagram, 8)).caption).toContain("同一浏览器导出器");
-  expect(diagram.evaluateAt(beatMiddle(diagram, 10)).caption).toContain("SDK 不依赖展示工程");
+  expect(textFor("node-tools")).toContain("Only GIF requires Chromium");
+  expect(textFor("showcase")).toContain("Private consumer");
+  expect(textFor("showcase")).toContain("SDK consumer");
+  expect(diagram.evaluateAt(beatMiddle(diagram, 7)).caption).toContain("without launching Chromium");
+  expect(diagram.evaluateAt(beatMiddle(diagram, 8)).caption).toContain("the same browser exporter");
+  expect(diagram.evaluateAt(beatMiddle(diagram, 10)).caption).toContain("the SDK does not depend on them");
 });
 
 it("shows evaluation, playback, export and consumer calls in their actual directions", () => {

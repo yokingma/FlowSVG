@@ -5,12 +5,12 @@ import { catalogSource } from "../src/formal.js";
 it("groups the eight formal examples by their primary purpose", () => {
   const { catalog, json } = compileCatalog(catalogSource);
   expect(catalog.groups?.map(({ id, label, entries }) => ({ id, label, ids: entries.map((entry) => entry.id) }))).toEqual([
-    { id: "workflow", label: "业务流程", ids: ["request-response", "rag-workflow"] },
-    { id: "architecture", label: "系统架构", ids: ["project-architecture", "vllm-metal-stack"] },
-    { id: "state", label: "状态转换", ids: ["job-lifecycle"] },
-    { id: "data-flow", label: "数据流", ids: ["order-event-pipeline"] },
-    { id: "deployment", label: "部署拓扑", ids: ["web-service-deployment"] },
-    { id: "sequence", label: "交互时序", ids: ["cache-aside-sequence"] }
+    { id: "workflow", label: "Workflow", ids: ["request-response", "rag-workflow"] },
+    { id: "architecture", label: "Architecture", ids: ["project-architecture", "vllm-metal-stack"] },
+    { id: "state", label: "State transitions", ids: ["job-lifecycle"] },
+    { id: "data-flow", label: "Data flow", ids: ["order-event-pipeline"] },
+    { id: "deployment", label: "Deployment", ids: ["web-service-deployment"] },
+    { id: "sequence", label: "Sequence", ids: ["cache-aside-sequence"] }
   ]);
   expect(catalog.defaultId).toBe("request-response");
   for (const entry of catalog.entries) {
@@ -27,8 +27,8 @@ it("supports six broad categories in first-appearance order and keeps each group
   const order = [...categories, repeat.id];
   const { catalog } = compileCatalog({ definitions: [...definitions, repeat], order, defaultId: "sequence" });
   expect(catalog.groups?.map(({ id, label }) => [id, label])).toEqual([
-    ["deployment", "部署拓扑"], ["state", "状态转换"], ["data-flow", "数据流"],
-    ["sequence", "交互时序"], ["architecture", "系统架构"], ["workflow", "业务流程"]
+    ["deployment", "Deployment"], ["state", "State transitions"], ["data-flow", "Data flow"],
+    ["sequence", "Sequence"], ["architecture", "Architecture"], ["workflow", "Workflow"]
   ]);
   expect(catalog.groups?.[0]?.entries.map(({ id }) => id)).toEqual(["deployment", "second-deployment"]);
   expect(catalog.entries.map(({ id }) => id)).toEqual(order);

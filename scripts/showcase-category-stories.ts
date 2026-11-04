@@ -6,15 +6,15 @@ import { chooseOption } from "./showcase-choice.js";
 import { loadStoryDiagram, sceneTime } from "./showcase-timing.js";
 
 export const CATEGORY_STORIES = [
-  { id: "job-lifecycle", name: "后台任务生命周期", category: "状态转换", scene: "recover", directScene: "exhaust", directBeat: 1, text: "第 1 次重试", directText: "已失败终态" },
-  { id: "order-event-pipeline", name: "订单事件：从采集到指标", category: "数据流", scene: "split", directScene: "overview", directBeat: 0, text: "两条有效记录", directText: "人民币 ¥200" },
-  { id: "web-service-deployment", name: "Web 服务：双副本部署", category: "部署拓扑", scene: "health", directScene: "reroute", directBeat: 0, text: "副本 A 不健康", directText: "健康的副本 B" },
-  { id: "cache-aside-sequence", name: "缓存未命中：查询与回填", category: "交互时序", scene: "cache-miss", directScene: "response", directBeat: 0, text: "未命中 MISS", directText: "向客户端返回" }
+  { id: "job-lifecycle", name: "Background task lifecycle", category: "State transitions", scene: "recover", directScene: "exhaust", directBeat: 1, text: "first retry", directText: "Failed terminal state" },
+  { id: "order-event-pipeline", name: "Order events: From ingestion to metrics", category: "Data flow", scene: "split", directScene: "overview", directBeat: 0, text: "Two valid records", directText: "CNY 200" },
+  { id: "web-service-deployment", name: "Web service: Two-replica deployment", category: "Deployment", scene: "health", directScene: "reroute", directBeat: 0, text: "replica A unhealthy", directText: "healthy replica B" },
+  { id: "cache-aside-sequence", name: "Cache miss: Read and populate", category: "Sequence", scene: "cache-miss", directScene: "response", directBeat: 0, text: "returns MISS", directText: "to the client" }
 ] as const;
 
-export const FORMAL_NAMES = ["请求与响应", "RAG：从资料到答案", "FlowSVG：图解如何运行",
-  "vllm-metal：分层推理架构", ...CATEGORY_STORIES.map(({ name }) => name)];
-export const FORMAL_CATEGORIES = ["业务流程", "系统架构", ...CATEGORY_STORIES.map(({ category }) => category)];
+export const FORMAL_NAMES = ["Request and response", "RAG: From sources to answers", "FlowSVG: How diagrams run",
+  "vllm-metal: Layered inference architecture", ...CATEGORY_STORIES.map(({ name }) => name)];
+export const FORMAL_CATEGORIES = ["Workflow", "Architecture", ...CATEGORY_STORIES.map(({ category }) => category)];
 
 async function readTaskGeometry(page: Page) {
   return page.locator(".flowsvg-canvas > svg rect[data-id]").evaluateAll((nodes) => nodes.map((node) =>

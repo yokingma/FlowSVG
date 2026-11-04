@@ -322,13 +322,13 @@ async function inspectEmptyArtifact(
 /** Compare the architecture document and representative states through the copied site's own base. */
 async function inspectArchitectureArtifact(page: Page, address: string) {
   const diagram = await loadStoryDiagram(page, address, "project-architecture");
-  await page.getByRole("navigation", { name: "Examples" }).getByRole("button", { name: "FlowSVG：图解如何运行", exact: true }).click();
-  expect(await page.locator("#introduction h2").textContent()).toBe("FlowSVG：图解如何运行");
+  await page.getByRole("navigation", { name: "Examples" }).getByRole("button", { name: "FlowSVG: How diagrams run", exact: true }).click();
+  expect(await page.locator("#introduction h2").textContent()).toBe("FlowSVG: How diagrams run");
   expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe("0");
   const response = await page.request.get(`${address}json/project-architecture.json`);
   expect(response.status()).toBe(200);
   const document: unknown = await response.json();
-  expect(document).toMatchObject({ version: 1, title: "FlowSVG：图解如何运行" });
+  expect(document).toMatchObject({ version: 1, title: "FlowSVG: How diagrams run" });
   expect(document).not.toHaveProperty("defaults");
   const download = page.waitForEvent("download");
   await page.getByRole("link", { name: "Download diagram JSON" }).click();
@@ -336,8 +336,8 @@ async function inspectArchitectureArtifact(page: Page, address: string) {
   const svgs: string[] = [];
   for (const state of [
     { time: beatTime(diagram, 1), theme: "light", reduced: "0", text: "SVG" },
-    { time: beatTime(diagram, 8), theme: "dark", reduced: "0", text: "同一浏览器导出器" },
-    { time: beatTime(diagram, 10), theme: "light", reduced: "1", text: "SDK 不依赖展示工程" }
+    { time: beatTime(diagram, 8), theme: "dark", reduced: "0", text: "the same browser exporter" },
+    { time: beatTime(diagram, 10), theme: "light", reduced: "1", text: "the SDK does not depend on them" }
   ]) {
     await page.goto(`${address}?example=project-architecture&time=${state.time}&theme=${state.theme}&reduced=${state.reduced}`);
     const canvas = page.locator(".flowsvg-canvas > svg");
@@ -354,13 +354,13 @@ async function inspectArchitectureArtifact(page: Page, address: string) {
 /** Compare the layered vllm-metal document and representative states through the copied site's own base. */
 async function inspectVllmMetalArtifact(page: Page, address: string) {
   const diagram = await loadStoryDiagram(page, address, "vllm-metal-stack");
-  await page.getByRole("navigation", { name: "Examples" }).getByRole("button", { name: "vllm-metal：分层推理架构", exact: true }).click();
-  expect(await page.locator("#introduction h2").textContent()).toBe("vllm-metal：分层推理架构");
+  await page.getByRole("navigation", { name: "Examples" }).getByRole("button", { name: "vllm-metal: Layered inference architecture", exact: true }).click();
+  expect(await page.locator("#introduction h2").textContent()).toBe("vllm-metal: Layered inference architecture");
   expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe("0");
   const response = await page.request.get(`${address}json/vllm-metal-stack.json`);
   expect(response.status()).toBe(200);
   const document: unknown = await response.json();
-  expect(document).toMatchObject({ version: 1, title: "vllm-metal：分层推理架构" });
+  expect(document).toMatchObject({ version: 1, title: "vllm-metal: Layered inference architecture" });
   expect(document).not.toHaveProperty("defaults");
   const download = page.waitForEvent("download");
   await page.getByRole("link", { name: "Download diagram JSON" }).click();
@@ -368,8 +368,8 @@ async function inspectVllmMetalArtifact(page: Page, address: string) {
   const svgs: string[] = [];
   for (const state of [
     { time: beatTime(diagram, 1), theme: "light", reduced: "0", text: "KV block IDs" },
-    { time: beatTime(diagram, 4), theme: "dark", reduced: "0", text: "并非每次请求" },
-    { time: beatTime(diagram, 7), theme: "light", reduced: "1", text: "参考图" }
+    { time: beatTime(diagram, 4), theme: "dark", reduced: "0", text: "not used on every request" },
+    { time: beatTime(diagram, 7), theme: "light", reduced: "1", text: "Reference" }
   ]) {
     await page.goto(`${address}?example=vllm-metal-stack&time=${state.time}&theme=${state.theme}&reduced=${state.reduced}`);
     const canvas = page.locator(".flowsvg-canvas > svg");
@@ -389,9 +389,9 @@ async function inspectFormalArtifact(page: Page, address: string) {
   expect(await page.getByRole("navigation", { name: "Examples" }).getByRole("button").allTextContents()).toEqual(FORMAL_NAMES);
   const navigation = page.getByRole("navigation", { name: "Examples" });
   expect(await navigation.getByRole("heading", { level: 3 }).allTextContents()).toEqual(FORMAL_CATEGORIES);
-  expect(await navigation.getByRole("group", { name: "业务流程", exact: true }).getByRole("button").allTextContents()).toEqual(["请求与响应", "RAG：从资料到答案"]);
-  expect(await navigation.getByRole("group", { name: "系统架构", exact: true }).getByRole("button").allTextContents()).toEqual(["FlowSVG：图解如何运行", "vllm-metal：分层推理架构"]);
-  expect(await page.locator("#introduction h2").textContent()).toBe("请求与响应");
+  expect(await navigation.getByRole("group", { name: "Workflow", exact: true }).getByRole("button").allTextContents()).toEqual(["Request and response", "RAG: From sources to answers"]);
+  expect(await navigation.getByRole("group", { name: "Architecture", exact: true }).getByRole("button").allTextContents()).toEqual(["FlowSVG: How diagrams run", "vllm-metal: Layered inference architecture"]);
+  expect(await page.locator("#introduction h2").textContent()).toBe("Request and response");
   expect(await page.getByRole("combobox", { name: "Theme", exact: true }).getAttribute("data-value")).toBe("dark");
   expect(await page.getByRole("combobox", { name: "Speed", exact: true }).getAttribute("data-value")).toBe("1");
   expect(await page.getByRole("checkbox", { name: "Reduce motion", exact: true }).isChecked()).toBe(false);
@@ -399,7 +399,7 @@ async function inspectFormalArtifact(page: Page, address: string) {
   const response = await page.request.get(`${address}json/request-response.json`);
   expect(response.status()).toBe(200);
   const document: unknown = await response.json();
-  expect(document).toMatchObject({ version: 1, title: "请求与响应" });
+  expect(document).toMatchObject({ version: 1, title: "Request and response" });
   expect(document).not.toHaveProperty("defaults");
   const svgs: string[] = [];
   for (const state of [
@@ -414,22 +414,22 @@ async function inspectFormalArtifact(page: Page, address: string) {
   }
   expect(probe.badResources).toEqual([]);
   expect((await page.request.get(`${address}json/signal-motion.json`)).status()).toBe(404);
-  await page.getByRole("navigation", { name: "Examples" }).getByRole("button", { name: "RAG：从资料到答案", exact: true }).click();
-  expect(await page.locator("#introduction h2").textContent()).toBe("RAG：从资料到答案");
+  await page.getByRole("navigation", { name: "Examples" }).getByRole("button", { name: "RAG: From sources to answers", exact: true }).click();
+  expect(await page.locator("#introduction h2").textContent()).toBe("RAG: From sources to answers");
   expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe("0");
   const ragResponse = await page.request.get(`${address}json/rag-workflow.json`);
   expect(ragResponse.status()).toBe(200);
   const ragDocument: unknown = await ragResponse.json();
   const ragDiagram = await loadStoryDiagram(page, address, "rag-workflow");
-  expect(ragDocument).toMatchObject({ version: 1, title: "RAG：从资料到答案" });
+  expect(ragDocument).toMatchObject({ version: 1, title: "RAG: From sources to answers" });
   expect(ragDocument).not.toHaveProperty("defaults");
   const download = page.waitForEvent("download");
   await page.getByRole("link", { name: "Download diagram JSON" }).click();
   expect(JSON.parse(await readFile((await (await download).path())!, "utf8"))).toEqual(ragDocument);
   for (const state of [
-    { time: beatTime(ragDiagram, 6), theme: "light", reduced: "0", text: "C3 年假余额" },
-    { time: beatTime(ragDiagram, 7), theme: "dark", reduced: "0", text: "申请流程 · §4.1" },
-    { time: beatTime(ragDiagram, 10), theme: "light", reduced: "1", text: "直属负责人审批" }
+    { time: beatTime(ragDiagram, 6), theme: "light", reduced: "0", text: "C3 Balance" },
+    { time: beatTime(ragDiagram, 7), theme: "dark", reduced: "0", text: "Application · §4.1" },
+    { time: beatTime(ragDiagram, 10), theme: "light", reduced: "1", text: "Manager approval" }
   ]) {
     await page.goto(`${address}?example=rag-workflow&time=${state.time}&theme=${state.theme}&reduced=${state.reduced}`);
     const canvas = page.locator(".flowsvg-canvas > svg");

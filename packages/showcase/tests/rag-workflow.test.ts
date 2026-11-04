@@ -150,25 +150,25 @@ it("uses a clear title hierarchy and structured retrieval, selection and cited a
   }
   const recalled = layoutAt(beatMiddle(diagram, 6), "retriever")!;
   expect(recalled.lines.filter(({ role }) => role === "tag").map(({ text }) => text).slice(1)).toEqual([
-    "C3 年假余额", "C1 申请流程", "C5 办公地点", "C2 审批要求", "C4 费用报销"
+    "C3 Balance", "C1 Apply", "C5 Office", "C2 Approve", "C4 Expenses"
   ]);
   const reranked = layoutAt(beatMiddle(diagram, 7), "reranker")!;
   expect(reranked.lines.filter(({ role }) => role === "tag").map(({ text }) => text))
-    .toEqual(["5 段 → 2 段", "C1", "保留", "C2", "保留", "排除 C3 C4 C5"]);
+    .toEqual(["5 chunks → 2 chunks", "C1", "Keep", "C2", "Keep", "Exclude C3 C4 C5"]);
   expect(reranked.tags.every(({ shape }) => shape === "pill")).toBe(true);
   expect(reranked.lines.map(({ text }) => text)).toEqual(expect.arrayContaining([
-    "保留", "申请流程 · §4.1", "审批要求 · §4.2", "排除 C3 C4 C5"
+    "Keep", "Application · §4.1", "Approval · §4.2", "Exclude C3 C4 C5"
   ]));
   const context = layoutAt(beatMiddle(diagram, 8), "context")!;
   expect(context.lines.map(({ text }) => text)).toEqual(expect.arrayContaining([
-    "年假如何申请？", "在 OA 申请", "负责人审批", "C1 §4.1", "C2 §4.2"
+    "How to apply?", "Use HR portal", "Manager approval", "C1 §4.1", "C2 §4.2"
   ]));
   const answer = layoutAt(diagram.totalDuration, "answer")!;
   expect(answer.lines.filter(({ role }) => role === "marker").map(({ text }) => text)).toEqual(["1.", "2."]);
-  expect(answer.lines.map(({ text }) => text).join("")).toContain("在 OA 提交年假申请");
-  expect(answer.lines.map(({ text }) => text).join("")).toContain("直属负责人审批");
+  expect(answer.lines.map(({ text }) => text).join("")).toContain("Apply in HR portal");
+  expect(answer.lines.map(({ text }) => text).join("")).toContain("Manager approval");
   expect(answer.lines.filter(({ role }) => role === "tag").map(({ text }) => text))
-    .toEqual(["带引用回答", "C1 §4.1", "C2 §4.2"]);
+    .toEqual(["Cited answer", "C1 §4.1", "C2 §4.2"]);
 });
 
 it("keeps ingestion separate and supplies the question and candidate texts to reranking before context", () => {
@@ -177,19 +177,19 @@ it("keeps ingestion separate and supplies the question and candidate texts to re
     .filter(({ flow }) => flow).map(({ id, from, to, flow }) => ({ id, from, to, direction: flow!.direction, text: flow!.text }));
   expect(flowsAt(beatMiddle(diagram, 1))).toEqual([expect.objectContaining({ from: "splitter", to: "embedding" })]);
   expect(flowsAt(beatMiddle(diagram, 3))).toEqual([expect.objectContaining({ from: "question", to: "embedding" })]);
-  expect(flowsAt(beatMiddle(diagram, 4))).toEqual([expect.objectContaining({ from: "embedding", to: "retriever", text: "问题向量" })]);
+  expect(flowsAt(beatMiddle(diagram, 4))).toEqual([expect.objectContaining({ from: "embedding", to: "retriever", text: "Question vector" })]);
   expect(flowsAt(beatMiddle(diagram, 5))).toEqual([expect.objectContaining({ from: "retriever", to: "knowledge-index", direction: "forward" })]);
   expect(flowsAt(beatMiddle(diagram, 6))).toEqual([expect.objectContaining({ from: "retriever", to: "knowledge-index", direction: "reverse" })]);
   expect(flowsAt(beatMiddle(diagram, 7))).toEqual([
-    expect.objectContaining({ from: "retriever", to: "reranker", text: "候选文本" }),
-    expect.objectContaining({ from: "question", to: "reranker", text: "原始问题" })
+    expect.objectContaining({ from: "retriever", to: "reranker", text: "Candidate text" }),
+    expect.objectContaining({ from: "question", to: "reranker", text: "Original question" })
   ]);
   expect(flowsAt(beatMiddle(diagram, 8))).toEqual([
-    expect.objectContaining({ from: "question", to: "context", text: "原始问题" }),
+    expect.objectContaining({ from: "question", to: "context", text: "Original question" }),
     expect.objectContaining({ from: "reranker", to: "context", text: "C1 + C2" })
   ]);
   expect(flowsAt(beatMiddle(diagram, 9))).toEqual([expect.objectContaining({ from: "context", to: "language-model" })]);
-  expect(flowsAt(beatMiddle(diagram, 10))).toEqual([expect.objectContaining({ from: "language-model", to: "answer", text: "答案 + 引用" })]);
+  expect(flowsAt(beatMiddle(diagram, 10))).toEqual([expect.objectContaining({ from: "language-model", to: "answer", text: "Answer + citations" })]);
 });
 
 it("keeps all eight stage boundaries readable with orthogonal rendering in both themes and reduced motion", () => {
@@ -197,9 +197,9 @@ it("keeps all eight stage boundaries readable with orthogonal rendering in both 
   expect(new Set(example.document.edges.map(({ route }) => route))).toEqual(new Set(["orthogonal"]));
   expect(example.document.nodes.every(({ style }) => style === undefined)).toBe(true);
   expect(example.document.edges.every(({ style }) => style === undefined)).toBe(true);
-  expect(example.introduction).toMatch(/虚构.*不连接真实模型或数据库/);
-  expect(example.introduction).toContain("可选重排");
-  expect(example.introduction).toContain("不代表推荐参数");
+  expect(example.introduction).toMatch(/fictional.*No live model or database/);
+  expect(example.introduction).toContain("optionally rerank");
+  expect(example.introduction).toContain("teaching choices");
   const scenes = ["parse", "ingest", "ask", "retrieve", "rerank", "context", "generate", "complete"];
   for (const sceneId of scenes) {
     const time = sceneStart(diagram, sceneId);
