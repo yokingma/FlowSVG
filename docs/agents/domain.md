@@ -1,35 +1,20 @@
 # Domain Docs
 
-How the engineering skills should consume this repo's domain documentation when exploring the codebase.
+Read this before exploring domain behavior or changing a domain contract.
 
 ## Before exploring, read these
 
-- **`GLOSSARY.md`** at the repo root, if it exists.
-- **`docs/adr/`**: read ADRs that touch the area you're about to work in.
+- Read the [glossary](../../GLOSSARY.md) for the concepts used by the task.
+- Read the [ADRs](../adr/) that govern the affected behavior or boundary. Use their links to reach the relevant implementation and contract documentation.
 
-If these files don't exist, **proceed silently**. Don't flag their absence or suggest creating them upfront. The `/domain-modeling` skill creates them when terms or decisions get resolved.
-
-## File structure
-
-This repo uses a single-context layout:
-
-```text
-/
-├── GLOSSARY.md
-├── docs/adr/
-│   └── 0001-example-decision.md
-├── apps/
-└── packages/
-```
-
-The glossary and ADR directory are created only when needed.
+If either source is absent, continue with the available sources; creating domain documents is separate work.
 
 ## Use the glossary's vocabulary
 
-When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, or a test name), use the term as defined in `GLOSSARY.md`. Don't drift to synonyms the glossary explicitly avoids.
+Use the glossary's terms in issue titles, proposals, tests and documentation.
 
-If the concept isn't in the glossary yet, reconsider whether it reflects the project's language or note a real gap for `/domain-modeling`.
+For a new concept, first check the implementation's vocabulary. Record a glossary gap when the task establishes a reusable definition.
 
 ## Flag ADR conflicts
 
-If your output contradicts an existing ADR, surface the conflict explicitly instead of silently overriding the decision.
+Before finishing a proposed contract change, account for every affected ADR: preserve the decision or identify the exact conflict and proposed replacement. Resolve a conflict before describing the new contract as accepted.

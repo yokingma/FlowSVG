@@ -1,61 +1,24 @@
 # Workspace patterns
 
-## SDK and repository boundaries
+## Ownership
 
-- Keep SDK validation, rendering, playback, exports, release inputs, and host examples in this repository. The independently versioned Flow SVG Diagram Skill consumes public npm entries; SDK commands never require the Skill checkout. See [repository boundaries](docs/development/repository-split.md).
-- Change the Skill SDK baseline only in the Skill repository after independent acceptance. Do not add sibling-directory imports, old-path fallbacks, or floating runtime resolution here.
-- Preserve source identity and historical evidence when moving ownership. Run the independent Skill acceptance before cutover, then run SDK, package-consumer, showcase, and host checks. File generation, programmatic checks, actual visual inspection, and unexecuted CI are distinct evidence.
+- Publish formal demo text in English. Keep stable story IDs, bilingual documentation and SDK multilingual rendering coverage.
 
-## SDK and showcase maintenance
+- Keep each published unit self-contained. SDK build, tests and release verification use SDK-owned inputs; shared showcase and host delivery have their own checks. Repository boundaries and independent versioning are defined in [repository boundaries](docs/development/repository-split.md).
+- Keep structured-content tag text centered inside its decorative background; the shared SDK owns this geometry for every host and export.
+- Keep reusable behavior regressions with the SDK and narrative assertions with the shared author package. Retire an obsolete demonstration and its dedicated checks together while retaining generic behavior coverage.
+- Preserve licenses, attribution and source identity when moving ownership. Record generated output, programmatic checks, visual inspection and live deployment as distinct evidence.
 
-- Keep runnable SDK README examples self-contained in the npm package. Verify the JSON and preview through the explicit release allowlist; refresh checked-in teaching snapshots at authoring time so SDK release remains independent of the showcase build.
+## Read for the affected branch
 
-- Keep brand wordmark geometry in `docs/brand/flowsvg-wordmark.html`. Use the same closed path for the frame and SMIL motion, with the loop seam at the open corner marker. Center rendered glyph bounds before generating light/dark static SVGs and the shared package GIF. Use a cropped viewport around the frame and sample paused SVG times at exact 20 ms intervals (50 fps) with 2× pixel density, preserving the 4.8-second cycle without a duplicate endpoint frame. Set the same compact display width in all four READMEs.
+- **SDK internals or package delivery:** follow [SDK patterns](packages/flowsvg/PATTERNS.md). Public contracts belong in the SDK guides and package README; maintainer rules retain the implementation reasons and failure cases.
+- **Showcase author data or geometry:** follow [author patterns](packages/showcase/PATTERNS.md). Hosts consume generated documents; routing and rendering behavior stays in the SDK.
+- **Host lifecycle, presentation or browser acceptance:** follow [shared host maintenance](docs/development/showcase-hosts.md) and the affected app's patterns. Common rules have one owner; app files retain framework-specific constraints.
+- **Brand assets or README previews:** follow [brand inputs](docs/brand/README.md) and [preview maintenance](docs/assets/image-previews.md) before regenerating assets.
+- **npm publication:** follow the [release guide](docs/development/releasing.md). Verify the exact tarball that will be uploaded; distinguish a prepared source version from a version published on npm.
 
-- Record prepared SDK versions separately from npm latest. Verify the exact versioned tarball through `pnpm release`; only the explicit publish command uploads it. Keep version changes, final release notes and timing migration guidance together.
+## Build and verification boundaries
 
-- Publish the formal Native showcase through `.github/workflows/pages.yml`. Build the SDK before the host, select `dist/formal.js` explicitly, set the repository-name deployment base, and upload only the host artifact. Skip deployment for private repositories. Keep Pages permissions in the deployment job and keep SDK npm releases independent. Enable Pages before the first deployment and use a manual run when needed; visibility changes alone do not trigger deployment. Confirm live deployment separately from build success.
-
-- Fit optional canvas height in the SDK camera, retaining authored width and origin. Include painted geometry and labels, reject unrepresentable bounds, and keep explicit focus semantics. GIF uses the authored fixed viewport for stable dimensions and scale; never stretch each fitted SVG into a fixed GIF frame.
-
-- Round orthogonal bends in SDK geometry so serialization, flow placement, hit testing and bounds agree. Keep endpoint/arrow runs and obstacle clearance. For RAG, measure each current content version and explicitly update card height and affected row positions together; switch content and geometry immediately so new content never occupies old dimensions. Test exact boundaries and nonmonotonic seeks.
-
-- For fixed-geometry showcase migrations, retain authored heights as minimums and measure explicit initial/replacement content before document creation. Reuse the measured content in playback actions; keep measurement helpers in build-time author modules. Verify group, viewport and route clearance after future content growth.
-
-- Measure node content at authoring time through the public SDK API. Supply all required content versions explicitly, check unresolved diagnostics, and store the resulting fixed dimensions in the diagram document. Reject unrepresentable required heights with version-specific validation errors. Verify complete line boxes and tag backgrounds when checking compact content.
-
-- Keep gap centering and outside-channel clearance in SDK routing. Verify actual example geometry through shared contracts and static/browser previews; do not encode routing offsets in author data.
-
-- Use orthogonal routes for state transitions, order data transformations and deployment topology; keep event labels and group titles clear, with cardinal arrow approaches.
-
-- Cover each formal category through a complete shared author story and the common host/delivery checks. Keep narrative contracts in the author tests, and leave SDK capabilities independent of teaching data.
-
-- For author-only spacing changes, state gaps in SVG units (the rendered pixels scale with the viewport), check actual row/layer bounds, curve clearance and real page states before delivery. Keep narrative stable. When compacting node sizes, validate the fullest content of every beat and keep the new dimensions stable during playback.
-
-- Keep example categories in private showcase metadata. Hosts render shared nonempty groups; SDK documents and playback state do not carry navigation classification.
-
-- Include layered formal stories in the same real-host and copied-artifact checks as other stories; validate nested ownership through generated documents and rendered panels.
-
-- Verify formal stories through real host selection, scene navigation and standalone downloads. Compare representative time/theme/motion SVG states from every root/subpath artifact; keep narrative contracts in the shared author tests.
-
-- SDK commands operate on `packages/flowsvg` and SDK-owned regression inputs. Keep example delivery out of SDK test and release prerequisites. Use `test:all` to combine the independent flows explicitly.
-- Build examples sequentially: SDK, selected shared author output, native, React, then Vue. Root orchestration invokes Vite after shared generation; individual app dev/build commands prepare shared output themselves. Concurrent source selections in one checkout can overwrite shared generated data.
-- Run additional seek-heavy scenarios in a separate page and close it after the scenario. Chromium caps page history at 50 entries; shared navigation must leave room for Back/Forward assertions.
-- Keep common browser scenarios in root scripts and register them against real hosts. Delivery acceptance copies each built artifact outside the repository and serves only that artifact from its own origin and explicit base. Test user-visible controls, actual downloads and resource responses; do not create application test-only exports or duplicate SDK rendering/encoding.
-- Type-check showcase browser infrastructure through `tsconfig.showcase.json`. Shared modules and app source retain their own strict type-check commands. New checks supplement existing host, story and SDK contracts.
-
-- Use rounded orthogonal routes for the FlowSVG project architecture. Preserve directed runtime/build-time calls and verify active transfers against every node body when changing route families.
-
-- Keep the cross-host showcase shell visually consistent: use one dark technical palette, a single accent, a live-canvas status cue, catalog-driven story metrics and the same responsive header art. Preserve `[hidden]` semantics for empty state and presentation controls, and disable decorative motion under reduced-motion preferences.
-
-- Keep playback controls and custom selectors on the same dark token set as the showcase canvas: inherit `--flowsvg-control-background`, `--flowsvg-control-color` and `--flowsvg-control-border` from the dark shell, while retaining the accent for focus and active states.
-
-- Bind the showcase control token set to the committed theme class: `theme-dark` uses the dark canvas palette and `theme-light` uses the SDK light control palette. Keep the class on the host root so playback controls and custom selectors switch together.
-
-- Extend explicit theme tokens across the full presentation surface: player frame, canvas, caption, controls, downloads, sharing and manual-copy fields must switch together with `theme-light` / `theme-dark`.
-
-## Public repository inputs
-
-- Keep SDK behavior fixtures in the SDK and formal example data in the shared showcase. Verify SDK and example flows independently, then combine them through `test:all`.
-- Keep temporary plans, task logs and screenshots under the ignored `.scratch/` directory. Public documentation must explain current behavior without requiring local task records.
-- Keep source provenance, licenses and reproducible verification methods with maintained inputs. Retire obsolete demonstration pages and their dedicated narrative checks together.
+- Build selected shared author output and its consumers sequentially: source selection replaces shared generated data. Use the maintained commands in the [showcase verification guide](docs/verification/showcase-verification.md).
+- Verify installed-package behavior through the [SDK gate](docs/verification/sdk-verification.md) and copied host artifacts through the showcase gate. A passing source-level test cannot substitute for either delivery boundary.
+- Before completing an executable change, account for every affected owner and record the checks actually run, their results and any unverified environment.

@@ -488,6 +488,7 @@ Each player owns at most one task. A successful document load retains the old ta
 ```ts
 import { exportPng } from "flowsvg/node";
 import { writeFile } from "node:fs/promises";
+import { diagramDocument } from "./diagram.js";
 
 const png = await exportPng(diagramDocument, {
   executablePath: "/path/to/installed/chromium",

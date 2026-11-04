@@ -10,16 +10,11 @@ Before changing implementation, builds, or tests, read the root `PATTERNS.md` an
 
 ### Source documentation
 
-When adding or changing source modules, public APIs, or complex state/algorithms, follow `docs/agents/code-comments.md` and update adjacent comments with the implementation.
+Before adding or changing source modules, public APIs, or complex state/algorithms, read [source comments](docs/agents/code-comments.md). Update adjacent comments with the implementation.
 
 ### Technical writing
 
-When writing or editing technical documentation or source comments, apply these ASD-STE100-inspired clarity rules to both English and Chinese. This is a project writing convention, not a claim of STE compliance.
-
-- Required: use one consistent term per concept, aligned with code identifiers and the project glossary. Make actors, conditions, outcomes, failure behavior, and execution order explicit where relevant; give each pronoun an unambiguous referent.
-- Default: use direct wording, short sentences with one main point, and one operation per procedural step. Prefer active voice when it clarifies responsibility.
-- Flexible: allow domain terms, code identifiers, and complex sentences needed for precision. Treat STE vocabulary, word-count, tense, and voice restrictions as advisory; preserve accuracy, completeness, rationale, and tradeoffs when simplifying.
-- Before finishing, check the changed text for inconsistent terminology, ambiguous references, and missing conditions or ordering information. Apply the source-comment content requirements in `docs/agents/code-comments.md` when editing comments.
+Before writing technical documentation or source comments, read [technical writing](docs/agents/technical-writing.md). Apply its completion checks to every changed passage.
 
 ### Documentation sync
 
@@ -39,4 +34,4 @@ When assigning triage labels, use the mappings in `docs/agents/triage-labels.md`
 
 ### Domain docs
 
-Before exploring a domain or changing its contracts, follow `docs/agents/domain.md`: read the root `GLOSSARY.md` and relevant decisions in `docs/adr/`.
+Before exploring a domain or changing its contracts, follow [domain documentation](docs/agents/domain.md).

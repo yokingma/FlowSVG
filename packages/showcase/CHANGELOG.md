@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Present all eight formal examples and category labels in English, with compact measured content and explicit CNY amounts. Preserve example IDs, geometry and playback behavior.
+
 - Share eight formal teaching examples, complete defaults and category navigation through the common author catalog.
 - Preserve operation-time playback settings across presentation changes, and support shareable addresses, browser history and standalone downloads.
 - Verify actual hosts and copied root/subpath artifacts independently of SDK release gates.

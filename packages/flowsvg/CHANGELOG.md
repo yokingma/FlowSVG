@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Ship the background task lifecycle example and README GIF with English labels and captions. Keep the standalone document and existing task transitions.
+- Center decorative tag text inside its rounded or pill background while preserving authored tag rows and dimensions.
+
 ## 0.2.2 - 2026-10-28
 
 - Add `flowsvg/node.exportPng` with preflight, offline Chromium rasterization, caller browser ownership and late-resource cleanup.

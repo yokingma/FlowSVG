@@ -23,6 +23,8 @@ The TypeScript core runs without a DOM, network access, or browser clock. Native
 
 ## Use cases
 
+The formal demo catalog uses English for navigation, introductions and diagram text. Stable example IDs keep shared links valid.
+
 | Use case | Typical output |
 | --- | --- |
 | Presentation materials | SVG/PNG diagrams or GIF animations for architecture, processes and state changes |
@@ -130,7 +132,7 @@ The browser SDK also exports PNG at controlled pixel dimensions, with transparen
 
 ## Offline HTML
 
-Node 20+ tools generate a single HTML file with data, player and styles. The file opens through `file://` without a network connection. It starts paused with controls and captions, using the document theme or light when no theme is specified.
+Node 20+ tools generate a single HTML file with data, player and styles. The file opens through `file://` without a network connection. It starts paused with controls and captions, using the document theme or light when no theme is specified. This example reuses `diagramDocument` from the quick start. Compile `diagram.ts` to `diagram.js` before running it in Node.
 
 ```js
 import { renderHtml } from "flowsvg/node";

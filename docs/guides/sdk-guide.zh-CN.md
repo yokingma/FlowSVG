@@ -552,6 +552,7 @@ const bytes = await exportGif(diagramDocument, {
 ```ts
 import { exportPng } from "flowsvg/node";
 import { writeFile } from "node:fs/promises";
+import { diagramDocument } from "./diagram.js";
 
 const png = await exportPng(diagramDocument, {
   executablePath: "/path/to/installed/chromium",

@@ -9,6 +9,7 @@
 ## 维护与验证
 
 - [发布指南](development/releasing.md)：环境准备、实际包消费者验证、预演和显式上传。
+- [宿主维护](development/showcase-hosts.md)：三个展示宿主的公共维护规则与验证边界。
 - [GitHub Pages](development/github-pages.md)：站点构建、设置和上线验证。
 - [SDK verification](verification/sdk-verification.md) · [Showcase verification](verification/showcase-verification.md)：当前命令、覆盖范围与输入归属。
 - [仓库边界](development/repository-split.md)：SDK 与独立创作工具的职责。
@@ -17,6 +18,6 @@
 ## 协作约定
 
 - [术语](../GLOSSARY.md)、[架构决策](adr/)、[实现模式](../PATTERNS.md)与 [SDK 版本说明](../packages/flowsvg/CHANGELOG.md)。
-- [源码注释](agents/code-comments.md)、[领域文档](agents/domain.md)、[本地任务记录](agents/issue-tracker.md)与 [标签映射](agents/triage-labels.md)。
+- [技术写作](agents/technical-writing.md)、[源码注释](agents/code-comments.md)、[领域文档](agents/domain.md)、[本地任务记录](agents/issue-tracker.md)与 [标签映射](agents/triage-labels.md)。
 
 当前行为以公开类型、实现和测试为事实来源。临时计划、日志和截图属于本地工作材料，不是公开文档的阅读前提。

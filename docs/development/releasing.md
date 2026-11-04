@@ -88,19 +88,19 @@ pnpm release
 4. 输出已验证的 tarball 路径与 SHA256。
 5. 对该 tarball 运行 `npm publish --dry-run`。
 
-任一步失败，脚本立即停止。SDK 发布门禁不读取或构建示例 app、共享展示 package。SDK 类型、行为、浏览器与 tarball 消费验收只使用 SDK 自有输入。示例交付通过 `pnpm build:examples` 和 `pnpm test:examples` 单独运行；`pnpm test:all` 显式组合 SDK 与示例验收，但不进入发布门禁。根路径/子路径独立交付检查见[展示验收说明](../verification/showcase-verification.md)。依赖检查与逐项迁移映射见 [SDK 验收说明](../verification/sdk-verification.md)。可运行 `pnpm release --help` 查看参数；`pnpm release --dry-run` 与默认行为相同。
+任一步失败，脚本立即停止。SDK 发布门禁不读取或构建示例 app、共享展示 package。SDK 类型、行为、浏览器与 tarball 消费验收只使用 SDK 自有输入。示例交付通过 `pnpm build:examples` 和 `pnpm test:examples` 单独运行；`pnpm test:all` 显式组合 SDK 与示例验收，但不进入发布门禁。根路径/子路径独立交付检查见[展示验收说明](../verification/showcase-verification.md)。依赖检查与输入归属见 [SDK 验收说明](../verification/sdk-verification.md)。可运行 `pnpm release --help` 查看参数；`pnpm release --dry-run` 与默认行为相同。
 
 tarball 验证先删除 SDK 的 `dist`，再通过 `npm pack` 触发 `prepack` 构建，并检查所有导出文件、类型声明、样式、图片和文件白名单。脚本将构建后的包解压到临时目录，如临时 README 包含相对图片地址，则将其转换为当前包版本的 npm CDN 地址，再以 `--ignore-scripts` 重新打包，确认文件集合未变。源码 README 保留相对图片地址，本地预览不依赖版本发布。随后脚本在临时项目中验证无框架安装、无 DOM 导入、严格类型检查、最低 React 18.0.0 / Vue 3.5.0 的类型与服务端渲染，以及原生、Web Component、React 和 Vue 的挂载、更新与清理。临时安装默认自动删除。
 
 核心消费验收还通过已安装包的公开入口验证无 DOM 的 `measureNodeContent` 调用、只读内容版本集合、已知推荐高度及写回尺寸后的求值结果；严格类型检查覆盖三项公开测量类型。
 
-验证通过的同一份 tarball 保存在 `dist/releases/flowsvg-<version>.tgz`，后续预演与上传均使用该文件，不重新打包。发布文件应只有 `package.json`、中英文 README、CHANGELOG、PATTERNS、LICENSE，列出的 `docs/images/*.png` 示例图和 `docs/images/flowsvg-wordmark.gif` 品牌图，以及公开入口、`dist/core/`、`dist/browser/`、`dist/export/`、`dist/node/` 与 `dist/adapters/` 内部模块的 JavaScript 与类型声明、`dist/styles.css`，以及 `dist/portable/` 的播放器、导出器、CSS、版本清单和许可证。各分入口 TypeScript 编译保留内部目录层级。`scripts/verify-release.mjs` 逐模块列出允许产物；增加内部模块时同步更新允许清单。源 `.ts`、测试产物、fixture 和未声明文件均不得进入 tarball。
+验证通过的同一份 tarball 保存在 `dist/releases/flowsvg-<version>.tgz`，后续预演与上传均使用该文件，不重新打包。发布文件应只有 `package.json`、中英文 README、CHANGELOG、PATTERNS、LICENSE，列出的 `docs/images/*.png` 示例图、`docs/images/job-lifecycle.gif` 教学动画、`docs/images/flowsvg-wordmark.gif` 品牌图和 `examples/job-lifecycle.json` 示例文档，以及公开入口、`dist/core/`、`dist/browser/`、`dist/export/`、`dist/node/` 与 `dist/adapters/` 内部模块的 JavaScript 与类型声明、`dist/styles.css`，以及 `dist/portable/` 的播放器、导出器、CSS、版本清单和许可证。各分入口 TypeScript 编译保留内部目录层级。`scripts/verify-release.mjs` 逐模块列出允许产物；增加内部模块时同步更新允许清单。源 `.ts`、测试产物、fixture 和未声明文件均不得进入 tarball。
 
 ## 登录与上传
 
 确认工作区干净，待发布源码已提交，且版本尚未使用。同步更新包内中英文 README、SDK CHANGELOG 和受影响的使用文档。检查 `package.json` 中的仓库、主页和问题反馈地址是否正确。面向 npm 使用者的文档须能在无私有仓库访问权限时使用。
 
-包内中英文 README 面向前端开发者，保持自足：按安装、首次播放、框架接入、播放控制、导出和编写规则组织，保留常用模型、选项、事件与错误契约。包 README 保持自足，完整手册在公开源码仓库维护；更细的字段说明可查包内 TypeScript 声明与 JSDoc。仓库内的 [SDK 手册](../guides/sdk-guide.zh-CN.md) 供维护者使用，不加入 npm 文件白名单。示例 JSON 和图片仍分别位于 `packages/flowsvg/examples/` 与 `packages/flowsvg/docs/images/` 并随包分发。README 在最前面居中展示动态 Logo，首次播放步骤之后再展示生命周期示例。发布脚本将 Markdown 图片和 HTML `<img>` 中的 `./docs/images/` 地址转换为按包版本固定的 npm CDN 地址，且只修改临时 README 副本。语言切换、更新日志与许可证链接继续指向 npm CDN。上传时使用重新生成并验证的最终 tarball。图片生成来源与刷新方式见[图片说明](../assets/image-previews.md)。
+包内中英文 README 面向前端开发者，保持自足：按安装、首次播放、框架接入、播放控制、导出和编写规则组织，保留常用模型、选项、事件与错误契约。更细的字段说明可查包内 TypeScript 声明与 JSDoc，或公开源码仓库中的 [SDK 手册](../guides/sdk-guide.zh-CN.md)。该手册提供完整接入与 API 参考，不加入 npm 文件白名单。示例 JSON 和图片仍分别位于 `packages/flowsvg/examples/` 与 `packages/flowsvg/docs/images/` 并随包分发。README 在最前面居中展示动态 Logo，首次播放步骤之后再展示生命周期示例。发布脚本将 Markdown 图片和 HTML `<img>` 中的 `./docs/images/` 地址转换为按包版本固定的 npm CDN 地址，且只修改临时 README 副本。语言切换、更新日志与许可证链接继续指向 npm CDN。上传时使用重新生成并验证的最终 tarball。图片生成来源与刷新方式见[图片说明](../assets/image-previews.md)。
 
 登录 npm 官方 registry：
 

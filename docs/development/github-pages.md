@@ -1,6 +1,6 @@
 # GitHub Pages showcase
 
-> **Document status:** Current entry. The workflow file and app build configuration are the source of truth for deployment behavior. The linked showcase verification record is evidence from particular runs and does not guarantee that a live site or every host build is currently available.
+> **Document status:** Current entry. The workflow file and app build configuration are the source of truth for deployment behavior. The [showcase verification guide](../verification/showcase-verification.md) describes reproducible checks. Verify the deployed site separately from local build results.
 
 The deployment workflow publishes the Native showcase and its eight formal examples. The intended URL is <https://yokingma.github.io/FlowSVG/>. This URL becomes available after GitHub Pages is enabled and the first deployment succeeds.
 

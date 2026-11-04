@@ -106,6 +106,8 @@ You should see a request travel from Client to Service, followed by a response i
 
 ## Example: background task lifecycle
 
+The bundled diagram JSON and GIF use English labels and captions.
+
 The example contains three independent cases:
 
 - Task A retries and completes.

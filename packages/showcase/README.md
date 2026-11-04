@@ -1,6 +1,6 @@
 # Shared showcase authoring and sessions
 
-`@flowsvg/showcase` is a private workspace package. It is an SDK consumer, never an SDK dependency. The formal catalog in [src/formal.ts](src/formal.ts) selects **请求与响应** (`request-response`) as its first and default example. The second entry is **RAG：从资料到答案** (`rag-workflow`). The third entry is **FlowSVG：图解如何运行** (`project-architecture`). The fourth entry is **vllm-metal：分层推理架构** (`vllm-metal-stack`). Complete author definitions live in [request-response](src/examples/request-response.ts), [rag-workflow](src/examples/rag-workflow.ts), [project-architecture](src/examples/project-architecture.ts), [vllm-metal-stack](src/examples/vllm-metal-stack.ts), [job-lifecycle](src/examples/job-lifecycle.ts), [order-event-pipeline](src/examples/order-event-pipeline.ts), [web-service-deployment](src/examples/web-service-deployment.ts), and [cache-aside-sequence](src/examples/cache-aside-sequence.ts). [src/acceptance.ts](src/acceptance.ts) is an explicit mechanism-acceptance input; it never fills the formal catalog.
+`@flowsvg/showcase` is a private workspace package. It is an SDK consumer, never an SDK dependency. The formal catalog in [src/formal.ts](src/formal.ts) selects **Request and response** (`request-response`) as its first and default example. The second entry is **RAG: From sources to answers** (`rag-workflow`). The third entry is **FlowSVG: How diagrams run** (`project-architecture`). The fourth entry is **vllm-metal: Layered inference architecture** (`vllm-metal-stack`). Complete author definitions live in [request-response](src/examples/request-response.ts), [rag-workflow](src/examples/rag-workflow.ts), [project-architecture](src/examples/project-architecture.ts), [vllm-metal-stack](src/examples/vllm-metal-stack.ts), [job-lifecycle](src/examples/job-lifecycle.ts), [order-event-pipeline](src/examples/order-event-pipeline.ts), [web-service-deployment](src/examples/web-service-deployment.ts), and [cache-aside-sequence](src/examples/cache-aside-sequence.ts). [src/acceptance.ts](src/acceptance.ts) is an explicit mechanism-acceptance input; it never fills the formal catalog.
 
 TypeScript is the only author source. Each source module exports `catalogSource` with definitions, an explicit ordered ID list, and `defaultId`. Each definition supplies an ID, name, primary `category`, introduction, complete diagram document, and complete `speed`, `theme` and `reducedMotion` defaults. IDs use lowercase letters, digits and single hyphens. Compose variants in TypeScript; each selected variant must contain a complete document before generation.
 
@@ -8,14 +8,16 @@ Each definition selects one primary category from [src/categories.ts](src/catego
 
 | Category ID | Navigation label | Purpose |
 | --- | --- | --- |
-| `architecture` | 系统架构 | Components, responsibilities and layers |
-| `workflow` | 业务流程 | Task steps and decisions |
-| `sequence` | 交互时序 | Ordered communication between participants |
-| `data-flow` | 数据流 | Data sources, transformations and destinations |
-| `state` | 状态转换 | States and triggering events |
-| `deployment` | 部署拓扑 | Runtime locations and connections |
+| `architecture` | Architecture | Components, responsibilities and layers |
+| `workflow` | Workflow | Task steps and decisions |
+| `sequence` | Sequence | Ordered communication between participants |
+| `data-flow` | Data flow | Data sources, transformations and destinations |
+| `state` | State transitions | States and triggering events |
+| `deployment` | Deployment | Runtime locations and connections |
 
 The formal navigation fills all six categories, in this order: workflow, architecture, state, data-flow, deployment and sequence. Workflow and architecture each retain two stories; the remaining categories each have one. The isolated signal acceptance definitions use `data-flow`.
+
+All public story text, category labels and generated diagram documents use English. Keep stable IDs when editing wording so example links remain valid.
 
 The SDK Loop button starts off. Its choice survives example, theme, reduced-motion, retry, Back/Forward and persisted page-cache replacements in the current page session. The host captures loop with time and speed only at operations; the SDK owns the playback clock. Fresh entry or refresh starts with looping off. Loop is absent from share URLs and downloaded diagram JSON, and does not configure GIF repetition.
 
@@ -43,16 +45,16 @@ For a single flow, the sender paints immediately. After arrival, the receiver fi
 
 | Category | Author ID | Teaching contract |
 | --- | --- | --- |
-| 状态转换 | `job-lifecycle` | One current state; task A succeeds after retry, independent B fails at its retry limit, independent C is cancelled while queued |
-| 数据流 | `order-event-pipeline` | E1/E2/E1/E3 becomes two valid orders worth ¥200, one discarded duplicate and one quarantined invalid record |
-| 部署拓扑 | `web-service-deployment` | Public/private boundaries, two application replicas, cache and database roles; replication and health checks are independent relationships |
-| 交互时序 | `cache-aside-sequence` | Seven visible message rows: request, cache GET, MISS, database SELECT/result, cache SET and client response |
+| State transitions | `job-lifecycle` | One current state; task A succeeds after retry, independent B fails at its retry limit, independent C is cancelled while queued |
+| Data flow | `order-event-pipeline` | E1/E2/E1/E3 becomes two valid orders worth CNY 200, one discarded duplicate and one quarantined invalid record |
+| Deployment | `web-service-deployment` | Public/private boundaries, two application replicas, cache and database roles; replication and health checks are independent relationships |
+| Sequence | `cache-aside-sequence` | Seven visible message rows: request, cache GET, MISS, database SELECT/result, cache SET and client response |
 
-The additional stories are **后台任务生命周期** (`job-lifecycle`), **订单事件：从采集到指标** (`order-event-pipeline`), **Web 服务：双副本部署** (`web-service-deployment`), and **缓存未命中：查询与回填** (`cache-aside-sequence`). They demonstrate a single current task state, conserved event counts and amounts, nested deployment boundaries, and seven ordered message rows. All eight use SDK default styling with the dark theme selected initially. The sequence story uses straight messages; RAG, project architecture, task states, order data flow and deployment use orthogonal routes with SDK-rounded bends; request-response and vllm-metal use curved edges. All data is self-contained teaching data.
+The additional stories are **Background task lifecycle** (`job-lifecycle`), **Order events: From ingestion to metrics** (`order-event-pipeline`), **Web service: Two-replica deployment** (`web-service-deployment`), and **Cache miss: Read and populate** (`cache-aside-sequence`). They demonstrate a single current task state, conserved event counts and amounts, nested deployment boundaries, and seven ordered message rows. All eight use SDK default styling with the dark theme selected initially. The sequence story uses straight messages; RAG, project architecture, task states, order data flow and deployment use orthogonal routes with SDK-rounded bends; request-response and vllm-metal use curved edges. All data is self-contained teaching data.
 
 The task-state author explicitly creates the initial inactive content and all nine stage versions before creating the document. It passes these versions to public `measureNodeContent` at width 220, rejects unresolved diagnostics, and reuses those same versions in beat updates. All six cards share the recommended height 141, with a 50-unit row gap and explicit coordinates. Measurement inputs and version collections stay outside the generated document.
 
-Task states use unlabeled event flows with `highlightParticipants: false` and one explicitly highlighted node with a “当前” tag. Each event shows a moving solid dot while retaining the unique current state; independent task setup stages have no flow. The retry edge loops above the state row to separate event labels. The data story uses a fictional one-minute aggregation window and amounts in RMB. The deployment story does not promise cross-zone placement, synchronous replication or automatic database failover. The sequence story uses existing participant groups and one pair of small endpoint nodes per message; no sequence-specific SDK API is added. Its database record exists and cache SET succeeds; the SET acknowledgement is omitted explicitly. Vertical spacing denotes order, not elapsed time.
+Task states use unlabeled event flows with `highlightParticipants: false` and one explicitly highlighted node with a “Current” tag. Each event shows a moving solid dot while retaining the unique current state; independent task setup stages have no flow. The retry edge loops above the state row to separate event labels. The data story uses a fictional one-minute aggregation window and amounts in RMB. The deployment story does not promise cross-zone placement, synchronous replication or automatic database failover. The sequence story uses existing participant groups and one pair of small endpoint nodes per message; no sequence-specific SDK API is added. Its database record exists and cache SET succeeds; the SET acknowledgement is omitted explicitly. Vertical spacing denotes order, not elapsed time.
 
 The SDK centers unobstructed orthogonal bridges when arrow space permits. Matching port sides use a single outside channel; separate ancestor frames contribute clearance without forcing internal edges outside a shared container. Author tests verify these behaviors on the three orthogonal stories.
 

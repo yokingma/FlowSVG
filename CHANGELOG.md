@@ -1,5 +1,10 @@
 # Workspace changelog
 
+## Unreleased
+
+- Use English throughout the formal demo catalog, downloadable diagrams and SDK lifecycle preview; preserve stable example IDs and bilingual documentation.
+- Center structured-content tag text inside its decorative background across core SVG and browser rendering.
+
 ## Public repository scope
 
 - Maintain the FlowSVG SDK, shared formal author catalog and Native/React/Vue example hosts.
