@@ -162,11 +162,18 @@ export class ShowcaseApp extends Component<Record<string, never>, AppState> {
   override render(): ReactNode {
     const { session } = this.state;
     const definition = session.exampleId === null ? undefined : catalog.get(session.exampleId);
-    return <main className="showcase flowsvg-compact">
+    return <main className={`showcase flowsvg-compact${session.settings?.reducedMotion ? " reduced-motion" : ""}${session.settings ? ` theme-${session.settings.theme}` : ""}`}>
       <header className="showcase-header">
-        <p className="eyebrow">FlowSVG / React</p>
-        <h1>Diagram showcase</h1>
-        <p>Explore a diagram, read its purpose, and take the source with you.</p>
+        <div className="showcase-header-grid">
+          <div className="showcase-copy">
+            <div className="brandline"><span className="brand-mark" aria-hidden="true">F</span><span>FlowSVG</span><span className="status-chip"><span className="live-dot" aria-hidden="true" />LIVE CANVAS</span></div>
+            <p className="eyebrow">React / animated systems</p>
+            <h1>Diagram showcase</h1>
+            <p>Explore a diagram, read its purpose, and take the source with you.</p>
+            <div className="showcase-stats" aria-label="Showcase facts"><span><strong>{catalog.entries.length}</strong> stories</span><span><strong>3</strong> adapters</span><span><strong>1</strong> authoring model</span></div>
+          </div>
+          <div className="header-art" aria-hidden="true"><span className="art-orbit" /><span className="art-node art-node-a">REQUEST</span><span className="art-node art-node-b">ROUTER</span><span className="art-node art-node-c">RESPONSE</span><span className="art-pulse" /></div>
+        </div>
       </header>
       <div className="showcase-layout">
         <aside><h2 className="navigation-title">Examples</h2><nav aria-label="Examples">
@@ -178,6 +185,7 @@ export class ShowcaseApp extends Component<Record<string, never>, AppState> {
         </nav></aside>
         <section className="current-example" aria-label="Current example">
           <div id="introduction">
+            {definition && <div className="example-meta"><span className="example-live"><span className="live-dot" aria-hidden="true" /> LIVE STORY</span><span className="example-id">{definition.id}</span></div>}
             <h2>{definition?.name ?? "No showcase examples configured."}</h2>
             <p>{definition?.introduction ?? "The formal example catalog is awaiting content selection."}</p>
           </div>

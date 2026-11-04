@@ -6,6 +6,7 @@ import "flowsvg/styles.css";
 import "./style.css";
 
 const navigation = requireElement("nav");
+const storyCount = requireElement("#story-count");
 const introduction = requireElement("#introduction");
 const playerHost = requireElement("#player");
 const downloadHost = requireElement("#download");
@@ -24,6 +25,7 @@ const shareResult = requireElement("#share-result");
 const manualShare = requireElement("#manual-share");
 const shareUrl = requireElement<HTMLInputElement>("#share-url");
 const initial = restoreSession(catalog, location.href);
+storyCount.textContent = String(catalog.entries.length);
 let session = initial.session;
 let shareRequest = 0;
 let player: FlowPlayer | undefined;
@@ -125,6 +127,10 @@ function captureSnapshot(): { snapshot?: PlaybackSnapshot; error?: unknown } {
 function mountSession(): void {
   const definition = session.exampleId === null ? undefined : catalog.get(session.exampleId);
   if (!definition || !session.settings) return;
+  const showcase = document.querySelector("main.showcase");
+  showcase?.classList.toggle("reduced-motion", session.settings.reducedMotion);
+  showcase?.classList.toggle("theme-light", session.settings.theme === "light");
+  showcase?.classList.toggle("theme-dark", session.settings.theme === "dark");
   const version = session.version;
   errorHost.hidden = true;
   visualHost.hidden = false;
@@ -151,11 +157,20 @@ function mountSession(): void {
 }
 
 function renderIntroduction(definition: ShowcaseDefinition): void {
+  const meta = document.createElement("div");
+  meta.className = "example-meta";
+  const live = document.createElement("span");
+  live.className = "example-live";
+  live.innerHTML = '<span class="live-dot" aria-hidden="true"></span> LIVE STORY';
+  const id = document.createElement("span");
+  id.className = "example-id";
+  id.textContent = definition.id;
+  meta.append(live, id);
   const title = document.createElement("h2");
   title.textContent = definition.name;
   const copy = document.createElement("p");
   copy.textContent = definition.introduction;
-  introduction.replaceChildren(title, copy);
+  introduction.replaceChildren(meta, title, copy);
   const link = document.createElement("a");
   link.textContent = "Download diagram JSON";
   link.href = new URL(definition.jsonPath, new URL(import.meta.env.BASE_URL, location.href)).href;

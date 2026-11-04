@@ -60,5 +60,5 @@ const document: DiagramDocument = {
 export const cacheAsideSequenceExample: ShowcaseAuthorDefinition = {
   id: "cache-aside-sequence", category: "sequence", name: "缓存未命中：查询与回填",
   introduction: "按从上到下的七行消息，观察客户端、API、缓存、数据库之间的查询、未命中、记录返回和回填。泳道表示参与者，纵向表示消息先后；沿用直线箭头与默认主题，仅教学演示。",
-  document, defaults: { speed: 1, theme: "light", reducedMotion: false }
+  document, defaults: { speed: 1, theme: "dark", reducedMotion: false }
 };

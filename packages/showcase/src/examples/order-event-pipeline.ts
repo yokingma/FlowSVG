@@ -77,5 +77,5 @@ const document: DiagramDocument = {
 export const orderEventPipelineExample: ShowcaseAuthorDefinition = {
   id: "order-event-pipeline", category: "data-flow", name: "订单事件：从采集到指标",
   introduction: "跟随 4 条虚构订单事件经过队列、校验去重、有效／异常分流和窗口聚合。两条有效订单合计人民币 ¥200；事件 ID、计数和金额贯穿各阶段，不连接真实消息或数据服务。",
-  document, defaults: { speed: 1, theme: "light", reducedMotion: false }
+  document, defaults: { speed: 1, theme: "dark", reducedMotion: false }
 };

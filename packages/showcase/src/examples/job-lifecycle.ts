@@ -105,5 +105,5 @@ const document: DiagramDocument = {
 export const jobLifecycleExample: ShowcaseAuthorDefinition = {
   id: "job-lifecycle", category: "state", name: "后台任务生命周期",
   introduction: "观察后台任务的事件与状态迁移：任务 A 重试后完成，独立任务 B 达到重试上限，任务 C 在待执行时取消。当前状态始终唯一；重试次数是教学设定，不执行真实任务。",
-  document, defaults: { speed: 1, theme: "light", reducedMotion: false }
+  document, defaults: { speed: 1, theme: "dark", reducedMotion: false }
 };

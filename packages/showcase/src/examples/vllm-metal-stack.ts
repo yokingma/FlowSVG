@@ -132,5 +132,5 @@ export const vllmMetalStackExample: ShowcaseAuthorDefinition = {
   name: "vllm-metal：分层推理架构",
   introduction: "参考 vllm-metal 官方架构图，用 24 秒讲解客户端、上游 vLLM V1、嵌套的 model runner 与 MLX / Metal / Apple Silicon 四层结构。区分 mlx_lm 复用、自有注意力实现和硬件／配置条件；仅展示模块职责，不执行真实推理。",
   document,
-  defaults: { speed: 1, theme: "light", reducedMotion: false }
+  defaults: { speed: 1, theme: "dark", reducedMotion: false }
 };

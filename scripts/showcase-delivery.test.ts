@@ -392,7 +392,7 @@ async function inspectFormalArtifact(page: Page, address: string) {
   expect(await navigation.getByRole("group", { name: "业务流程", exact: true }).getByRole("button").allTextContents()).toEqual(["请求与响应", "RAG：从资料到答案"]);
   expect(await navigation.getByRole("group", { name: "系统架构", exact: true }).getByRole("button").allTextContents()).toEqual(["FlowSVG：图解如何运行", "vllm-metal：分层推理架构"]);
   expect(await page.locator("#introduction h2").textContent()).toBe("请求与响应");
-  expect(await page.getByRole("combobox", { name: "Theme", exact: true }).getAttribute("data-value")).toBe("light");
+  expect(await page.getByRole("combobox", { name: "Theme", exact: true }).getAttribute("data-value")).toBe("dark");
   expect(await page.getByRole("combobox", { name: "Speed", exact: true }).getAttribute("data-value")).toBe("1");
   expect(await page.getByRole("checkbox", { name: "Reduce motion", exact: true }).isChecked()).toBe(false);
   expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe("0");

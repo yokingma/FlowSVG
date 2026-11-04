@@ -17,7 +17,7 @@ it("offers the architecture as a standalone third example with the original defa
   expect(catalog.defaultId).toBe("request-response");
   expect(example.name).toBe("FlowSVG：图解如何运行");
   expect(example.durationMs).toBe(createDiagram(example.document).totalDuration);
-  expect(example.defaults).toEqual({ speed: 1, theme: "light", reducedMotion: false });
+  expect(example.defaults).toEqual({ speed: 1, theme: "dark", reducedMotion: false });
   expect(JSON.parse(json.get(example.jsonPath)!)).toEqual(example.document);
 });
 

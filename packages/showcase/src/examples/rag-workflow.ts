@@ -241,5 +241,5 @@ export const ragWorkflowExample: ShowcaseAuthorDefinition = {
   name: "RAG：从资料到答案",
   introduction: "演示 RAG 的资料入库与用户问答：复用嵌入模型，召回 5 个候选片段，经可选重排保留 2 个，再生成带来源的答案。员工手册、问题和答案均为虚构教学内容，不连接真实模型或数据库；片段数量不代表推荐参数。",
   document,
-  defaults: { speed: 1, theme: "light", reducedMotion: false }
+  defaults: { speed: 1, theme: "dark", reducedMotion: false }
 };

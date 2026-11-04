@@ -8,3 +8,5 @@
 - Retire obsolete demonstration narratives and their dedicated checks; maintain generic behavior coverage in the SDK.
 
 - Consume measured content, rounded routes, adaptive RAG geometry and the SDK compiled playback schedule. Preserve runtime Loop preferences across replacements.
+
+- Use the shared technical presentation shell, responsive animated header and complete light/dark theme tokens. Start all formal examples in the dark theme.

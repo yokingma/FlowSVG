@@ -304,14 +304,32 @@ const App = defineComponent({
       const target = session.value;
       const definition =
         target.exampleId === null ? undefined : catalog.get(target.exampleId);
-      return h("main", { class: "showcase flowsvg-compact" }, [
+      return h("main", { class: `showcase flowsvg-compact${target.settings?.reducedMotion ? " reduced-motion" : ""}${target.settings ? ` theme-${target.settings.theme}` : ""}` }, [
         h("header", { class: "showcase-header" }, [
-          h("p", { class: "eyebrow" }, "FlowSVG / Vue"),
-          h("h1", "Diagram showcase"),
-          h(
-            "p",
-            "Explore a diagram, read its purpose, and take the source with you.",
-          ),
+          h("div", { class: "showcase-header-grid" }, [
+            h("div", { class: "showcase-copy" }, [
+              h("div", { class: "brandline" }, [
+                h("span", { class: "brand-mark", "aria-hidden": "true" }, "F"),
+                h("span", "FlowSVG"),
+                h("span", { class: "status-chip" }, [h("span", { class: "live-dot", "aria-hidden": "true" }), "LIVE CANVAS"]),
+              ]),
+              h("p", { class: "eyebrow" }, "Vue / animated systems"),
+              h("h1", "Diagram showcase"),
+              h("p", "Explore a diagram, read its purpose, and take the source with you."),
+              h("div", { class: "showcase-stats", "aria-label": "Showcase facts" }, [
+                h("span", [h("strong", String(catalog.entries.length)), " stories"]),
+                h("span", [h("strong", "3"), " adapters"]),
+                h("span", [h("strong", "1"), " authoring model"]),
+              ]),
+            ]),
+            h("div", { class: "header-art", "aria-hidden": "true" }, [
+              h("span", { class: "art-orbit" }),
+              h("span", { class: "art-node art-node-a" }, "REQUEST"),
+              h("span", { class: "art-node art-node-b" }, "ROUTER"),
+              h("span", { class: "art-node art-node-c" }, "RESPONSE"),
+              h("span", { class: "art-pulse" }),
+            ]),
+          ]),
         ]),
         h("div", { class: "showcase-layout" }, [
           renderNavigation(target),
@@ -352,7 +370,14 @@ function renderIntroduction(definition: ShowcaseDefinition | undefined) {
     "div",
     { id: "introduction" },
     definition
-      ? [h("h2", definition.name), h("p", definition.introduction)]
+      ? [
+          h("div", { class: "example-meta" }, [
+            h("span", { class: "example-live" }, [h("span", { class: "live-dot", "aria-hidden": "true" }), " LIVE STORY"]),
+            h("span", { class: "example-id" }, definition.id),
+          ]),
+          h("h2", definition.name),
+          h("p", definition.introduction),
+        ]
       : [
           h("h2", "No showcase examples configured."),
           h("p", "The formal example catalog is awaiting content selection."),

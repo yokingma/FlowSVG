@@ -40,7 +40,7 @@ function expectOrthogonalEdges(edges: readonly EvaluatedEdge[]): void {
 it.each(NEW_EXAMPLES)("offers %s with readable stable geometry and consistent routes", (id, category, route) => {
   const { example, diagram } = getExample(id);
   expect(example.category).toBe(category);
-  expect(example.defaults).toEqual({ speed: 1, theme: "light", reducedMotion: false });
+  expect(example.defaults).toEqual({ speed: 1, theme: "dark", reducedMotion: false });
   expect(example.document.edges.every((edge) => edge.route === route)).toBe(true);
   const starts = [...diagram.beats.map(({ startMs }) => startMs), diagram.totalDuration];
   const initial = diagram.evaluateAt(0);

@@ -72,5 +72,5 @@ export const requestResponseExample: ShowcaseAuthorDefinition = {
   name: "请求与响应",
   introduction: "客户端发起请求，网关并行检查身份与库存；订单服务创建订单后逐级返回结果。播放 10 秒流程，观察并行传递、反向响应和参与节点高亮。",
   document,
-  defaults: { speed: 1, theme: "light", reducedMotion: false }
+  defaults: { speed: 1, theme: "dark", reducedMotion: false }
 };

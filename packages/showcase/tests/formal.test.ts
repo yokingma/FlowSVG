@@ -16,7 +16,7 @@ it("opens the selected formal story with SDK defaults and downloadable standalon
   expect(catalog.defaultId).toBe("request-response");
   expect(example.name).toBe("请求与响应");
   expect(example.introduction).toContain("并行");
-  expect(example.defaults).toEqual({ speed: 1, theme: "light", reducedMotion: false });
+  expect(example.defaults).toEqual({ speed: 1, theme: "dark", reducedMotion: false });
   expect(JSON.parse(json.get(example.jsonPath)!)).toEqual(example.document);
   expect(example.durationMs).toBe(10_000);
 });
@@ -101,7 +101,7 @@ it("offers a standalone RAG story with SDK-compiled timing after the default req
   expect(example, "RAG must be a selectable formal example").toBeDefined();
   expect(example?.name).toBe("RAG：从资料到答案");
   expect(example?.durationMs).toBeCloseTo(22_543.151, 3);
-  expect(example?.defaults).toEqual({ speed: 1, theme: "light", reducedMotion: false });
+  expect(example?.defaults).toEqual({ speed: 1, theme: "dark", reducedMotion: false });
   expect(JSON.parse(json.get(example!.jsonPath)!)).toEqual(example?.document);
   expect(example?.document.scenes.map(({ label }) => label)).toEqual([
     "解析与切分", "向量化与入库", "提交问题", "召回候选片段",

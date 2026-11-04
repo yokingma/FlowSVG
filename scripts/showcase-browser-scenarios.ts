@@ -146,12 +146,25 @@ export function registerShowcaseBrowserScenarios(config: { packageName: string }
     await page.goto(`${origin}/formal/`);
     expect(await page.getByRole("navigation", { name: "Examples" }).getByRole("button").allTextContents()).toEqual(FORMAL_NAMES);
     expect(await page.getByRole("heading", { name: "请求与响应", exact: true }).count()).toBe(1);
-    expect(await page.getByRole("combobox", { name: "Theme", exact: true }).getAttribute("data-value")).toBe("light");
+    expect(await page.getByRole("combobox", { name: "Theme", exact: true }).getAttribute("data-value")).toBe("dark");
     expect(await page.getByRole("combobox", { name: "Speed", exact: true }).getAttribute("data-value")).toBe("1");
     expect(await page.getByRole("checkbox", { name: "Reduce motion", exact: true }).isChecked()).toBe(false);
     expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe("0");
     expect(await page.getByRole("button", { name: "Play", exact: true }).count()).toBe(1);
     await expect.poll(() => page.locator(".flowsvg-canvas > svg").count()).toBe(1);
+    const themePage = await browser.newPage();
+    try {
+      await themePage.goto(`${origin}/formal/`);
+      const readBackground = (selector: string) => themePage.locator(selector).evaluate((element) => getComputedStyle(element).backgroundColor);
+      expect(await readBackground("#player .flowsvg-controls")).toBe("rgb(16, 27, 21)");
+      expect(await readBackground("#download a")).toBe("rgb(16, 27, 21)");
+      await chooseOption(themePage.getByRole("combobox", { name: "Theme", exact: true }), "light");
+      await themePage.mouse.move(0, 0);
+      await expect.poll(() => readBackground("#player .flowsvg-controls")).toBe("rgb(255, 255, 255)");
+      await expect.poll(() => readBackground("#download a")).toBe("rgb(255, 255, 255)");
+    } finally {
+      await themePage.close();
+    }
     const data = await page.request.get(`${origin}/formal/json/request-response.json`);
     expect(data.status()).toBe(200);
     expect(await data.json()).toMatchObject({ title: "请求与响应", version: 1 });

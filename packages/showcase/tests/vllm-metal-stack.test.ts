@@ -19,7 +19,7 @@ it("offers the layered stack as a fourth standalone example with the original de
   expect(catalog.defaultId).toBe("request-response");
   expect(example.name).toBe("vllm-metal：分层推理架构");
   expect(example.durationMs).toBe(createDiagram(example.document).totalDuration);
-  expect(example.defaults).toEqual({ speed: 1, theme: "light", reducedMotion: false });
+  expect(example.defaults).toEqual({ speed: 1, theme: "dark", reducedMotion: false });
   expect(JSON.parse(json.get(example.jsonPath)!)).toEqual(example.document);
   expect(example.introduction).toContain("参考");
   expect(example.introduction).toContain("不执行真实推理");

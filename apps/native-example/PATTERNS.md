@@ -40,4 +40,12 @@
 
 - Consume SDK `Diagram.beats` for effective scene/beat boundaries. Never reconstruct a timeline by summing authored `durationMs`; single-flow movement plus 500 ms replaces authored beat timing. Keep reading time and unique task-state highlights independent of marker arrival.
 
+- Keep the cross-host showcase shell visually consistent: use one dark technical palette, a single accent, a live-canvas status cue, catalog-driven story metrics and the same responsive header art. Preserve `[hidden]` semantics for empty state and presentation controls, and disable decorative motion under reduced-motion preferences.
+
+- Keep playback controls and custom selectors on the same dark token set as the showcase canvas: inherit `--flowsvg-control-background`, `--flowsvg-control-color` and `--flowsvg-control-border` from the dark shell, while retaining the accent for focus and active states.
+
+- Bind the showcase control token set to the committed theme class: `theme-dark` uses the dark canvas palette and `theme-light` uses the SDK light control palette. Keep the class on the host root so playback controls and custom selectors switch together.
+
+- Extend explicit theme tokens across the full presentation surface: player frame, canvas, caption, controls, downloads, sharing and manual-copy fields must switch together with `theme-light` / `theme-dark`.
+
 - Keep the formal site in `src/` and browser acceptance in `acceptance/`. SDK behavior uses independent SDK fixtures; shared author tests own the formal narratives.

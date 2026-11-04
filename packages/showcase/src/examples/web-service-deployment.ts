@@ -82,5 +82,5 @@ const document: DiagramDocument = {
 export const webServiceDeploymentExample: ShowcaseAuthorDefinition = {
   id: "web-service-deployment", category: "deployment", name: "Web 服务：双副本部署",
   introduction: "查看公网入口、私网应用双副本与数据层：查询经过负载均衡、缓存和主实例，复制与健康检查分别说明。副本 A 不健康后，后续请求选择 B；仅教学演示，不连接基础设施。",
-  document, defaults: { speed: 1, theme: "light", reducedMotion: false }
+  document, defaults: { speed: 1, theme: "dark", reducedMotion: false }
 };

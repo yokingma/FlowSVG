@@ -95,5 +95,5 @@ export const projectArchitectureExample: ShowcaseAuthorDefinition = {
   name: "FlowSVG：图解如何运行",
   introduction: "了解 FlowSVG 自身架构：同一份图解文档经过平台无关核心求值，由浏览器播放器及适配器展示，并导出 SVG、GIF 或离线 HTML。区分可选导出、Node 运行条件与私有展示工程边界；箭头表示数据或调用。",
   document,
-  defaults: { speed: 1, theme: "light", reducedMotion: false }
+  defaults: { speed: 1, theme: "dark", reducedMotion: false }
 };
