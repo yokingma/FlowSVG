@@ -67,3 +67,44 @@ describe("Web Component loop mode", () => {
     } finally { element.remove(); }
   });
 });
+
+describe("Web Component interaction events", () => {
+  it("forwards hover, click and their aliases from the wrapped player", () => {
+    const element = window.document.createElement(FLOW_PLAYER_TAG) as FlowPlayerElement;
+    element.controls = false;
+    element.reducedMotion = false;
+    element.document = {
+      version: 1,
+      viewport: { width: 200, height: 120 },
+      nodes: [{ id: "node", kind: "rect", x: 20, y: 30, width: 80, height: 50 }],
+      edges: [],
+      scenes: []
+    };
+    const events = new Map<string, unknown[]>();
+    for (const name of ["hover", "objecthover", "click", "objectclick"] as const) {
+      const received: unknown[] = [];
+      events.set(name, received);
+      element.addEventListener(name, (event) => received.push((event as CustomEvent).detail));
+    }
+
+    try {
+      window.document.body.append(element);
+      const svg = element.querySelector<SVGElement>("svg");
+      if (!svg) throw new Error("Expected the Web Component SVG");
+      svg.getBoundingClientRect = () => ({
+        x: 0, y: 0, left: 0, top: 0, right: 200, bottom: 120, width: 200, height: 120,
+        toJSON: () => ({})
+      });
+      const canvas = element.querySelector<HTMLElement>(".flowsvg-canvas");
+      if (!canvas) throw new Error("Expected the Web Component canvas");
+      canvas.dispatchEvent(new MouseEvent("pointermove", { bubbles: true, clientX: 40, clientY: 50 }));
+      canvas.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: 40, clientY: 50 }));
+
+      for (const name of ["hover", "objecthover", "click", "objectclick"] as const) {
+        expect(events.get(name)).toEqual([expect.objectContaining({ id: "node", type: "node" })]);
+      }
+    } finally {
+      element.remove();
+    }
+  });
+});

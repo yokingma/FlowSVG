@@ -360,7 +360,10 @@ export class FlowPlayerElement extends HTMLElementBase {
 
   private forwardPlayerEvents(host: HTMLElement): void {
     this.removeForwardedEvents();
-    for (const name of ["stepchange", "timeupdate", "playstatechange", "loopchange", "error"] as const) {
+    for (const name of [
+      "stepchange", "timeupdate", "playstatechange", "loopchange", "error",
+      "hover", "click", "objecthover", "objectclick"
+    ] as const) {
       const listener: EventListener = (event) => {
         const source = event as CustomEvent<PlayerEventMap[typeof name]["detail"]>;
         if (name === "loopchange") {

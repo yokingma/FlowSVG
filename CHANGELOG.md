@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Forward Web Component hover/click interaction events and their aliases to the custom element boundary.
+
 - Simplify LLM inference annotations and cache-card typography; include the ninth formal story in shared browser navigation and delivery assertions.
 
 - Preserve complete English words in ordinary node and edge labels; keep vertical connection labels readable at the authored font size.
