@@ -215,7 +215,7 @@ For project conventions, see the [glossary](GLOSSARY.md), [architecture decision
 
 ## Related Skill
 
-Flow SVG Diagram is an executable diagram Skill for explaining systems and processes: author once, then play, embed, inspect, and export. Its separate `flow-svg-diagram-skills` project owns authoring, layout plans, validation workflows, reviews, and delivery reports. It consumes the public `flowsvg@0.2.2` package without this checkout.
+Flow SVG Diagram is an executable diagram Skill for explaining systems and processes: author once, then play, embed, inspect, and export. Its separate `flow-svg-diagram-skills` project owns authoring, layout plans, validation workflows, reviews, and delivery reports. It consumes the public `flowsvg@0.2.3` package without this checkout.
 
 See [repository boundaries](docs/development/repository-split.md) for the SDK integration boundary. SDK installation, development, tests, release verification and examples are self-contained.
 

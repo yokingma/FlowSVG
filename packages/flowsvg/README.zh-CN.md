@@ -4,7 +4,7 @@
 
 <p align="center">声明式 SVG 图解，支持时间线播放与 SVG/PNG/GIF 导出。</p>
 
-<p align="center"><a href="https://cdn.jsdelivr.net/npm/flowsvg@0.2.2/README.md">English</a> | 简体中文</p>
+<p align="center"><a href="https://cdn.jsdelivr.net/npm/flowsvg@0.2.3/README.md">English</a> | 简体中文</p>
 
 <p align="center">
   <a href="#快速开始">快速开始</a> ·
@@ -531,4 +531,4 @@ SDK CLI 支持 HTML 和 GIF 输出。PNG 使用 SDK API 导出。
 
 更多字段说明可在编辑器中查看包内 TypeScript 声明与 JSDoc。
 
-[更新日志](https://cdn.jsdelivr.net/npm/flowsvg@0.2.2/CHANGELOG.md) · [MIT](https://cdn.jsdelivr.net/npm/flowsvg@0.2.2/LICENSE)
+[更新日志](https://cdn.jsdelivr.net/npm/flowsvg@0.2.3/CHANGELOG.md) · [MIT](https://cdn.jsdelivr.net/npm/flowsvg@0.2.3/LICENSE)

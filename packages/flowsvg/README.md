@@ -4,7 +4,7 @@
 
 <p align="center">Declarative SVG diagrams with timeline playback and SVG/PNG/GIF export.</p>
 
-<p align="center">English | <a href="https://cdn.jsdelivr.net/npm/flowsvg@0.2.2/README.zh-CN.md">简体中文</a></p>
+<p align="center">English | <a href="https://cdn.jsdelivr.net/npm/flowsvg@0.2.3/README.zh-CN.md">简体中文</a></p>
 
 <p align="center">
   <a href="#quick-start">Quick&nbsp;start</a> ·
@@ -531,4 +531,4 @@ When recording a decision, bind source, SDK identity, time and visual options se
 
 For additional field details, use the TypeScript declarations and JSDoc included in the package.
 
-[Changelog](https://cdn.jsdelivr.net/npm/flowsvg@0.2.2/CHANGELOG.md) · [MIT](https://cdn.jsdelivr.net/npm/flowsvg@0.2.2/LICENSE)
+[Changelog](https://cdn.jsdelivr.net/npm/flowsvg@0.2.3/CHANGELOG.md) · [MIT](https://cdn.jsdelivr.net/npm/flowsvg@0.2.3/LICENSE)

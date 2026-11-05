@@ -215,7 +215,7 @@ pnpm test
 
 ## 独立 Skill
 
-Flow SVG Diagram：面向系统和流程解释的可执行图解 Skill。一次编写，支持播放、嵌入、检查和导出。独立的 `flow-svg-diagram-skills` 项目负责创作、布局计划、校验流程、复核与交付报告，通过公开 `flowsvg@0.2.2` 包运行，无需本仓源码。
+Flow SVG Diagram：面向系统和流程解释的可执行图解 Skill。一次编写，支持播放、嵌入、检查和导出。独立的 `flow-svg-diagram-skills` 项目负责创作、布局计划、校验流程、复核与交付报告，通过公开 `flowsvg@0.2.3` 包运行，无需本仓源码。
 
 SDK 与独立创作工具的职责见[仓库边界](docs/development/repository-split.md)。SDK 安装、开发、测试、发布验收和示例均可独立运行。
 

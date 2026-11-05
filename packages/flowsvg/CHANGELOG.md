@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.3 - 2026-11-05
 
 - Preserve complete Latin words when wrapping ordinary labels. Allow overwide words to exceed the estimated width and use endpoint column widths for purely vertical edge labels without reducing font size. Keep complete Latin words in GIF captions and reject captions when an intact word exceeds the available width.
 
