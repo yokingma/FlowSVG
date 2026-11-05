@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Keep the RAG question-to-context arrow as a straight segment to remove the small visual bend at the context card.
+
 - Forward Web Component hover/click interaction events and their aliases to the custom element boundary.
 
 - Simplify LLM inference annotations and cache-card typography; include the ninth formal story in shared browser navigation and delivery assertions.

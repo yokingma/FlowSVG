@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Keep the RAG question-to-context arrow as a straight segment to remove the small visual bend at the context card.
+
 - Remove the LLM inference diagram's duplicate title and subtitle. Center unboxed annotations over their columns, compact the viewport, and give each cache card separate layer/count lines that fit all playback states.
 
 - Add the English `llm-inference` formal example covering tokenization, causal prefill, KV-cache decode and next-token sampling. Preserve causal edge relationships and category navigation.

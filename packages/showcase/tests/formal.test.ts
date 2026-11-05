@@ -111,7 +111,7 @@ it("offers a standalone RAG story with SDK-compiled timing after the default req
   const example = catalog.get("rag-workflow");
   expect(example, "RAG must be a selectable formal example").toBeDefined();
   expect(example?.name).toBe("RAG: From sources to answers");
-  expect(example?.durationMs).toBeCloseTo(22_543.151, 3);
+  expect(example?.durationMs).toBeCloseTo(22_587.595, 3);
   expect(example?.defaults).toEqual({ speed: 1, theme: "dark", reducedMotion: false });
   expect(JSON.parse(json.get(example!.jsonPath)!)).toEqual(example?.document);
   expect(example?.document.scenes.map(({ label }) => label)).toEqual([

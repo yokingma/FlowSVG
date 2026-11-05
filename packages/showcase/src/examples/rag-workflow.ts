@@ -84,7 +84,7 @@ const INITIAL_NODES: Omit<StageNode, "y" | "height">[] = [
     content: createContent("Reranker", "After retrieval",
       { type: "paragraph", text: "Question + candidates" },
       { type: "paragraph", role: "auxiliary", text: "Rank by relevance" }) },
-  { id: "context", kind: "roundedRect", x: 24, width: 240,
+  { id: "context", kind: "roundedRect", x: 4, width: 240,
     content: createContent("Build context", "Question + sources",
       { type: "paragraph", text: "Question + sources" },
       { type: "paragraph", role: "auxiliary", text: "Answer with sources" }) },
@@ -155,7 +155,8 @@ const document: DiagramDocument = {
     { id: "search-index", from: "retriever", to: "knowledge-index", route: "orthogonal", fromPort: "right", toPort: "right" },
     { id: "candidate-texts", from: "retriever", to: "reranker", route: "orthogonal", fromPort: "left", toPort: "right" },
     { id: "rerank-question", from: "question", to: "reranker", route: "orthogonal", fromPort: "right", toPort: "left" },
-    { id: "context-question", from: "question", to: "context", route: "orthogonal", fromPort: "bottom", toPort: "top" },
+    // Keep the direct question-to-context relationship as one straight segment for a cleaner arrow.
+    { id: "context-question", from: "question", to: "context", route: "straight", fromPort: "bottom", toPort: "top" },
     { id: "selected-chunks", from: "reranker", to: "context", route: "orthogonal", fromPort: "bottom", toPort: "top" },
     { id: "model-context", from: "context", to: "language-model", route: "orthogonal", fromPort: "right", toPort: "left" },
     { id: "cited-answer", from: "language-model", to: "answer", route: "orthogonal", fromPort: "right", toPort: "left" }

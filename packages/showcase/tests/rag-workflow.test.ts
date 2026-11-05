@@ -118,12 +118,12 @@ it("keeps shared inputs distinct and aligns each arrival with its target side", 
     const values = path.match(/-?\d+(?:\.\d+)?/g)!.map(Number);
     return Array.from({ length: values.length / 2 }, (_, index) => ({ x: values[index * 2]!, y: values[index * 2 + 1]! }));
   };
-  for (const ids of [["embed-chunks", "embed-question"], ["rerank-question", "candidate-texts"], ["context-question", "selected-chunks"]]) {
+  for (const ids of [["embed-chunks", "embed-question"], ["rerank-question", "candidate-texts"]]) {
     const [first, second] = ids.map((id) => pointsFor(id).at(-1)!);
     expect(Math.hypot(first!.x - second!.x, first!.y - second!.y)).toBeGreaterThanOrEqual(20);
   }
   const normals = { top: { x: 0, y: -1 }, right: { x: 1, y: 0 }, bottom: { x: 0, y: 1 }, left: { x: -1, y: 0 } };
-  for (const edge of frame.edges) {
+  for (const edge of frame.edges.filter(({ id }) => id !== "context-question")) {
     expect(edge.path).toMatch(/^M/);
     const points = pointsFor(edge.id);
     const end = points.at(-1)!;
@@ -132,6 +132,16 @@ it("keeps shared inputs distinct and aligns each arrival with its target side", 
     expect((before.x - end.x) * normal.x + (before.y - end.y) * normal.y).toBeGreaterThan(0);
     expect((before.x - end.x) * normal.y - (before.y - end.y) * normal.x).toBeCloseTo(0);
   }
+});
+
+it("keeps the question-to-context relationship as one straight segment", () => {
+  const { example, diagram } = getRagDiagram();
+  expect(example.document.edges.find(({ id }) => id === "context-question")?.route).toBe("straight");
+  const edge = diagram.evaluateAt(beatMiddle(diagram, 8)).edges.find(({ id }) => id === "context-question");
+  expect(edge?.path).toMatch(/^M -?\d+(?:\.\d+)? -?\d+(?:\.\d+)? L -?\d+(?:\.\d+)? -?\d+(?:\.\d+)?$/);
+  const coordinates = edge?.path.match(/-?\d+(?:\.\d+)?/g)?.map(Number) ?? [];
+  expect(coordinates).toHaveLength(4);
+  expect(coordinates[0]).toBeCloseTo(coordinates[2]);
 });
 
 it("uses a clear title hierarchy and structured retrieval, selection and cited answer content", () => {
@@ -192,9 +202,9 @@ it("keeps ingestion separate and supplies the question and candidate texts to re
   expect(flowsAt(beatMiddle(diagram, 10))).toEqual([expect.objectContaining({ from: "language-model", to: "answer", text: "Answer + citations" })]);
 });
 
-it("keeps all eight stage boundaries readable with orthogonal rendering in both themes and reduced motion", () => {
+it("keeps all eight stage boundaries readable with authored routes in both themes and reduced motion", () => {
   const { example, diagram } = getRagDiagram();
-  expect(new Set(example.document.edges.map(({ route }) => route))).toEqual(new Set(["orthogonal"]));
+  expect(new Set(example.document.edges.map(({ route }) => route))).toEqual(new Set(["orthogonal", "straight"]));
   expect(example.document.nodes.every(({ style }) => style === undefined)).toBe(true);
   expect(example.document.edges.every(({ style }) => style === undefined)).toBe(true);
   expect(example.introduction).toMatch(/fictional.*No live model or database/);
