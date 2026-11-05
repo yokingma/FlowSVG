@@ -323,7 +323,7 @@ Use `exportPng` for PNG output; the player has no PNG download button.
 | `theme`, `reducedMotion` | Document theme then `light`; reduced motion defaults to `false`. |
 | `startMs`, `endMs`, `speed` | Full timeline at `1×`; range start is inclusive and end exclusive, except the global end includes the completed state. |
 | `width`, `fps` | `min(viewport.width, 1280)` pixels; `15` samples/second (`1`–`30`, integer). |
-| `includeCaptions`, `captionHeight` | `true`; fixed caption region of `80` pixels. |
+| `includeCaptions`, `captionHeight` | `true`; fixed caption region of `80` pixels. Captions preserve complete Latin words and explicit newlines; an overwide word reports `caption-overflow`. |
 | `loopCount`, `finalHoldMs` | `0` means infinite GIF looping; `1`–`65536` means total plays. Add `1000` ms of final hold by default. Independent of live player looping. |
 | `signal`, `onProgress` | `AbortSignal`; callback receives `{ phase, completed, total }`. Phases: `preparing`, `sampling`, `encoding`, `complete`. |
 
@@ -453,7 +453,7 @@ Set `typography: { nodeLabel: 32, edgeLabel: 24, flowLabel: 20 }` on the documen
 
 **Validation:** values must be positive and finite. Unrepresentable derived text metrics throw `DiagramValidationError` with a `typography.<role>` path.
 
-Ordinary labels and `wrapText` keep Latin words intact. Overwide words can exceed the estimated line width; fonts do not shrink automatically. Purely vertical edge labels use the narrower endpoint width for horizontal wrapping. Increase authored spacing or node width if labels overlap.
+Ordinary labels and `wrapText` keep Latin words intact. Overwide words can exceed the estimated line width; fonts do not shrink automatically. Purely vertical edge labels use the narrower endpoint width for horizontal wrapping. Increase authored spacing or node width if labels overlap. GIF captions use the same word boundaries with measured font widths.
 
 **Sizing and inheritance:**
 

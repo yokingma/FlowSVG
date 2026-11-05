@@ -323,7 +323,7 @@ SVG 接受相同的 `background` 选项。透明背景仅移除整图底色，�
 | `theme`、`reducedMotion` | 文档主题，未设置时为 `light`；减少动态效果默认 `false`。 |
 | `startMs`、`endMs`、`speed` | 默认导出完整时间线，倍率 `1`；区间含起点、不含终点，完整时间线终点包含完成状态。 |
 | `width`、`fps` | 默认 `min(viewport.width, 1280)` 像素；每秒 `15` 次采样（整数 `1`–`30`）。 |
-| `includeCaptions`、`captionHeight` | 默认 `true`，固定字幕区域高度为 `80` 像素。 |
+| `includeCaptions`、`captionHeight` | 默认 `true`，固定字幕区域高度为 `80` 像素。说明文字保留完整拉丁字母单词和显式换行；单个单词超宽时报告 `caption-overflow`。 |
 | `loopCount`、`finalHoldMs` | `0` 为无限循环，`1`–`65536` 为总播放次数；默认追加 `1000` 毫秒结尾停留。与播放器循环独立。 |
 | `signal`、`onProgress` | `AbortSignal`；回调接收 `{ phase, completed, total }`，阶段为 `preparing`、`sampling`、`encoding`、`complete`。 |
 
@@ -451,7 +451,7 @@ SDK CLI 支持 HTML 和 GIF 输出。PNG 使用 SDK API 导出。
 | `edgeLabel` | `14` | 连线标签 |
 | `flowLabel` | `12` | 单行传递胶囊 |
 
-普通标签和 `wrapText` 保留完整的拉丁字母单词。单个单词超宽时允许超出估算行宽，字号不自动缩小。纯竖向连线标签以两个端点中较窄节点的宽度作为水平排字范围。标签发生遮挡时，请增加节点间距或节点宽度。
+普通标签和 `wrapText` 保留完整的拉丁字母单词。单个单词超宽时允许超出估算行宽，字号不自动缩小。纯竖向连线标签以两个端点中较窄节点的宽度作为水平排字范围。标签发生遮挡时，请增加节点间距或节点宽度。GIF 说明文字使用相同的单词边界，并按实际字体宽度测量。
 
 **校验：**设置须为有限正数。无法表示的派生文字指标抛出带 `typography.<字段>` 路径的 `DiagramValidationError`。
 

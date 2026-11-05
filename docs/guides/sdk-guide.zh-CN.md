@@ -650,7 +650,7 @@ const service = {
 
 ![固定尺寸的 Order service 节点，包含标题、辅助文字、正文与蓝色右对齐段落](../../packages/flowsvg/docs/images/node-content.png)
 
-文字字段接受字符串或 `ContentTextSpan[]`：`{ text, style?: { fontSize, fontWeight, color } }`。片段继承内容块样式，对齐由内容块决定。换行使用宽度估算，保留显式换行和完整 Unicode 字素，优先在空格处断行，必要时拆分长单词或 URL。
+文字字段接受字符串或 `ContentTextSpan[]`：`{ text, style?: { fontSize, fontWeight, color } }`。片段继承内容块样式，对齐由内容块决定。结构化内容换行使用宽度估算，保留显式换行和完整 Unicode 字素，优先在空格处断行，必要时拆分长单词或 URL。普通节点和连线标签遵循[文档级字号](#文档级字号)中的整词规则。
 
 文字样式：有限正数 `fontSize`、100–900 整数 `fontWeight`、十六进制 `color`、`align`（`left`、`center`、`right`）。内容的 `padding`、`blockGap` 为非负有限数。默认值按图解单位计：标题 20/700、正文 14/400、辅助文字 12/400、内边距 16、块间距 14。
 

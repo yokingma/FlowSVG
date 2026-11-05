@@ -650,7 +650,7 @@ The `service` node rendered with the light theme:
 
 ![Fixed-size Order service node with title, auxiliary text, body and a blue right-aligned paragraph](../../packages/flowsvg/docs/images/node-content.png)
 
-Text fields accept strings or `ContentTextSpan[]`: `{ text, style?: { fontSize, fontWeight, color } }`. Spans inherit block styles; alignment belongs to the block. Estimated-width wrapping preserves newlines and Unicode graphemes, prefers spaces, and breaks long words or URLs as needed.
+Text fields accept strings or `ContentTextSpan[]`: `{ text, style?: { fontSize, fontWeight, color } }`. Spans inherit block styles; alignment belongs to the block. Structured-content wrapping preserves newlines and Unicode graphemes, prefers spaces, and breaks long words or URLs as needed. Ordinary node and edge labels use the word-safe rules in [document typography](#document-typography).
 
 Text styles: positive finite `fontSize`, integer `fontWeight` from 100–900, hexadecimal `color`, and `align` (`left`, `center`, `right`). Content `padding` and `blockGap` are finite and nonnegative. Defaults in diagram units: title 20/700, body 14/400, auxiliary 12/400, padding 16, block gap 14.
 
