@@ -131,7 +131,7 @@ export function registerShowcaseBrowserScenarios(config: { packageName: string }
     expect(await navigation.getByRole("heading", { level: 3 }).allTextContents()).toEqual(FORMAL_CATEGORIES);
     const workflow = navigation.getByRole("group", { name: "Workflow", exact: true });
     const architecture = navigation.getByRole("group", { name: "Architecture", exact: true });
-    expect(await workflow.getByRole("button").allTextContents()).toEqual(["Request and response", "RAG: From sources to answers"]);
+    expect(await workflow.getByRole("button").allTextContents()).toEqual(["Request and response", "RAG: From sources to answers", "LLM inference: Prefill, decode and KV cache"]);
     expect(await architecture.getByRole("button").allTextContents()).toEqual(["FlowSVG: How diagrams run", "vllm-metal: Layered inference architecture"]);
     await architecture.getByRole("button", { name: "vllm-metal: Layered inference architecture", exact: true }).click();
     expect(await architecture.getByRole("button", { name: "vllm-metal: Layered inference architecture", exact: true }).getAttribute("aria-current")).toBe("true");

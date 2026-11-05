@@ -12,7 +12,7 @@ export const CATEGORY_STORIES = [
   { id: "cache-aside-sequence", name: "Cache miss: Read and populate", category: "Sequence", scene: "cache-miss", directScene: "response", directBeat: 0, text: "returns MISS", directText: "to the client" }
 ] as const;
 
-export const FORMAL_NAMES = ["Request and response", "RAG: From sources to answers", "FlowSVG: How diagrams run",
+export const FORMAL_NAMES = ["Request and response", "RAG: From sources to answers", "LLM inference: Prefill, decode and KV cache", "FlowSVG: How diagrams run",
   "vllm-metal: Layered inference architecture", ...CATEGORY_STORIES.map(({ name }) => name)];
 export const FORMAL_CATEGORIES = ["Workflow", "Architecture", ...CATEGORY_STORIES.map(({ category }) => category)];
 

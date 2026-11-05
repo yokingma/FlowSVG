@@ -1,10 +1,17 @@
 /**
  * Teaching story for decoder-only inference: tokenizer, causal prefill, logits and KV-cached decode.
  * The circles represent per-position state vectors at a layer, not neurons or model weights.
+ * Unboxed annotations distinguish reading aids from model states and cache cards.
  * Source adaptation: reviewed offline diagram `llm-inference-complete`, revision v004.
  */
-import type { DiagramDocument } from "flowsvg";
+import type { DiagramDocument, NodeContent } from "flowsvg";
 import type { ShowcaseAuthorDefinition } from "../model.js";
+import { measureExampleNode } from "./example-content.js";
+
+const DECODE_SCORE_CONTENT: NodeContent = {
+  style: { padding: 4, blockGap: 4 },
+  blocks: [{ type: "paragraph", text: "Next token", style: { fontSize: 16, align: "center" } }]
+};
 
 const document: DiagramDocument = {
   "version": 1,
@@ -12,7 +19,7 @@ const document: DiagramDocument = {
   "theme": "light",
   "viewport": {
     "width": 1120,
-    "height": 760
+    "height": 658
   },
   "typography": {
     "nodeLabel": 20,
@@ -20,62 +27,16 @@ const document: DiagramDocument = {
     "flowLabel": 16
   },
   "nodes": [
-    {
-      "id": "title",
-      "kind": "rect",
-      "x": 46,
-      "y": 20,
-      "width": 930,
-      "height": 45,
-      "content": {
-        "style": {
-          "padding": 0,
-          "blockGap": 4
-        },
-        "blocks": [
-          {
-            "type": "paragraph",
-            "text": "How an LLM generates the next token",
-            "style": {
-              "fontSize": 30
-            }
-          }
-        ]
-      }
-    },
-    {
-      "id": "subtitle",
-      "kind": "rect",
-      "x": 48,
-      "y": 72,
-      "width": 1030,
-      "height": 30,
-      "content": {
-        "style": {
-          "padding": 0,
-          "blockGap": 4
-        },
-        "blocks": [
-          {
-            "type": "paragraph",
-            "text": "Decoder-only Transformer · Single-request inference loop (teaching diagram)",
-            "style": {
-              "fontSize": 18
-            }
-          }
-        ]
-      }
-    },
-    {
+    measureExampleNode({
       "id": "h_token",
       "kind": "rect",
-      "x": 49,
-      "y": 126,
+      "x": 20,
+      "y": 24,
       "width": 160,
       "height": 38,
       "content": {
         "style": {
-          "padding": 0,
+          "padding": 6,
           "blockGap": 4
         },
         "blocks": [
@@ -83,22 +44,28 @@ const document: DiagramDocument = {
             "type": "paragraph",
             "text": "Input tokens",
             "style": {
-              "fontSize": 19
+              "fontSize": 19,
+              "align": "center",
+              "fontWeight": 600
             }
           }
         ]
+      },
+      "style": {
+        "fill": "#00000000",
+        "strokeWidth": 0
       }
-    },
-    {
+    }),
+    measureExampleNode({
       "id": "h1",
       "kind": "rect",
       "x": 213,
-      "y": 126,
+      "y": 24,
       "width": 124,
       "height": 38,
       "content": {
         "style": {
-          "padding": 0,
+          "padding": 6,
           "blockGap": 4
         },
         "blocks": [
@@ -106,22 +73,28 @@ const document: DiagramDocument = {
             "type": "paragraph",
             "text": "Layer 1",
             "style": {
-              "fontSize": 19
+              "fontSize": 19,
+              "align": "center",
+              "fontWeight": 600
             }
           }
         ]
+      },
+      "style": {
+        "fill": "#00000000",
+        "strokeWidth": 0
       }
-    },
-    {
+    }),
+    measureExampleNode({
       "id": "h2",
       "kind": "rect",
       "x": 383,
-      "y": 126,
+      "y": 24,
       "width": 124,
       "height": 38,
       "content": {
         "style": {
-          "padding": 0,
+          "padding": 6,
           "blockGap": 4
         },
         "blocks": [
@@ -129,22 +102,28 @@ const document: DiagramDocument = {
             "type": "paragraph",
             "text": "Layer 2",
             "style": {
-              "fontSize": 19
+              "fontSize": 19,
+              "align": "center",
+              "fontWeight": 600
             }
           }
         ]
+      },
+      "style": {
+        "fill": "#00000000",
+        "strokeWidth": 0
       }
-    },
-    {
+    }),
+    measureExampleNode({
       "id": "h3",
       "kind": "rect",
       "x": 553,
-      "y": 126,
+      "y": 24,
       "width": 124,
       "height": 38,
       "content": {
         "style": {
-          "padding": 0,
+          "padding": 6,
           "blockGap": 4
         },
         "blocks": [
@@ -152,22 +131,28 @@ const document: DiagramDocument = {
             "type": "paragraph",
             "text": "Layer k",
             "style": {
-              "fontSize": 19
+              "fontSize": 19,
+              "align": "center",
+              "fontWeight": 600
             }
           }
         ]
+      },
+      "style": {
+        "fill": "#00000000",
+        "strokeWidth": 0
       }
-    },
-    {
+    }),
+    measureExampleNode({
       "id": "h4",
       "kind": "rect",
       "x": 723,
-      "y": 126,
+      "y": 24,
       "width": 124,
       "height": 38,
       "content": {
         "style": {
-          "padding": 0,
+          "padding": 6,
           "blockGap": 4
         },
         "blocks": [
@@ -175,22 +160,28 @@ const document: DiagramDocument = {
             "type": "paragraph",
             "text": "Layer N",
             "style": {
-              "fontSize": 19
+              "fontSize": 19,
+              "align": "center",
+              "fontWeight": 600
             }
           }
         ]
+      },
+      "style": {
+        "fill": "#00000000",
+        "strokeWidth": 0
       }
-    },
-    {
+    }),
+    measureExampleNode({
       "id": "h_output",
       "kind": "rect",
-      "x": 910,
-      "y": 126,
+      "x": 906,
+      "y": 24,
       "width": 165,
       "height": 38,
       "content": {
         "style": {
-          "padding": 0,
+          "padding": 6,
           "blockGap": 4
         },
         "blocks": [
@@ -198,22 +189,28 @@ const document: DiagramDocument = {
             "type": "paragraph",
             "text": "Next token",
             "style": {
-              "fontSize": 19
+              "fontSize": 19,
+              "align": "center",
+              "fontWeight": 600
             }
           }
         ]
+      },
+      "style": {
+        "fill": "#00000000",
+        "strokeWidth": 0
       }
-    },
-    {
+    }),
+    measureExampleNode({
       "id": "rule",
       "kind": "rect",
       "x": 49,
-      "y": 172,
+      "y": 70,
       "width": 1020,
       "height": 30,
       "content": {
         "style": {
-          "padding": 0,
+          "padding": 4,
           "blockGap": 4
         },
         "blocks": [
@@ -221,17 +218,22 @@ const document: DiagramDocument = {
             "type": "paragraph",
             "text": "Each layer: causal attention + FFN; circles = position state vectors, not neurons or weights",
             "style": {
-              "fontSize": 16
+              "fontSize": 16,
+              "align": "center"
             }
           }
         ]
+      },
+      "style": {
+        "fill": "#00000000",
+        "strokeWidth": 0
       }
-    },
+    }),
     {
       "id": "t1",
       "kind": "roundedRect",
       "x": 62,
-      "y": 209,
+      "y": 107,
       "width": 76,
       "height": 52,
       "label": "I"
@@ -240,7 +242,7 @@ const document: DiagramDocument = {
       "id": "a11",
       "kind": "ellipse",
       "x": 257,
-      "y": 217,
+      "y": 115,
       "width": 36,
       "height": 36
     },
@@ -248,7 +250,7 @@ const document: DiagramDocument = {
       "id": "a21",
       "kind": "ellipse",
       "x": 427,
-      "y": 217,
+      "y": 115,
       "width": 36,
       "height": 36
     },
@@ -256,7 +258,7 @@ const document: DiagramDocument = {
       "id": "a31",
       "kind": "ellipse",
       "x": 597,
-      "y": 217,
+      "y": 115,
       "width": 36,
       "height": 36
     },
@@ -264,7 +266,7 @@ const document: DiagramDocument = {
       "id": "a41",
       "kind": "ellipse",
       "x": 767,
-      "y": 217,
+      "y": 115,
       "width": 36,
       "height": 36
     },
@@ -272,7 +274,7 @@ const document: DiagramDocument = {
       "id": "t2",
       "kind": "roundedRect",
       "x": 62,
-      "y": 289,
+      "y": 187,
       "width": 76,
       "height": 52,
       "label": "want"
@@ -281,7 +283,7 @@ const document: DiagramDocument = {
       "id": "a12",
       "kind": "ellipse",
       "x": 257,
-      "y": 297,
+      "y": 195,
       "width": 36,
       "height": 36
     },
@@ -289,7 +291,7 @@ const document: DiagramDocument = {
       "id": "a22",
       "kind": "ellipse",
       "x": 427,
-      "y": 297,
+      "y": 195,
       "width": 36,
       "height": 36
     },
@@ -297,7 +299,7 @@ const document: DiagramDocument = {
       "id": "a32",
       "kind": "ellipse",
       "x": 597,
-      "y": 297,
+      "y": 195,
       "width": 36,
       "height": 36
     },
@@ -305,7 +307,7 @@ const document: DiagramDocument = {
       "id": "a42",
       "kind": "ellipse",
       "x": 767,
-      "y": 297,
+      "y": 195,
       "width": 36,
       "height": 36
     },
@@ -313,7 +315,7 @@ const document: DiagramDocument = {
       "id": "t3",
       "kind": "roundedRect",
       "x": 62,
-      "y": 369,
+      "y": 267,
       "width": 76,
       "height": 52,
       "label": "eat"
@@ -322,7 +324,7 @@ const document: DiagramDocument = {
       "id": "a13",
       "kind": "ellipse",
       "x": 257,
-      "y": 377,
+      "y": 275,
       "width": 36,
       "height": 36
     },
@@ -330,7 +332,7 @@ const document: DiagramDocument = {
       "id": "a23",
       "kind": "ellipse",
       "x": 427,
-      "y": 377,
+      "y": 275,
       "width": 36,
       "height": 36
     },
@@ -338,7 +340,7 @@ const document: DiagramDocument = {
       "id": "a33",
       "kind": "ellipse",
       "x": 597,
-      "y": 377,
+      "y": 275,
       "width": 36,
       "height": 36
     },
@@ -346,7 +348,7 @@ const document: DiagramDocument = {
       "id": "a43",
       "kind": "ellipse",
       "x": 767,
-      "y": 377,
+      "y": 275,
       "width": 36,
       "height": 36
     },
@@ -354,7 +356,7 @@ const document: DiagramDocument = {
       "id": "t4",
       "kind": "roundedRect",
       "x": 62,
-      "y": 449,
+      "y": 347,
       "width": 76,
       "height": 52
     },
@@ -362,7 +364,7 @@ const document: DiagramDocument = {
       "id": "a14",
       "kind": "ellipse",
       "x": 257,
-      "y": 457,
+      "y": 355,
       "width": 36,
       "height": 36,
       "visible": false
@@ -371,7 +373,7 @@ const document: DiagramDocument = {
       "id": "a24",
       "kind": "ellipse",
       "x": 427,
-      "y": 457,
+      "y": 355,
       "width": 36,
       "height": 36,
       "visible": false
@@ -380,7 +382,7 @@ const document: DiagramDocument = {
       "id": "a34",
       "kind": "ellipse",
       "x": 597,
-      "y": 457,
+      "y": 355,
       "width": 36,
       "height": 36,
       "visible": false
@@ -389,21 +391,21 @@ const document: DiagramDocument = {
       "id": "a44",
       "kind": "ellipse",
       "x": 767,
-      "y": 457,
+      "y": 355,
       "width": 36,
       "height": 36,
       "visible": false
     },
-    {
+    measureExampleNode({
       "id": "h_cache",
       "kind": "rect",
-      "x": 47,
-      "y": 558,
-      "width": 177,
+      "x": 200,
+      "y": 456,
+      "width": 660,
       "height": 32,
       "content": {
         "style": {
-          "padding": 0,
+          "padding": 3,
           "blockGap": 4
         },
         "blocks": [
@@ -411,58 +413,64 @@ const document: DiagramDocument = {
             "type": "paragraph",
             "text": "Layered KV cache",
             "style": {
-              "fontSize": 18
+              "fontSize": 18,
+              "align": "center",
+              "fontWeight": 600
             }
           }
         ]
+      },
+      "style": {
+        "fill": "#00000000",
+        "strokeWidth": 0
       }
-    },
+    }),
     {
       "id": "cache1",
       "kind": "roundedRect",
-      "x": 210,
-      "y": 603,
-      "width": 130,
-      "height": 65,
-      "label": "L1  0 positions"
+      "x": 200,
+      "y": 501,
+      "width": 150,
+      "height": 76,
+      "label": "L1\n0 positions"
     },
     {
       "id": "cache2",
       "kind": "roundedRect",
-      "x": 380,
-      "y": 603,
-      "width": 130,
-      "height": 65,
-      "label": "L2  0 positions"
+      "x": 370,
+      "y": 501,
+      "width": 150,
+      "height": 76,
+      "label": "L2\n0 positions"
     },
     {
       "id": "cache3",
       "kind": "roundedRect",
-      "x": 550,
-      "y": 603,
-      "width": 130,
-      "height": 65,
-      "label": "Lk  0 positions"
+      "x": 540,
+      "y": 501,
+      "width": 150,
+      "height": 76,
+      "label": "Lk\n0 positions"
     },
     {
       "id": "cache4",
       "kind": "roundedRect",
-      "x": 720,
-      "y": 603,
-      "width": 130,
-      "height": 65,
-      "label": "LN  0 positions"
+      "x": 710,
+      "y": 501,
+      "width": 150,
+      "height": 76,
+      "label": "LN\n0 positions"
     },
-    {
+    measureExampleNode({
       "id": "cache_note",
       "kind": "rect",
       "x": 45,
-      "y": 687,
+      "y": 585,
       "width": 1034,
       "height": 27,
       "content": {
         "style": {
-          "padding": 0,
+          "padding": 3,
           "blockGap": 4
         },
         "blocks": [
@@ -470,31 +478,36 @@ const document: DiagramDocument = {
             "type": "paragraph",
             "text": "Each cell stores one position's K/V. New rounds append cells; reads grow with history.",
             "style": {
-              "fontSize": 15
+              "fontSize": 15,
+              "align": "center"
             }
           }
         ]
+      },
+      "style": {
+        "fill": "#00000000",
+        "strokeWidth": 0
       }
-    },
+    }),
     {
       "id": "lm",
       "kind": "roundedRect",
       "x": 932,
-      "y": 232,
+      "y": 130,
       "width": 113,
       "height": 52,
       "label": "LM head"
     },
-    {
+    measureExampleNode({
       "id": "score_note",
       "kind": "rect",
       "x": 906,
-      "y": 556,
+      "y": 454,
       "width": 180,
       "height": 30,
       "content": {
         "style": {
-          "padding": 0,
+          "padding": 5,
           "blockGap": 4
         },
         "blocks": [
@@ -502,17 +515,22 @@ const document: DiagramDocument = {
             "type": "paragraph",
             "text": "Candidates",
             "style": {
-              "fontSize": 14
+              "fontSize": 14,
+              "align": "center"
             }
           }
         ]
+      },
+      "style": {
+        "fill": "#00000000",
+        "strokeWidth": 0
       }
-    },
+    }, DECODE_SCORE_CONTENT),
     {
       "id": "bar1",
       "kind": "roundedRect",
       "x": 932,
-      "y": 316,
+      "y": 214,
       "width": 151,
       "height": 50,
       "label": "noodles",
@@ -522,7 +540,7 @@ const document: DiagramDocument = {
       "id": "bar2",
       "kind": "roundedRect",
       "x": 932,
-      "y": 376,
+      "y": 274,
       "width": 96,
       "height": 50,
       "label": "rice",
@@ -532,22 +550,22 @@ const document: DiagramDocument = {
       "id": "bar3",
       "kind": "roundedRect",
       "x": 932,
-      "y": 436,
+      "y": 334,
       "width": 62,
       "height": 50,
       "label": "dish",
       "visible": false
     },
-    {
+    measureExampleNode({
       "id": "footer",
       "kind": "rect",
       "x": 45,
-      "y": 718,
+      "y": 616,
       "width": 1035,
       "height": 27,
       "content": {
         "style": {
-          "padding": 0,
+          "padding": 3,
           "blockGap": 4
         },
         "blocks": [
@@ -555,12 +573,17 @@ const document: DiagramDocument = {
             "type": "paragraph",
             "text": "Token boundaries and scores are illustrative; the tokenizer and model define them.",
             "style": {
-              "fontSize": 15
+              "fontSize": 15,
+              "align": "center"
             }
           }
         ]
+      },
+      "style": {
+        "fill": "#00000000",
+        "strokeWidth": 0
       }
-    }
+    })
   ],
   "edges": [
     {
@@ -1049,7 +1072,7 @@ const document: DiagramDocument = {
               "type": "updateNode",
               "target": "cache1",
               "value": {
-                "label": "L1  3 positions"
+                "label": "L1\n3 positions"
               }
             }
           ]
@@ -1104,7 +1127,7 @@ const document: DiagramDocument = {
               "type": "updateNode",
               "target": "cache2",
               "value": {
-                "label": "L2  3 positions"
+                "label": "L2\n3 positions"
               }
             }
           ]
@@ -1159,7 +1182,7 @@ const document: DiagramDocument = {
               "type": "updateNode",
               "target": "cache3",
               "value": {
-                "label": "Lk  3 positions"
+                "label": "Lk\n3 positions"
               }
             }
           ]
@@ -1214,7 +1237,7 @@ const document: DiagramDocument = {
               "type": "updateNode",
               "target": "cache4",
               "value": {
-                "label": "LN  3 positions"
+                "label": "LN\n3 positions"
               }
             }
           ]
@@ -1311,21 +1334,7 @@ const document: DiagramDocument = {
               "type": "updateNode",
               "target": "score_note",
               "value": {
-                "content": {
-                  "style": {
-                    "padding": 0,
-                    "blockGap": 4
-                  },
-                  "blocks": [
-                    {
-                      "type": "paragraph",
-                      "text": "Next token",
-                      "style": {
-                        "fontSize": 16
-                      }
-                    }
-                  ]
-                }
+                "content": DECODE_SCORE_CONTENT
               }
             },
             {
@@ -1552,7 +1561,7 @@ const document: DiagramDocument = {
               "type": "updateNode",
               "target": "cache1",
               "value": {
-                "label": "L1  4 positions"
+                "label": "L1\n4 positions"
               }
             }
           ]
@@ -1591,7 +1600,7 @@ const document: DiagramDocument = {
               "type": "updateNode",
               "target": "cache2",
               "value": {
-                "label": "L2  4 positions"
+                "label": "L2\n4 positions"
               }
             }
           ]
@@ -1630,7 +1639,7 @@ const document: DiagramDocument = {
               "type": "updateNode",
               "target": "cache3",
               "value": {
-                "label": "Lk  4 positions"
+                "label": "Lk\n4 positions"
               }
             }
           ]
@@ -1669,7 +1678,7 @@ const document: DiagramDocument = {
               "type": "updateNode",
               "target": "cache4",
               "value": {
-                "label": "LN  4 positions"
+                "label": "LN\n4 positions"
               }
             }
           ]

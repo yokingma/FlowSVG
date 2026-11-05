@@ -389,7 +389,7 @@ async function inspectFormalArtifact(page: Page, address: string) {
   expect(await page.getByRole("navigation", { name: "Examples" }).getByRole("button").allTextContents()).toEqual(FORMAL_NAMES);
   const navigation = page.getByRole("navigation", { name: "Examples" });
   expect(await navigation.getByRole("heading", { level: 3 }).allTextContents()).toEqual(FORMAL_CATEGORIES);
-  expect(await navigation.getByRole("group", { name: "Workflow", exact: true }).getByRole("button").allTextContents()).toEqual(["Request and response", "RAG: From sources to answers"]);
+  expect(await navigation.getByRole("group", { name: "Workflow", exact: true }).getByRole("button").allTextContents()).toEqual(["Request and response", "RAG: From sources to answers", "LLM inference: Prefill, decode and KV cache"]);
   expect(await navigation.getByRole("group", { name: "Architecture", exact: true }).getByRole("button").allTextContents()).toEqual(["FlowSVG: How diagrams run", "vllm-metal: Layered inference architecture"]);
   expect(await page.locator("#introduction h2").textContent()).toBe("Request and response");
   expect(await page.getByRole("combobox", { name: "Theme", exact: true }).getAttribute("data-value")).toBe("dark");

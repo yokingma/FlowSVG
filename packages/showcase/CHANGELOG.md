@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Remove the LLM inference diagram's duplicate title and subtitle. Center unboxed annotations over their columns, compact the viewport, and give each cache card separate layer/count lines that fit all playback states.
+
 - Add the English `llm-inference` formal example covering tokenization, causal prefill, KV-cache decode and next-token sampling. Preserve causal edge relationships and category navigation.
 
 - Present all eight formal examples and category labels in English, with compact measured content and explicit CNY amounts. Preserve example IDs, geometry and playback behavior.
