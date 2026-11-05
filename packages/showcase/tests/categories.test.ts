@@ -2,10 +2,10 @@ import { expect, it } from "vitest";
 import { compileCatalog } from "../src/build.js";
 import { catalogSource } from "../src/formal.js";
 
-it("groups the eight formal examples by their primary purpose", () => {
+it("groups the formal examples by their primary purpose", () => {
   const { catalog, json } = compileCatalog(catalogSource);
   expect(catalog.groups?.map(({ id, label, entries }) => ({ id, label, ids: entries.map((entry) => entry.id) }))).toEqual([
-    { id: "workflow", label: "Workflow", ids: ["request-response", "rag-workflow"] },
+    { id: "workflow", label: "Workflow", ids: ["request-response", "rag-workflow", "llm-inference"] },
     { id: "architecture", label: "Architecture", ids: ["project-architecture", "vllm-metal-stack"] },
     { id: "state", label: "State transitions", ids: ["job-lifecycle"] },
     { id: "data-flow", label: "Data flow", ids: ["order-event-pipeline"] },

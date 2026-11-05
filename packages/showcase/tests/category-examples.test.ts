@@ -193,3 +193,33 @@ it("uses single outer channels and retains a straight arrow approach between sta
   expect(bridge.y).toBeGreaterThan(sourceBottom);
   expect(bridge.y).toBeLessThan(target.y);
 });
+
+it("keeps the LLM story causal and makes decode read and append the matching layer cache", () => {
+  const { example, diagram } = getExample("llm-inference");
+  const edges = new Map(example.document.edges.map((edge) => [edge.id, edge]));
+
+  expect(edges.get("p1_1_1")).toMatchObject({ from: "t1", to: "a11" });
+  expect(edges.get("p1_1_2")).toMatchObject({ from: "t1", to: "a12" });
+  expect(edges.get("p1_2_2")).toMatchObject({ from: "t2", to: "a12" });
+  expect(edges.get("p1_3_3")).toMatchObject({ from: "t3", to: "a13" });
+  expect(example.document.edges.some(({ from, to }) => from === "t2" && to === "a11")).toBe(false);
+  expect(example.document.edges.some(({ from, to }) => from === "t3" && to !== "a13" && to.startsWith("a1"))).toBe(false);
+
+  const layer1Prefill = diagram.beats.find(({ caption }) => caption?.startsWith("Layer 1: position"))!;
+  const prefillFrame = diagram.evaluateAt((layer1Prefill.startMs + layer1Prefill.endMs) / 2);
+  expect(prefillFrame.edges.filter(({ flow }) => flow).map(({ id }) => id)).toEqual([
+    "p1_1_1", "p1_1_2", "p1_1_3", "p1_2_2", "p1_2_3", "p1_3_3"
+  ]);
+
+  for (const [layer, cache, read] of [[1, "cache1", "read1"], [2, "cache2", "read2"], ["k", "cache3", "read3"], ["N", "cache4", "read4"] as const]) {
+    const decode = diagram.beats.find(({ caption }) => caption?.startsWith(`Layer ${layer}: the new position`))!;
+    const readFrame = diagram.evaluateAt((decode.startMs + decode.endMs) / 2);
+    const target = layer === "k" ? "a34" : layer === "N" ? "a44" : `a${layer}4`;
+    expect(example.document.edges.find(({ id }) => id === read)).toMatchObject({ from: cache, to: target });
+    expect(readFrame.edges.filter(({ flow }) => flow).map(({ id }) => id)).toContain(read);
+
+    const append = diagram.beats.find(({ caption }) => caption?.startsWith(`Append the new position's Layer ${layer}`))!;
+    const appendFrame = diagram.evaluateAt(append.startMs);
+    expect(appendFrame.nodes.find(({ id }) => id === cache)!.label).toContain("4 positions");
+  }
+});

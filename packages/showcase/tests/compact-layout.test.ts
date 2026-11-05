@@ -14,7 +14,8 @@ const VIEWPORT_LIMITS = [
   ["job-lifecycle", 868, 416],
   ["order-event-pipeline", 964, 580],
   ["web-service-deployment", 922, 756],
-  ["cache-aside-sequence", 948, 572]
+  ["cache-aside-sequence", 948, 572],
+  ["llm-inference", 1120, 760]
 ] as const;
 
 it.each(VIEWPORT_LIMITS)("keeps %s compact without excess space below its fullest content", (id, width, height) => {

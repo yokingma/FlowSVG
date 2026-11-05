@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add the English `llm-inference` formal example covering tokenization, causal prefill, KV-cache decode and next-token sampling. Preserve causal edge relationships and category navigation.
+
 - Present all eight formal examples and category labels in English, with compact measured content and explicit CNY amounts. Preserve example IDs, geometry and playback behavior.
 
 - Share eight formal teaching examples, complete defaults and category navigation through the common author catalog.

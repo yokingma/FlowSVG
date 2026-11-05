@@ -8,6 +8,7 @@ import { jobLifecycleExample } from "./examples/job-lifecycle.js";
 import { orderEventPipelineExample } from "./examples/order-event-pipeline.js";
 import { webServiceDeploymentExample } from "./examples/web-service-deployment.js";
 import { cacheAsideSequenceExample } from "./examples/cache-aside-sequence.js";
+import { llmInferenceExample } from "./examples/llm-inference.js";
 
 export const catalogSource: CatalogSource = {
   definitions: [
@@ -18,7 +19,8 @@ export const catalogSource: CatalogSource = {
     jobLifecycleExample,
     orderEventPipelineExample,
     webServiceDeploymentExample,
-    cacheAsideSequenceExample
+    cacheAsideSequenceExample,
+    llmInferenceExample
   ],
   order: [
     requestResponseExample.id,
@@ -28,7 +30,8 @@ export const catalogSource: CatalogSource = {
     jobLifecycleExample.id,
     orderEventPipelineExample.id,
     webServiceDeploymentExample.id,
-    cacheAsideSequenceExample.id
+    cacheAsideSequenceExample.id,
+    llmInferenceExample.id
   ],
   defaultId: requestResponseExample.id
 };

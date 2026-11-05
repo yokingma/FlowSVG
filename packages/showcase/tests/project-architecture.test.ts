@@ -13,7 +13,7 @@ function getArchitecture() {
 
 it("offers the architecture as a standalone third example with the original default", () => {
   const { catalog, json, example } = getArchitecture();
-  expect(catalog.entries.map(({ id }) => id)).toEqual(["request-response", "rag-workflow", "project-architecture", "vllm-metal-stack", "job-lifecycle", "order-event-pipeline", "web-service-deployment", "cache-aside-sequence"]);
+  expect(catalog.entries.map(({ id }) => id)).toEqual(["request-response", "rag-workflow", "project-architecture", "vllm-metal-stack", "job-lifecycle", "order-event-pipeline", "web-service-deployment", "cache-aside-sequence", "llm-inference"]);
   expect(catalog.defaultId).toBe("request-response");
   expect(example.name).toBe("FlowSVG: How diagrams run");
   expect(example.durationMs).toBe(createDiagram(example.document).totalDuration);
