@@ -24,4 +24,5 @@
 - Build selected shared author output and its consumers sequentially: source selection replaces shared generated data. Use the maintained commands in the [showcase verification guide](docs/verification/showcase-verification.md).
 - Verify installed-package behavior through the [SDK gate](docs/verification/sdk-verification.md) and copied host artifacts through the showcase gate. A passing source-level test cannot substitute for either delivery boundary.
 - Keep shared browser navigation expectations aligned with the complete formal catalog and its category order, including newly selected stories.
+- Keep the Pages workflow scoped to deployment inputs, cancel superseded runs and bound build/deploy time so routine documentation pushes do not consume Actions minutes.
 - Before completing an executable change, account for every affected owner and record the checks actually run, their results and any unverified environment.

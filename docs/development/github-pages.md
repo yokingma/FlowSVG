@@ -6,7 +6,7 @@ The deployment workflow publishes the Native showcase and its eight formal examp
 
 ## Enable deployment
 
-The [Pages workflow](../../.github/workflows/pages.yml) builds the Native showcase on pushes to `main` and manual runs. Deployment is enabled for public repositories; private repositories build and upload the artifact but skip deployment.
+The [Pages workflow](../../.github/workflows/pages.yml) builds the Native showcase on relevant pushes to `main` and manual runs. Changes limited to documentation or other files outside the deployment inputs do not start an automatic build. Superseded runs are cancelled, and build/deploy jobs have bounded runtimes. Deployment is enabled for public repositories; private repositories build and upload the artifact but skip deployment.
 
 1. Confirm that GitHub Pages is available for the repository and that the workflow's visibility condition permits deployment.
 2. Open **Settings → Pages**.

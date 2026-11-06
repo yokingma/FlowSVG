@@ -3,6 +3,25 @@ name: Deploy showcase to GitHub Pages
 on:
   push:
     branches: [main]
+    paths:
+      - .github/workflows/pages.yml
+      - apps/native-example/index.html
+      - apps/native-example/package.json
+      - apps/native-example/src/**
+      - apps/native-example/tsconfig.json
+      - apps/native-example/vite.config.js
+      - packages/flowsvg/package.json
+      - packages/flowsvg/scripts/**
+      - packages/flowsvg/src/**
+      - packages/flowsvg/tsconfig*.json
+      - packages/showcase/package.json
+      - packages/showcase/scripts/**
+      - packages/showcase/src/**
+      - packages/showcase/tsconfig.json
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - tsconfig.showcase.json
   workflow_dispatch:
 
 permissions:
@@ -10,11 +29,12 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -37,6 +57,7 @@ jobs:
     if: github.event.repository.private == false
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       pages: write
       id-token: write
