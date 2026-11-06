@@ -7,6 +7,11 @@
 <p align="center">English | <a href="README.zh-CN.md">简体中文</a></p>
 
 <p align="center">
+  <a href="https://www.npmjs.com/package/flowsvg"><img src="https://img.shields.io/npm/v/flowsvg?logo=npm&label=npm" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/flowsvg"><img src="https://img.shields.io/npm/dm/flowsvg?logo=npm&label=downloads" alt="monthly npm downloads"></a>
+</p>
+
+<p align="center">
   <a href="#related-skill">Skill</a> ·
   <a href="#quick-start">Quick&nbsp;start</a> ·
   <a href="#integrations-and-api">API</a> ·

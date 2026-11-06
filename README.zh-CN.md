@@ -7,6 +7,11 @@
 <p align="center"><a href="README.md">English</a> | 简体中文</p>
 
 <p align="center">
+  <a href="https://www.npmjs.com/package/flowsvg"><img src="https://img.shields.io/npm/v/flowsvg?logo=npm&label=npm" alt="npm 版本"></a>
+  <a href="https://www.npmjs.com/package/flowsvg"><img src="https://img.shields.io/npm/dm/flowsvg?logo=npm&label=downloads" alt="npm 月下载量"></a>
+</p>
+
+<p align="center">
   <a href="#独立-skill">Skill</a> ·
   <a href="#快速开始">快速开始</a> ·
   <a href="#集成与-api">API</a> ·
