@@ -4,7 +4,7 @@
  * Unboxed annotations distinguish reading aids from model states and cache cards.
  * Source adaptation: reviewed offline diagram `llm-inference-complete`, revision v004.
  */
-import type { DiagramDocument, NodeContent } from "flowsvg";
+import type { Action, DiagramDocument, NodeContent } from "flowsvg";
 import type { ShowcaseAuthorDefinition } from "../model.js";
 import { measureExampleNode } from "./example-content.js";
 
@@ -12,6 +12,74 @@ const DECODE_SCORE_CONTENT: NodeContent = {
   style: { padding: 4, blockGap: 4 },
   blocks: [{ type: "paragraph", text: "Next token", style: { fontSize: 16, align: "center" } }]
 };
+
+const TRAIL_OPACITY = 0.58;
+const PREFILL_STATE_NODES: Readonly<Record<"1" | "2" | "k" | "N", readonly string[]>> = {
+  "1": ["a11", "a12", "a13"],
+  "2": ["a21", "a22", "a23"],
+  k: ["a31", "a32", "a33"],
+  N: ["a41", "a42", "a43"]
+};
+const DECODE_STATE_NODES: Readonly<Record<"1" | "2" | "k" | "N", readonly string[]>> = {
+  "1": ["a14"],
+  "2": ["a24"],
+  k: ["a34"],
+  N: ["a44"]
+};
+
+type InferenceLayer = keyof typeof PREFILL_STATE_NODES;
+
+function getLayer(caption: string | undefined, pattern: RegExp): InferenceLayer | undefined {
+  const layer = caption?.match(pattern)?.[1];
+  return layer as InferenceLayer | undefined;
+}
+
+function appendTrailActions(actions: readonly Action[], nodes: readonly string[], opacity?: number): Action[] {
+  return [
+    ...actions,
+    ...nodes.flatMap((target): Action[] => {
+      const trail: Action[] = [{ type: "highlight", target }];
+      if (opacity !== undefined) trail.push({ type: "updateNode", target, value: { opacity } });
+      return trail;
+    })
+  ];
+}
+
+function appendOpacityActions(actions: readonly Action[], nodes: readonly string[], opacity: number): Action[] {
+  return [
+    ...actions,
+    ...nodes.map((target): Action => ({ type: "updateNode", target, value: { opacity } }))
+  ];
+}
+
+/** Keep completed vectors visible as a subdued trail while the current transfer uses full flow paint. */
+function addStateVectorTrail(source: DiagramDocument): DiagramDocument {
+  const scenes = source.scenes.map((scene) => ({
+    ...scene,
+    beats: scene.beats.map((beat) => {
+      const prefillFlowLayer = getLayer(beat.caption, /^Layer (1|2|k|N): position/);
+      const prefillStoreLayer = getLayer(beat.caption, /^Layer (1|2|k|N) stores/);
+      const decodeStoreLayer = getLayer(beat.caption, /^Append the new position's Layer (1|2|k|N)/);
+      let actions = [...beat.actions];
+      if (prefillFlowLayer && prefillFlowLayer !== "1") {
+        const previousLayer = prefillFlowLayer === "2" ? "1" : prefillFlowLayer === "k" ? "2" : "k";
+        actions = appendTrailActions(actions, PREFILL_STATE_NODES[previousLayer], 1);
+      }
+      if (prefillStoreLayer) {
+        actions = appendTrailActions(actions, PREFILL_STATE_NODES[prefillStoreLayer], prefillStoreLayer === "N" ? undefined : TRAIL_OPACITY);
+        if (prefillStoreLayer !== "1") {
+          const previousLayer = prefillStoreLayer === "2" ? "1" : prefillStoreLayer === "k" ? "2" : "k";
+          actions = appendOpacityActions(actions, PREFILL_STATE_NODES[previousLayer], TRAIL_OPACITY);
+        }
+      }
+      if (decodeStoreLayer) {
+        actions = appendTrailActions(actions, DECODE_STATE_NODES[decodeStoreLayer], decodeStoreLayer === "N" ? undefined : TRAIL_OPACITY);
+      }
+      return { ...beat, actions };
+    })
+  }));
+  return { ...source, scenes };
+}
 
 const document: DiagramDocument = {
   "version": 1,
@@ -1030,37 +1098,37 @@ const document: DiagramDocument = {
               "type": "flow",
               "target": "p1_1_1",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             },
             {
               "type": "flow",
               "target": "p1_1_2",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             },
             {
               "type": "flow",
               "target": "p1_1_3",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             },
             {
               "type": "flow",
               "target": "p1_2_2",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             },
             {
               "type": "flow",
               "target": "p1_2_3",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             },
             {
               "type": "flow",
               "target": "p1_3_3",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             }
           ]
         },
@@ -1085,37 +1153,37 @@ const document: DiagramDocument = {
               "type": "flow",
               "target": "p2_1_1",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             },
             {
               "type": "flow",
               "target": "p2_1_2",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             },
             {
               "type": "flow",
               "target": "p2_1_3",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             },
             {
               "type": "flow",
               "target": "p2_2_2",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             },
             {
               "type": "flow",
               "target": "p2_2_3",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             },
             {
               "type": "flow",
               "target": "p2_3_3",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             }
           ]
         },
@@ -1140,37 +1208,37 @@ const document: DiagramDocument = {
               "type": "flow",
               "target": "p3_1_1",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             },
             {
               "type": "flow",
               "target": "p3_1_2",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             },
             {
               "type": "flow",
               "target": "p3_1_3",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             },
             {
               "type": "flow",
               "target": "p3_2_2",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             },
             {
               "type": "flow",
               "target": "p3_2_3",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             },
             {
               "type": "flow",
               "target": "p3_3_3",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             }
           ]
         },
@@ -1195,37 +1263,37 @@ const document: DiagramDocument = {
               "type": "flow",
               "target": "p4_1_1",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             },
             {
               "type": "flow",
               "target": "p4_1_2",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             },
             {
               "type": "flow",
               "target": "p4_1_3",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             },
             {
               "type": "flow",
               "target": "p4_2_2",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             },
             {
               "type": "flow",
               "target": "p4_2_3",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             },
             {
               "type": "flow",
               "target": "p4_3_3",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             }
           ]
         },
@@ -1261,7 +1329,7 @@ const document: DiagramDocument = {
               "type": "flow",
               "target": "logits",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             }
           ]
         },
@@ -1539,13 +1607,13 @@ const document: DiagramDocument = {
               "type": "flow",
               "target": "new1",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             },
             {
               "type": "flow",
               "target": "read1",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             }
           ]
         },
@@ -1578,13 +1646,13 @@ const document: DiagramDocument = {
               "type": "flow",
               "target": "new2",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             },
             {
               "type": "flow",
               "target": "read2",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             }
           ]
         },
@@ -1617,13 +1685,13 @@ const document: DiagramDocument = {
               "type": "flow",
               "target": "new3",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             },
             {
               "type": "flow",
               "target": "read3",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             }
           ]
         },
@@ -1656,13 +1724,13 @@ const document: DiagramDocument = {
               "type": "flow",
               "target": "new4",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             },
             {
               "type": "flow",
               "target": "read4",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             }
           ]
         },
@@ -1701,7 +1769,7 @@ const document: DiagramDocument = {
               "type": "flow",
               "target": "nextlogits",
               "direction": "forward",
-              "highlightParticipants": false
+              "highlightParticipants": true
             }
           ]
         },
@@ -1721,6 +1789,6 @@ export const llmInferenceExample: ShowcaseAuthorDefinition = {
   category: "workflow",
   name: "LLM inference: Prefill, decode and KV cache",
   introduction: "Follow one request from tokenization through causal prefill, next-token selection and layer-by-layer decode. The story distinguishes parallel input processing from single-token generation and shows why historical K/V values can be reused.",
-  document,
+  document: addStateVectorTrail(document),
   defaults: { speed: 1, theme: "dark", reducedMotion: false }
 };

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Keep a subdued LLM inference trail on completed state vectors while restoring full opacity for the currently active layer during prefill and decode.
+
 - Keep the RAG question-to-context arrow as a straight segment to remove the small visual bend at the context card.
 
 - Remove the LLM inference diagram's duplicate title and subtitle. Center unboxed annotations over their columns, compact the viewport, and give each cache card separate layer/count lines that fit all playback states.
