@@ -2,7 +2,7 @@
 
 > **Document status:** Current entry. The workflow file and app build configuration are the source of truth for deployment behavior. The [showcase verification guide](../verification/showcase-verification.md) describes reproducible checks. Verify the deployed site separately from local build results.
 
-The deployment workflow publishes the Native showcase and its eight formal examples. The intended URL is <https://yokingma.github.io/FlowSVG/>. This URL becomes available after GitHub Pages is enabled and the first deployment succeeds.
+The deployment workflow publishes the Native showcase and its nine formal examples. The intended URL is <https://yokingma.github.io/FlowSVG/>. This URL becomes available after GitHub Pages is enabled and the first deployment succeeds.
 
 ## Enable deployment
 
@@ -36,7 +36,7 @@ Open the preview URL with `/FlowSVG/` appended. The preview command serves exist
 
 ## Verify a deployment
 
-1. Open the site and confirm that all eight examples are available.
+1. Open the site and confirm that all nine examples are available.
 2. Select RAG, seek, play and pause. Toggle Loop and switch examples.
 3. Open a shared example/time link in a new tab, then refresh it. Confirm paused restoration.
 4. Download diagram JSON and confirm that its URL remains under `/FlowSVG/json/`.
