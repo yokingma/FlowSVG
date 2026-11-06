@@ -9,6 +9,7 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/flowsvg"><img src="https://img.shields.io/npm/v/flowsvg?logo=npm&label=npm" alt="npm 版本"></a>
   <a href="https://www.npmjs.com/package/flowsvg"><img src="https://img.shields.io/npm/dm/flowsvg?logo=npm&label=downloads" alt="npm 月下载量"></a>
+  <a href="https://github.com/yokingma/flow-diagram-skill"><img src="https://img.shields.io/badge/Agent_Skill-flow--diagram-2a63c8" alt="Flow Diagram 图解 Skill"></a>
 </p>
 
 <p align="center">
@@ -23,7 +24,7 @@
 
 用同一份可编辑的 JSON 或 TypeScript 文档描述节点、连线、场景和节拍。用静态图解释结构，用动画展示流程推进和状态变化。这份文档可复用于交互式播放器、单文件离线 HTML、SVG、PNG 和 GIF。
 
-FlowSVG 包含 SDK、共享 showcase，以及原生浏览器、React、Vue 集成示例。独立的 [Flow SVG Diagram Skill](#独立-skill) 提供图解创作与复核能力。
+FlowSVG 包含 SDK、共享 showcase，以及原生浏览器、React、Vue 集成示例。独立的 [Flow Diagram Skill](#独立-skill) 提供图解创作与复核能力。
 
 核心使用 TypeScript，运行时不依赖 DOM、网络或浏览器时钟。原生浏览器、Vue、React 和 Web Component 接入复用同一套时间线与渲染结果。
 
@@ -233,7 +234,15 @@ pnpm test
 
 ## 独立 Skill
 
-Flow SVG Diagram：面向系统和流程解释的可执行图解 Skill。一次编写，支持播放、嵌入、检查和导出。独立的 `flow-svg-diagram-skills` 项目提供创作、布局计划、校验流程、复核与交付报告，通过已发布的 `flowsvg@0.2.3` 包运行。
+[**Flow Diagram**](https://github.com/yokingma/flow-diagram-skill)：面向系统和流程解释的可执行图解 Skill。一次编写，支持播放、嵌入、检查和导出。独立的仓库提供创作、布局计划、校验流程、复核与交付报告，通过已发布的 `flowsvg` 包在它锁定的精确基线上运行。
+
+在需要创作图解的项目中安装：
+
+```sh
+npx skills add https://github.com/yokingma/flow-diagram-skill --skill flow-diagram
+```
+
+Codex 中以 `$flow-diagram` 调用，Claude Code 中以 `/flow-diagram` 调用。宿主要求、支持的助手与已知限制见该仓库说明。
 
 SDK 与独立创作工具的职责见[仓库边界](docs/development/repository-split.md)。SDK 安装、开发、测试、发布验收和示例均可独立运行。
 

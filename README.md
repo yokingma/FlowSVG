@@ -9,11 +9,12 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/flowsvg"><img src="https://img.shields.io/npm/v/flowsvg?logo=npm&label=npm" alt="npm version"></a>
   <a href="https://www.npmjs.com/package/flowsvg"><img src="https://img.shields.io/npm/dm/flowsvg?logo=npm&label=downloads" alt="monthly npm downloads"></a>
+  <a href="https://github.com/yokingma/flow-diagram-skill"><img src="https://img.shields.io/badge/Agent_Skill-flow--diagram-2a63c8" alt="Flow Diagram agent Skill"></a>
 </p>
 
 <p align="center">
   <a href="https://yokingma.github.io/FlowSVG/">Live demo</a> ·
-  <a href="#related-skill">Skill</a> ·
+  <a href="#independent-skill">Skill</a> ·
   <a href="#quick-start">Quick&nbsp;start</a> ·
   <a href="#integrations-and-api">API</a> ·
   <a href="apps/native-example/README.md">Examples</a>
@@ -23,7 +24,7 @@
 
 Use one editable JSON or TypeScript document to describe nodes, relationships, scenes, and beats. Explain structures with static diagrams and show process progression or state changes with animation. Reuse that document for an interactive player, standalone offline HTML, SVG, PNG, or GIF.
 
-FlowSVG includes the SDK, a shared showcase, and native browser, React, and Vue integration examples. The independent [Flow SVG Diagram Skill](#related-skill) provides diagram authoring and review.
+FlowSVG includes the SDK, a shared showcase, and native browser, React, and Vue integration examples. The independent [Flow Diagram Skill](#independent-skill) provides diagram authoring and review.
 
 The TypeScript core runs without a DOM, network access, or browser clock. Native browser, Vue, React, and Web Component integrations share the same timeline and rendering results.
 
@@ -231,9 +232,17 @@ Browser checks require a prepared Chromium browser and fonts. Follow the [browse
 
 For project conventions, see the [glossary](GLOSSARY.md), [architecture decisions](docs/adr/) and [implementation patterns](PATTERNS.md). SDK release notes are in the [package changelog](packages/flowsvg/CHANGELOG.md).
 
-## Related Skill
+## Independent Skill
 
-Flow SVG Diagram is an executable diagram Skill for explaining systems and processes: author once, then play, embed, inspect, and export. Its separate `flow-svg-diagram-skills` project provides authoring, layout plans, validation workflows, reviews, and delivery reports. It consumes the published `flowsvg@0.2.3` package.
+[**Flow Diagram**](https://github.com/yokingma/flow-diagram-skill) is an executable diagram Skill for explaining systems and processes: author once, then play, embed, inspect, and export. Its separate repository provides authoring, layout plans, validation workflows, reviews, and delivery reports, and consumes the published `flowsvg` package at the exact baseline it locks.
+
+Install it in the project where you want to author diagrams:
+
+```sh
+npx skills add https://github.com/yokingma/flow-diagram-skill --skill flow-diagram
+```
+
+Ask with `$flow-diagram` in Codex or `/flow-diagram` in Claude Code. Host requirements, supported assistants, and known limits are documented in that repository.
 
 See [repository boundaries](docs/development/repository-split.md) for the SDK integration boundary. SDK installation, development, tests, release verification and examples are self-contained.
 

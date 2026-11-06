@@ -797,7 +797,7 @@ These documentation entries serve different readers and keep different levels of
 | [Published package README](../../packages/flowsvg/README.md) | The self-contained npm installation path, common defaults, limits, and error behavior | Must remain usable from the published package without this repository; link here for repository-only depth |
 | This SDK guide | The complete repository reference for the public API, document model, timeline, playback, export, and diagnostics | The primary source for detailed SDK behavior and cross-host links |
 | [Host READMEs](../../apps/native-example/README.md), [React](../../apps/react-example/README.md), [Vue](../../apps/vue-example/README.md) | Host lifecycle, development commands, build/deploy behavior, and host-specific failure handling | Summarize the compiled timeline and link back here for shared SDK rules |
-| Flow SVG Diagram Skill (independent project) | Authoring-tool commands, layout plans, reports, revision history, and review/export workflow | Bundles the execution references for its exact SDK baseline; SDK users can use this guide without installing the Skill. See [repository boundaries](../development/repository-split.md) |
+| [Flow Diagram Skill](https://github.com/yokingma/flow-diagram-skill) (independent project) | Authoring-tool commands, layout plans, reports, revision history, and review/export workflow | Bundles the execution references for its exact SDK baseline; SDK users can use this guide without installing the Skill. See [repository boundaries](../development/repository-split.md) |
 
 When a description conflicts with behavior, use the public types, implementation, and tests as the fact source. The [documentation map](../README.md) records the language and ownership policy.
 
