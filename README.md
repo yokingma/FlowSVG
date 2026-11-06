@@ -17,7 +17,7 @@
 
 Use one editable JSON or TypeScript document to describe nodes, relationships, scenes, and beats. Explain structures with static diagrams and show process progression or state changes with animation. Reuse that document for an interactive player, standalone offline HTML, SVG, PNG, or GIF.
 
-This repository maintains the SDK, shared showcase, and native browser, React, and Vue integration examples. The independent [Flow SVG Diagram Skill](#related-skill) handles diagram authoring and review.
+FlowSVG includes the SDK, a shared showcase, and native browser, React, and Vue integration examples. The independent [Flow SVG Diagram Skill](#related-skill) provides diagram authoring and review.
 
 The TypeScript core runs without a DOM, network access, or browser clock. Native browser, Vue, React, and Web Component integrations share the same timeline and rendering results.
 
@@ -225,7 +225,7 @@ For project conventions, see the [glossary](GLOSSARY.md), [architecture decision
 
 ## Related Skill
 
-Flow SVG Diagram is an executable diagram Skill for explaining systems and processes: author once, then play, embed, inspect, and export. Its separate `flow-svg-diagram-skills` project owns authoring, layout plans, validation workflows, reviews, and delivery reports. It consumes the public `flowsvg@0.2.3` package without this checkout.
+Flow SVG Diagram is an executable diagram Skill for explaining systems and processes: author once, then play, embed, inspect, and export. Its separate `flow-svg-diagram-skills` project provides authoring, layout plans, validation workflows, reviews, and delivery reports. It consumes the published `flowsvg@0.2.3` package.
 
 See [repository boundaries](docs/development/repository-split.md) for the SDK integration boundary. SDK installation, development, tests, release verification and examples are self-contained.
 

@@ -10,7 +10,7 @@ After centered-text changes, refresh the record-tag, Facts timeline and entity-g
 
 ## Typical SDK example
 
-Both SDK READMEs embed `docs/images/job-lifecycle.gif`. Its complete input is shipped as `packages/flowsvg/examples/job-lifecycle.json`, a checked-in snapshot of the formal background task lifecycle document. The JSON has no showcase metadata or runtime dependency on the private showcase package. The snapshot and GIF use English labels and captions. It presents three independent tasks: A retries and completes, B exhausts its retries, and C is cancelled while queued. Explicit state highlights and `flow.highlightParticipants: false` keep exactly one state current during event movement.
+Both SDK READMEs embed `docs/images/job-lifecycle.gif`. Its complete input is shipped as `packages/flowsvg/examples/job-lifecycle.json`, a checked-in snapshot of the formal background task lifecycle document. The JSON has no showcase metadata or runtime dependency on the showcase workspace package. The snapshot and GIF use English labels and captions. It presents three independent tasks: A retries and completes, B exhausts its retries, and C is cancelled while queued. Explicit state highlights and `flow.highlightParticipants: false` keep exactly one state current during event movement.
 
 To refresh the snapshot after an intentional story change, build the SDK and shared showcase, then copy `packages/showcase/dist/site/json/job-lifecycle.json` to the SDK example path. SDK build and release consume the checked-in JSON without running that author build. Measure all content versions and check warnings, unique current states and terminal-state boundaries before regenerating the preview.
 

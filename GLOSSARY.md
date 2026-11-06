@@ -2,14 +2,14 @@
 
 **FlowSVG（流形）**：项目品牌名，中文名为“流形”；英文文档仅使用 FlowSVG；中文文档可写作 FlowSVG（流形）。npm 包名与导入路径使用小写 `flowsvg`。公开播放器类、组件及相关类型使用 `Flow` 前缀，例如 `FlowPlayer`、`FlowPlayerProps` 和 `FlowPlayerElement`。默认自定义元素名为 `<flowsvg-player>`；CSS 类与控制栏变量使用 `flowsvg-` 和 `--flowsvg-` 前缀。
 
-本仓库维护 FlowSVG SDK、共享 showcase 和宿主示例，用声明式图解文档描述架构图和逻辑图，并用时间线播放其变化。Flow SVG Diagram Skill 的创作、布局、检查与交付术语由独立项目维护。
+FlowSVG 包含 SDK、共享 showcase 和宿主示例，用声明式图解文档描述架构图和逻辑图，并用时间线播放其变化。Flow SVG Diagram Skill 使用独立项目中的创作、布局、检查与交付术语。
 
 ## 语言
 
-**FlowSVG SDK**：本仓库维护的软件开发工具包，用于校验、渲染、播放和导出图解文档，也是应用集成的基础。
+**FlowSVG SDK**：用于校验、渲染、播放和导出图解文档的软件开发工具包，也是应用集成的基础。
 _避免_：Flow SVG Diagram Skill、图解创作助手
 
-**Flow SVG Diagram Skill**：由独立 `flow-svg-diagram-skills` 项目维护的图解创作能力，供助手组织来源资料、创作与修订图解、检查交付结果；通过公开 npm SDK 运行，不属于本仓运行或测试前提。
+**Flow SVG Diagram Skill**：独立 `flow-svg-diagram-skills` 项目提供的图解创作能力，供助手组织来源资料、创作与修订图解、检查交付结果；通过公开 npm SDK 运行，不属于 FlowSVG 的运行或测试前提。
 _避免_：FlowSVG SDK、播放器
 
 **图解文档（Diagram Document）**：描述一张图的节点、连线、场景和节拍的可序列化数据。

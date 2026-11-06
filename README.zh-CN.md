@@ -17,7 +17,7 @@
 
 用同一份可编辑的 JSON 或 TypeScript 文档描述节点、连线、场景和节拍。用静态图解释结构，用动画展示流程推进和状态变化。这份文档可复用于交互式播放器、单文件离线 HTML、SVG、PNG 和 GIF。
 
-本仓库维护 SDK、共享 showcase，以及原生浏览器、React、Vue 集成示例。独立的 [Flow SVG Diagram Skill](#独立-skill) 负责图解创作与复核。
+FlowSVG 包含 SDK、共享 showcase，以及原生浏览器、React、Vue 集成示例。独立的 [Flow SVG Diagram Skill](#独立-skill) 提供图解创作与复核能力。
 
 核心使用 TypeScript，运行时不依赖 DOM、网络或浏览器时钟。原生浏览器、Vue、React 和 Web Component 接入复用同一套时间线与渲染结果。
 
@@ -56,7 +56,7 @@ FlowSVG 包含三张代表性图解：一张展示简单的请求与响应流程
 - 使用浅色/深色主题、键盘操作和减少动画模式。
 - 校验文档，报告字段级错误和文字溢出警告；按需检查几何遮挡风险。
 
-节点位置和尺寸由作者指定。FlowSVG 面向图解展示与播放；拖拽编辑和语义自动布局不在当前范围内。创作与确定性布局计划工具由独立 Skill 维护。
+节点位置和尺寸由作者指定。FlowSVG 面向图解展示与播放；拖拽编辑和语义自动布局不在当前范围内。独立 Skill 提供创作与确定性布局计划工具。
 
 ## 安装
 
@@ -225,7 +225,7 @@ pnpm test
 
 ## 独立 Skill
 
-Flow SVG Diagram：面向系统和流程解释的可执行图解 Skill。一次编写，支持播放、嵌入、检查和导出。独立的 `flow-svg-diagram-skills` 项目负责创作、布局计划、校验流程、复核与交付报告，通过公开 `flowsvg@0.2.3` 包运行，无需本仓源码。
+Flow SVG Diagram：面向系统和流程解释的可执行图解 Skill。一次编写，支持播放、嵌入、检查和导出。独立的 `flow-svg-diagram-skills` 项目提供创作、布局计划、校验流程、复核与交付报告，通过已发布的 `flowsvg@0.2.3` 包运行。
 
 SDK 与独立创作工具的职责见[仓库边界](docs/development/repository-split.md)。SDK 安装、开发、测试、发布验收和示例均可独立运行。
 
