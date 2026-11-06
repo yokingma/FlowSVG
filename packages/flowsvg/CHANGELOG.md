@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.3 - 2026-11-05
+## 0.2.3 - 2026-11-06
 
 - Add full-timeline request-response, web-service-deployment and LLM inference showcase GIFs to the package README and npm tarball, rendered at 1.5x speed and 24 fps.
 
