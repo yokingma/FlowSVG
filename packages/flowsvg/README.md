@@ -19,6 +19,28 @@ Define nodes, edges, scenes and beats in one JSON or TypeScript document. Use th
 
 Node positions and dimensions are explicit. FlowSVG renders and animates the layout you author.
 
+## Featured examples
+
+These three diagrams show how FlowSVG explains a simple request flow, a deployed service topology and a layered model architecture with the same authored document, playback timeline and export path.
+
+### Request and response
+
+The client sends a request through an API gateway while authentication and inventory checks run in parallel. The order service returns the result through the gateway.
+
+<p align="center"><img src="./docs/images/request-response.gif" alt="Request and response flow" width="700"></p>
+
+### Web service deployment
+
+The diagram shows a public HTTPS entry, two application replicas, cache and database tiers, independent replication, health checks and later rerouting to the healthy replica.
+
+<p align="center"><img src="./docs/images/web-service-deployment.gif" alt="Two-replica web service deployment" width="700"></p>
+
+### LLM inference
+
+Token positions move through Transformer layers, causal prefill and KV-cache updates before next-token sampling. The diagram keeps state vectors, cache layers and model output visible in one frame.
+
+<p align="center"><img src="./docs/images/llm-inference.gif" alt="LLM inference with Transformer layers and KV cache" width="700"></p>
+
 ## Install
 
 ```sh

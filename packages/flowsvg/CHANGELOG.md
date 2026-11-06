@@ -2,6 +2,8 @@
 
 ## 0.2.3 - 2026-11-05
 
+- Add full-timeline request-response, web-service-deployment and LLM inference showcase GIFs to the package README and npm tarball, rendered at 1.5x speed and 24 fps.
+
 - Forward browser hover, click, and their compatibility aliases from the Web Component so the documented interaction events reach `<flowsvg-player>` listeners.
 
 - Preserve complete Latin words when wrapping ordinary labels. Allow overwide words to exceed the estimated width and use endpoint column widths for purely vertical edge labels without reducing font size. Keep complete Latin words in GIF captions and reject captions when an intact word exceeds the available width.

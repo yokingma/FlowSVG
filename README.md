@@ -21,6 +21,16 @@ This repository maintains the SDK, shared showcase, and native browser, React, a
 
 The TypeScript core runs without a DOM, network access, or browser clock. Native browser, Vue, React, and Web Component integrations share the same timeline and rendering results.
 
+## Featured examples
+
+FlowSVG includes three representative diagrams: a simple request and response flow, a two-replica web service deployment, and an LLM inference walkthrough that makes Transformer layers and KV-cache reuse visible.
+
+<p align="center"><img src="packages/flowsvg/docs/images/request-response.gif" alt="Request and response flow" width="700"></p>
+
+<p align="center"><img src="packages/flowsvg/docs/images/web-service-deployment.gif" alt="Two-replica web service deployment" width="700"></p>
+
+<p align="center"><img src="packages/flowsvg/docs/images/llm-inference.gif" alt="LLM inference with Transformer layers and KV cache" width="700"></p>
+
 ## Use cases
 
 The formal demo catalog uses English for navigation, introductions and diagram text. Stable example IDs keep shared links valid.

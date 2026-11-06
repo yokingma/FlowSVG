@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add full-timeline request-response, web-service-deployment and LLM inference GIF previews to the repository and SDK READMEs, rendered at 1.5x speed and 24 fps.
+
 - Keep the RAG question-to-context arrow as a straight segment to remove the small visual bend at the context card.
 
 - Forward Web Component hover/click interaction events and their aliases to the custom element boundary.

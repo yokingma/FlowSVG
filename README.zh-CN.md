@@ -21,6 +21,16 @@
 
 核心使用 TypeScript，运行时不依赖 DOM、网络或浏览器时钟。原生浏览器、Vue、React 和 Web Component 接入复用同一套时间线与渲染结果。
 
+## 典型示例
+
+FlowSVG 包含三张代表性图解：一张展示简单的请求与响应流程，一张展示双副本 Web 服务部署，另一张展示 Transformer 层与 KV Cache 复用的 LLM 推理过程。
+
+<p align="center"><img src="packages/flowsvg/docs/images/request-response.gif" alt="请求与响应流程" width="700"></p>
+
+<p align="center"><img src="packages/flowsvg/docs/images/web-service-deployment.gif" alt="双副本 Web 服务部署" width="700"></p>
+
+<p align="center"><img src="packages/flowsvg/docs/images/llm-inference.gif" alt="包含 Transformer 层和 KV Cache 的 LLM 推理" width="700"></p>
+
 ## 应用场景
 
 公开演示示例的分类、介绍与图中文字统一使用英文；示例 ID 保持稳定，现有分享链接仍可使用。

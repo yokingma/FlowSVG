@@ -19,6 +19,28 @@
 
 节点位置和尺寸由作者明确指定。FlowSVG 负责渲染和播放作者编排的布局。
 
+## 典型示例
+
+下面三张图展示 FlowSVG 如何使用同一份文档、时间线和导出路径，解释简单的请求流程、服务部署拓扑与分层模型架构。
+
+### 请求与响应
+
+客户端通过 API 网关发送请求，同时执行身份验证和库存检查；订单服务随后通过网关返回结果。
+
+<p align="center"><img src="./docs/images/request-response.gif" alt="请求与响应流程" width="700"></p>
+
+### Web 服务部署
+
+图中展示公共 HTTPS 入口、两个应用副本、缓存与数据库层、独立复制、健康检查，以及后续请求切换到健康副本。
+
+<p align="center"><img src="./docs/images/web-service-deployment.gif" alt="双副本 Web 服务部署" width="700"></p>
+
+### LLM 推理
+
+图中展示 token 位置经过 Transformer 层、因果预填充和 KV Cache 更新，最后进行下一个 token 采样；状态向量、缓存层和模型输出保持在同一画面中。
+
+<p align="center"><img src="./docs/images/llm-inference.gif" alt="包含 Transformer 层和 KV Cache 的 LLM 推理" width="700"></p>
+
 ## 安装
 
 ```sh

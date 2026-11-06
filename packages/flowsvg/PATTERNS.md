@@ -116,6 +116,8 @@ Read the sections for the affected subsystem. For public-contract changes, also 
 
 ## Package and verification
 
+- Keep README showcase GIFs as generated full-timeline exports from the formal showcase. Record the source, speed, theme, time range, width and frame rate in the image maintenance guide, and include each shipped asset in the release allowlist.
+
 - Keep the shipped lifecycle document and its README GIF in English. Refresh the SDK-owned JSON snapshot and GIF together after formal story wording changes; retain multilingual text regression fixtures.
 
 - Present the typical README example with a brief scenario description and a GIF preview. Keep example JSON under `examples/` and its GIF under `docs/images/` explicit in the package and release verification allowlists. The lifecycle document is a checked-in snapshot of the formal teaching story; SDK build, tests and release must not require showcase generation. Use `highlightParticipants: false` for state-transition flows so explicit highlights identify exactly one current state.
