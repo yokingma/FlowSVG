@@ -12,6 +12,7 @@
 </p>
 
 <p align="center">
+  <a href="https://yokingma.github.io/FlowSVG/">Live demo</a> ·
   <a href="#related-skill">Skill</a> ·
   <a href="#quick-start">Quick&nbsp;start</a> ·
   <a href="#integrations-and-api">API</a> ·
@@ -25,6 +26,8 @@ Use one editable JSON or TypeScript document to describe nodes, relationships, s
 FlowSVG includes the SDK, a shared showcase, and native browser, React, and Vue integration examples. The independent [Flow SVG Diagram Skill](#related-skill) provides diagram authoring and review.
 
 The TypeScript core runs without a DOM, network access, or browser clock. Native browser, Vue, React, and Web Component integrations share the same timeline and rendering results.
+
+Try the [live demo](https://yokingma.github.io/FlowSVG/) to browse the example catalog, play diagrams, and inspect shareable demonstrations in the browser.
 
 ## Featured examples
 

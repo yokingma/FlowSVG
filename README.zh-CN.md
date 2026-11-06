@@ -12,6 +12,7 @@
 </p>
 
 <p align="center">
+  <a href="https://yokingma.github.io/FlowSVG/">在线演示</a> ·
   <a href="#独立-skill">Skill</a> ·
   <a href="#快速开始">快速开始</a> ·
   <a href="#集成与-api">API</a> ·
@@ -25,6 +26,8 @@
 FlowSVG 包含 SDK、共享 showcase，以及原生浏览器、React、Vue 集成示例。独立的 [Flow SVG Diagram Skill](#独立-skill) 提供图解创作与复核能力。
 
 核心使用 TypeScript，运行时不依赖 DOM、网络或浏览器时钟。原生浏览器、Vue、React 和 Web Component 接入复用同一套时间线与渲染结果。
+
+可以访问[在线演示](https://yokingma.github.io/FlowSVG/)，浏览示例目录，在浏览器中播放图解，并查看可分享的演示链接。
 
 ## 典型示例
 
