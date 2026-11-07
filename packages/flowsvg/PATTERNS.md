@@ -27,6 +27,10 @@ Read the sections for the affected subsystem. For public-contract changes, also 
 
 ## Routing and SVG geometry
 
+- Keep predefined-process side lines decorative within one node identity; only its rectangular outer contour supplies attachments and routing obstacles.
+
+- Reject points outside preset bounds before testing contour half planes; representable tiny dimensions may collapse at a large finite origin.
+
 - New semantic presets share one contour definition across serialization, cardinal/ray edge attachments and hits; preserve existing-shape behavior. Keep contour sampling separate from convex diagnostic paint decomposition.
 
 - Keep SVG background selection separate from frame evaluation. Remove only the whole-diagram background rectangle; preserve object paint and label contrast.
