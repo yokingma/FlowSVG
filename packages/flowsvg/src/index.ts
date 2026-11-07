@@ -61,6 +61,8 @@ export type {
 } from "./core/node-content.js";
 
 export { measureNodeContent } from "./core/node-content-measurement.js";
+export { measureNodeLabel } from "./core/node-label-measurement.js";
+export type { NodeLabelMeasurementInput, NodeLabelMeasurement, NodeLabelMeasurementDiagnostic } from "./core/node-label-measurement.js";
 export type {
   NodeContentMeasurementInput,
   NodeContentMeasurement,

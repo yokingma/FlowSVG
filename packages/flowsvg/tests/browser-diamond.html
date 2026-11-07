@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Measured decision branch</title>
+<link rel="stylesheet" href="../dist/styles.css">
+<style>
+  body { margin: 20px; font: 16px sans-serif; background: #f8fafc; color: #172033; }
+  #host { width: 900px; height: 650px; }
+  button { margin: 8px; }
+</style>
+<h1>Measured decision branch</h1>
+<div id="host"></div>
+<button id="initial">Initial</button><button id="resize">Resize midpoint</button><button id="overflow">Overflow</button>
+<output id="click">click: none</output>
+<script type="module">
+import { createPlayer } from "../dist/browser.js";
+import { createDiagram, measureNodeLabel } from "../dist/index.js";
+const source = await (await fetch("../examples/decision-branch.json")).json();
+const theme = new URLSearchParams(location.search).get("theme") === "dark" ? "dark" : "light";
+const labels = ["Request approved?", "Does request satisfy policy?"];
+const measured = measureNodeLabel({ kind: "diamond", width: 240, label: labels });
+const model = { ...source, theme, nodes: source.nodes.map((node) => node.id === "decision" ? { ...node, height: measured.height } : node) };
+const host = document.querySelector("#host");
+const player = createPlayer(host, model, { controls: false, reducedMotion: false });
+host.addEventListener("click", (event) => {
+  if (event instanceof CustomEvent) document.querySelector("#click").textContent = `click: ${event.detail?.id ?? "none"}`;
+});
+for (const [id, time] of [["initial", 0], ["resize", 1500], ["overflow", 2500]]) {
+  document.querySelector(`#${id}`).onclick = () => player.seek(time);
+}
+window.diamondFixture = { player, model, host,
+  matchesCore() {
+    const expected = document.createElement("div");
+    expected.innerHTML = createDiagram(model).renderSvg(player.getState().timeMs);
+    return host.querySelector("svg")?.outerHTML === expected.querySelector("svg")?.outerHTML;
+  }
+};
+</script>
+</html>

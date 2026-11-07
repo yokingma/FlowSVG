@@ -261,7 +261,7 @@ Register in a DOM environment. DOM-free imports are safe, but that module instan
 | `title` / `theme` | Optional title and `light` / `dark` document theme |
 | `typography` | Optional node, edge and flow-label sizes; see [document typography](#document-typography) |
 
-Node and edge IDs are globally unique. Shapes: `rect`, `roundedRect`, `ellipse`, `cylinder`, `group`. Group borders are rounded by default. `parentId` names a parent group; child coordinates are group-relative. Labels are plain text; `visible` defaults to `true`. Node styles: `fill`, `stroke`, `strokeWidth`, `textColor`, `dashed` (group borders). Edge styles: `stroke`, `strokeWidth`, `dashed`. Colors use hexadecimal RGB/RGBA, such as `#2563eb` or `#2563eb80`.
+Node and edge IDs are globally unique. Shapes: `rect`, `roundedRect`, `ellipse`, `cylinder`, `group`; unreleased source also supports `diamond`. Group borders are rounded by default. `parentId` names a parent group; child coordinates are group-relative. Labels are plain text; `visible` defaults to `true`. Node styles: `fill`, `stroke`, `strokeWidth`, `textColor`, `dashed` (group borders). Edge styles: `stroke`, `strokeWidth`, `dashed`. Colors use hexadecimal RGB/RGBA, such as `#2563eb` or `#2563eb80`.
 
 Routes: `straight` (default), `orthogonal`, or `curved`. Curves follow endpoint ports without avoiding other nodes. Orthogonal routes round bends by default; SVG output, flow markers, bounds and hit testing share that geometry. Rounding adapts to short segments and obstacle/arrow clearance. Orthogonal routes avoid visible ordinary nodes and use a fixed fallback if blocked; shortest paths and zero crossings are not guaranteed. Set `fromPort` / `toPort` to `top`, `right`, `bottom`, or `left`. Orthogonal routes prefer bridges at the gap midpoint when arrow space permits and single outside channels for matching port sides. Separate ancestor frames add outside clearance; shared containers remain traversable. Orthogonal routes reserve outward endpoint segments and a straight arrow approach scaled to the evaluated stroke width, shortened when adjacent nodes leave insufficient space. Curved and orthogonal inputs on the same target side receive separate positions ordered by source position, with document order breaking ties; hidden edges keep their positions. Positions use the central portion of the side, so crowded or very small nodes can still require more space. Curved ports set tangents. Omitted ports follow the dominant center-to-center axis; ellipse endpoints lie on the contour. Simple labels wrap by estimated width and remain visible on height overflow, with a `text-overflow` warning.
 
@@ -310,6 +310,7 @@ Import from `flowsvg`:
 | `diagram.renderSvg(timeMs = 0, options?)` | Exports SVG from the same evaluation result |
 | `diagram.hitTest(timeMs, point, options?)` | Returns `{ id, type: "node" \| "edge" }` or `null`, using document coordinates |
 | `measureNodeContent({ kind, width, content, typography? })` | Returns a recommended fixed height and unresolved per-version overflow diagnostics; see [content measurement](#measure-content-before-creating-a-document) |
+| `measureNodeLabel({ kind, width, label, typography? })` | Unreleased: measure shared diamond-label height and unresolved width issues; see [decision labels](#decision-labels-and-measurement). |
 | `wrapText(label, maxWidth, typography?)` | Wraps text with fixed width estimates and returns an array of lines |
 
 `validateDocument` checks authored structure and values. Compilation also rejects non-finite derived movement or accumulated timing with `DiagramValidationError` at the affected beat’s `durationMs` path. Input documents retain their authored durations.
@@ -438,6 +439,29 @@ Use this interface only when building host settings; normal player setup and sty
 
 Create `new SelectControl(document, "Theme", onChange)`, append its `element`, then call `render([{ value: "light", label: "Light" }, { value: "dark", label: "Dark" }], "light")`. `SelectChoice` contains string `value` and `label` fields; choice values must be unique within a control. The callback receives a requested value; the caller owns committed state and must call `render` to reflect it. The optional third `render` argument is a disabled flag, defaulting to `false`; an empty choice list also disables the trigger. Call `destroy()` before removing the host to release outside-dismissal listeners and remove the menu element. The menu reuses the imported `flowsvg/styles.css`, color variables and size class above.
 
+## Decision labels and measurement
+
+This unreleased source capability is not in published 0.2.3. `diamond` supports plain `label` only, with no structured `content`, including empty blocks. Timeline `content: null` retains existing clearing semantics. Its four vertices are side midpoints; the centered half-width/half-height inner rectangle reserves a further 12 diagram units on every side. The label is centered as complete line boxes with one fixed width.
+
+```ts
+import { createDiagram, measureNodeLabel } from "flowsvg";
+
+const width = 200;
+const labels = ["Ready?", "One\nTwo"];
+const measurement = measureNodeLabel({ kind: "diamond", width, label: labels });
+const diagram = createDiagram({ version: 1, viewport: { width: 300, height: 300 },
+  nodes: [{ id: "decision", kind: "diamond", x: 20, y: 20, width,
+    height: measurement.height, label: labels[1] }], edges: [], scenes: [] });
+```
+
+This example returns height 128. Inspect `measurement.diagnostics` before adopting the size. `measureNodeLabel` accepts only `diamond` in this source milestone, a finite positive width, a string or nonempty readonly label-version array, and optional existing `DiagramTypography`. It returns `{ height, diagnostics }`; each unresolved width issue contains `versionIndex`, `path`, `dimension: "width"`, and `message`. A single string uses version zero. Import `NodeLabelMeasurementInput`, `NodeLabelMeasurement`, and `NodeLabelMeasurementDiagnostic` from `flowsvg` for typed consumers.
+
+Versions share the maximum required height, including complete line boxes. With label height L, diamond height is 2 × (L + 24). Empty labels still return positive clearance height. Measurement and rendering share deterministic wrapping without DOM font metrics, input mutation or scene scanning. When one grapheme cannot fit, it occupies its own measured line and retains a width diagnostic; increasing height cannot solve that issue. Increase width or shorten the label. Invalid input or a non-finite computed height throws `DiagramValidationError` with field/version paths.
+
+Chinese and explicit newlines/blank lines are supported. Latin words remain whole when possible, but overwide words and URLs split only between complete graphemes. Nonempty text outside the safe area is clipped and reports `text-overflow`, without font reduction, ellipsis, source-text replacement or automatic node resizing. Positive tiny dimensions remain valid; nonpositive/non-finite dimensions are validation errors. Empty labels do not overflow solely because their safe area is zero.
+
+Cardinal and automatic connections in every route family, same-side inputs, hits and diagnostics follow the real contour. Clipped-away text cannot enlarge hit targets, diagnostics or fitted height. Group movement and timeline resizing use current geometry; node kind remains immutable during a timeline. SVG, players and exports reuse the core result. Existing node kinds and `measureNodeContent` keep their current behavior. The SDK ships an English decision-branch example with a measured update and intentional overflow.
+
 ## Document typography
 
 The optional document `typography` accepts `nodeLabel`, `edgeLabel` and `flowLabel`, defaulting independently to 16, 14 and 12. Sizes use diagram units, rather than PNG pixels or PowerPoint points.
@@ -455,7 +479,7 @@ const diagram = createDiagram({ version: 1, viewport: { width: 1280, height: 720
 
 Ordinary node labels and group headings use the node size; edge labels use the edge size. Wrapping, line height, estimated bounds, node label hits and rendering share these metrics. Transfer text remains single-line. Capsule width, height, baseline and `fitHeight` bounds follow its effective size without adding an interaction target.
 
-Ordinary labels and `wrapText` preserve complete Latin words, including internal apostrophes and hyphens. Break between words when a line is too narrow; keep an overwide word intact even if it exceeds the estimated width. Other scripts retain code-point wrapping, and explicit blank lines remain. Purely vertical edge labels use the narrower endpoint width as their horizontal text budget. Fonts do not shrink automatically; increase authored spacing or node width when labels overlap. GIF captions use the same Latin word boundaries with measured font widths. An overwide caption word produces `caption-overflow`; increase the export width or shorten the caption.
+Existing-shape labels, edge labels and `wrapText` preserve complete Latin words, including internal apostrophes and hyphens. Break between words when a line is too narrow; keep an overwide word intact even if it exceeds the estimated width. Other scripts retain code-point wrapping, and explicit blank lines remain. Purely vertical edge labels use the narrower endpoint width as their horizontal text budget. Fonts do not shrink automatically; increase authored spacing or node width when labels overlap. GIF captions use the same Latin word boundaries with measured font widths. An overwide caption word produces `caption-overflow`; increase the export width or shorten the caption.
 
 Default title, body, auxiliary, tag, status and graph-label sizes scale by `nodeLabel / 16`. Explicit block, list, item and span sizes retain their existing inheritance order. Content retains its line-height rule: `max(20, largest current line size × 1.35)`. Node dimensions, graph coordinates and fixed block heights, padding and gaps do not grow automatically. Remeasure with the same typography; width overflow and graph-internal height overflow can remain unresolved. Multiple content versions share the largest required height.
 

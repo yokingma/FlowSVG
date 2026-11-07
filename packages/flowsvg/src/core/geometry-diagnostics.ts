@@ -2,6 +2,7 @@
 import type { DiagramFrameEvaluation } from "./diagram.js";
 import type { EvaluatedNode, GeometryWarning, GeometryWarningCode } from "./model.js";
 import type { ContentLine } from "./node-content.js";
+import { nodeLabelSafeArea } from "./node-shape.js";
 import { TEXT_DESCENT_RATIO, EDGE_LABEL_HALO_RADIUS, textLineBounds, type TextMetrics } from "./typography.js";
 import { cameraRect, clipPolygon, nodeFill, nodeStroke, paintOverlapsPolygon, rectPolygon, segmentStrip, type Paint, type Polygon } from "./diagnostic-geometry.js";
 
@@ -44,10 +45,13 @@ function ordinaryLabels(evaluation: DiagramFrameEvaluation): Label[] {
   const collect = (object: EvaluatedNode | DiagramFrameEvaluation["frame"]["edges"][number], index: number,
     kind: "node" | "edge", typography: TextMetrics, painted: boolean, halo = 0): Label[] => {
     if (!object.visible || object.opacity <= 0 || !painted) return [];
+    const area = "kind" in object ? nodeLabelSafeArea(object) : undefined;
+    const safe = area ? rectPolygon({ left: area.x, top: area.y, right: area.x + area.width, bottom: area.y + area.height }) : undefined;
     const path = `${kind === "node" ? "nodes" : "edges"}[${index}].label`;
     return object.labelBoxes.flatMap((line, lineIndex) => line.text.length ? [{ objectId: object.id, path,
       descriptor: [kind, object.id, "label", path, lineIndex], ...(kind === "node" ? { ownerNodeId: object.id } : {}),
-      regions: [clipPolygon(rectPolygon(textLineBounds(line, typography, halo)), camera)],
+      regions: [clipPolygon(safe ? clipPolygon(rectPolygon(textLineBounds(line, typography, halo)), safe)
+        : rectPolygon(textLineBounds(line, typography, halo)), camera)],
       ...(kind === "edge" ? { foregroundRegions: hasPaint(object.style?.stroke)
         ? [clipPolygon(rectPolygon(textLineBounds(line, typography)), camera)] : [] } : {}) }] : []);
   };
