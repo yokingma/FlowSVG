@@ -478,6 +478,12 @@ const diagram = createDiagram({ version: 1, viewport: { width: 300, height: 300 
 
 SDK 自有的[子流程调用示例](../../packages/flowsvg/examples/subprocess-call.json)包含测量标签、尺寸变化、强调和有意溢出。先运行 `pnpm --filter flowsvg build`，再以 `packages/flowsvg` 为根目录启动静态服务，打开 `/tests/browser-predefined-process.html` 即可播放公开浏览器示例。
 
+未发布源码的[混合审批流程](../../packages/flowsvg/examples/mixed-flow.json)将四种形状、普通节点、分组和三种路由组合在同一图解中；包含标签替换、尺寸与样式变化，以及一个有意裁剪的标签。[生成脚本](../../packages/flowsvg/examples/create-mixed-flow.mjs)通过公开 `measureNodeLabel` 为多个标签版本预留共同高度。
+
+安装包含此能力的 SDK 后，在可写目录中放置脚本并运行 `node create-mixed-flow.mjs`，再运行 `npx flowsvg mixed-flow.json --format html --output mixed-flow.html` 生成离线播放文件。
+
+仓库内先执行 `pnpm --filter flowsvg build`，然后运行 `node packages/flowsvg/examples/create-mixed-flow.mjs`；以 `packages/flowsvg` 为静态服务根目录时，可打开 `/tests/browser-mixed-flow.html`。这些能力尚未发布到 npm。
+
 ## 文档级字号
 
 图解文档的可选 `typography` 接受 `nodeLabel`、`edgeLabel` 和 `flowLabel`，默认分别为 16、14、12。字号使用图解单位，不是 PNG 像素或 PPT 点数。每个字段独立使用默认值。

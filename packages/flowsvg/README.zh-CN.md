@@ -516,6 +516,12 @@ SDK 自有的[子流程调用示例](examples/subprocess-call.json)包含测量�
 
 改变字号后，用相同 `typography` 调用 `measureNodeContent`，再检查溢出。
 
+未发布源码的[混合审批流程](examples/mixed-flow.json)将四种形状、普通节点、分组和三种路由组合在同一图解中；包含标签替换、尺寸与样式变化，以及一个有意裁剪的标签。[生成脚本](examples/create-mixed-flow.mjs)通过公开 `measureNodeLabel` 为多个标签版本预留共同高度。
+
+安装包含此能力的 SDK 后，在可写目录中放置脚本并运行 `node create-mixed-flow.mjs`，再运行 `npx flowsvg mixed-flow.json --format html --output mixed-flow.html` 生成离线播放文件。
+
+仓库内先执行 `pnpm --filter flowsvg build`，然后运行 `node packages/flowsvg/examples/create-mixed-flow.mjs`；以 `packages/flowsvg` 为静态服务根目录时，可打开 `/tests/browser-mixed-flow.html`。这些能力尚未发布到 npm。
+
 ## 核心 API — `flowsvg`
 
 时间单位均为毫秒，位置与尺寸使用图解单位。

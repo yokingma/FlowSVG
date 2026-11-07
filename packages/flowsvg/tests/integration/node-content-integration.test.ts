@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
@@ -139,5 +140,27 @@ describe.each<HostEntry>(["browser", "web-component", "react", "vue"])("shared c
       player.play();
     } finally { cleanup(); host.remove(); }
     expect(callbacks.size).toBe(0);
+  });
+});
+
+const mixedFlow: DiagramDocument = JSON.parse(readFileSync(`${process.cwd()}/examples/mixed-flow.json`, "utf8"));
+describe.each<HostEntry>(["browser", "web-component", "react", "vue"])("mixed preset flow through %s", (entry) => {
+  it.each<PlayerOptions>([
+    { theme: "light", reducedMotion: false }, { theme: "dark", reducedMotion: true }
+  ])("shares core frames, clipped SVG and document replacement for %j", (options) => {
+    const host = document.createElement("div"); document.body.append(host);
+    const { player, reload, cleanup } = mountStory(entry, host, { ...options, controls: false }, mixedFlow);
+    const assertFrame = (model: DiagramDocument, time: number) => {
+      player.seek(time);
+      const diagram = createDiagram(model);
+      expect(player.getState()?.frame).toEqual(diagram.evaluateAt(time, options));
+      const expected = document.createElement("div"); expected.innerHTML = diagram.renderSvg(time, options);
+      expect(host.querySelector("svg")?.outerHTML).toBe(expected.querySelector("svg")?.outerHTML);
+    };
+    try {
+      for (const time of [0, 999, 1000, 1500, 2000, 2150, 2300, 3000, 4000]) assertFrame(mixedFlow, time);
+      const replacement: DiagramDocument = { ...mixedFlow, nodes: mixedFlow.nodes.map((node) => node.id === "input" ? { ...node, width: 260, label: "Replacement input" } : node) };
+      reload(replacement); assertFrame(replacement, 0); assertFrame(replacement, 1500);
+    } finally { cleanup(); host.remove(); }
   });
 });

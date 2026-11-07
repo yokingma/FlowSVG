@@ -72,6 +72,12 @@ Reuse one diagram document for static SVG/PNG, animated GIF and interactive or o
 
 Node positions and sizes are authored explicitly. FlowSVG focuses on presentation and playback; drag-and-drop editing and semantic automatic layout are outside its scope. Authoring and deterministic layout-plan tools belong to the independent Skill.
 
+The unreleased [mixed approval flow](packages/flowsvg/examples/mixed-flow.json) combines all four presets, an ordinary node, a group and three route families. It includes label replacement, size and style changes, and one deliberately clipped label. Its [generator](packages/flowsvg/examples/create-mixed-flow.mjs) reserves a shared height for label versions through public `measureNodeLabel`.
+
+After installing an SDK build with this feature, place the script in a writable directory and run `node create-mixed-flow.mjs`, then `npx flowsvg mixed-flow.json --format html --output mixed-flow.html` to generate offline playback.
+
+In this repository, first run `pnpm --filter flowsvg build`, then `node packages/flowsvg/examples/create-mixed-flow.mjs`; serve `packages/flowsvg` and open `/tests/browser-mixed-flow.html`. This capability has not been published to npm.
+
 ## Installation
 
 Install from [npm](https://www.npmjs.com/package/flowsvg):

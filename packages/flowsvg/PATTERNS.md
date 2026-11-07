@@ -2,6 +2,8 @@
 
 Read the sections for the affected subsystem. For public-contract changes, also read the corresponding [package README](README.md) sections. These rules retain implementation constraints and failure cases.
 
+- Keep the mixed preset-shape example SDK-owned. Generate its shared label heights through the public measurement API and reuse its JSON across hosts, offline playback and image acceptance.
+
 ## Core and timeline
 
 - Derive arrival paint from the shared 200 ms entrance, 100 ms hold and 200 ms departure constants. Keep paint weights separate from logical membership and marker progress: senders paint immediately, receivers use the cubic entrance, and automatic node/edge paint is multiplied by the remaining departure weight before max-merging explicit highlights. Retain logical membership at zero paint. Reduced motion and synchronized multi-flow beats bypass paint interpolation without changing compiled intervals.

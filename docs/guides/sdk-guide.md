@@ -478,6 +478,12 @@ Use plain `label`; structured `content` objects are rejected, including empty bl
 
 The SDK-owned [subprocess-call example](../../packages/flowsvg/examples/subprocess-call.json) includes measured labels, resizing, emphasis and intentional overflow. Run `pnpm --filter flowsvg build`, serve `packages/flowsvg` from the workspace, and open `/tests/browser-predefined-process.html` to play the public browser example.
 
+The unreleased [mixed approval flow](../../packages/flowsvg/examples/mixed-flow.json) combines all four presets, an ordinary node, a group and three route families. It includes label replacement, size and style changes, and one deliberately clipped label. Its [generator](../../packages/flowsvg/examples/create-mixed-flow.mjs) reserves a shared height for label versions through public `measureNodeLabel`.
+
+After installing an SDK build with this feature, place the script in a writable directory and run `node create-mixed-flow.mjs`, then `npx flowsvg mixed-flow.json --format html --output mixed-flow.html` to generate offline playback.
+
+In this repository, first run `pnpm --filter flowsvg build`, then `node packages/flowsvg/examples/create-mixed-flow.mjs`; serve `packages/flowsvg` and open `/tests/browser-mixed-flow.html`. This capability has not been published to npm.
+
 ## Document typography
 
 The optional document `typography` accepts `nodeLabel`, `edgeLabel` and `flowLabel`, defaulting independently to 16, 14 and 12. Sizes use diagram units, rather than PNG pixels or PowerPoint points.

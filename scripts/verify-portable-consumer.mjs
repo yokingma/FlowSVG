@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseGIF, decompressFrames } from "gifuct-js";
 import { chromium } from "playwright-core";
+import { createDiagram } from "flowsvg";
 import { renderHtml, exportGif, exportPng } from "flowsvg/node";
 
 const ROOT = process.cwd();
@@ -165,6 +166,16 @@ function prepareDetachedTools() {
     "--fps", "2", "--speed", "2", "--start-ms", "500", "--end-ms", "1000", "--no-captions", "--loop-count", "1", "--final-hold-ms", "0", "--reduced-motion"], detached);
   const result = decode(readFileSync(join(detached, "cli.gif")));
   assert.deepEqual([result.parsed.lsd.width, result.parsed.lsd.height, result.ticks, result.loop], [240, 120, 25, undefined]);
+  const mixed = readFileSync(join(PACKAGE, "examples/mixed-flow.json"), "utf8");
+  writeFileSync(join(detached, "mixed.json"), mixed);
+  run(NODE20, [cli, "mixed.json", "--output", "mixed.html", "--format", "html"], detached);
+  writeFileSync(join(detached, "mixed-png.mjs"), `
+    import { readFile, writeFile } from "node:fs/promises";
+    import { exportPng } from "./dist/node.js";
+    const model = JSON.parse(await readFile("mixed.json", "utf8"));
+    await writeFile("mixed.png", await exportPng(model, { timeMs: 3000, executablePath: process.env.FLOWSVG_CHROMIUM_PATH }));
+  `);
+  run(NODE20, ["mixed-png.mjs"], detached);
   return detached;
 }
 
@@ -211,12 +222,46 @@ async function verifyHtml(browser, detached) {
   } finally { await context.close(); }
 }
 
+async function verifyMixed(browser, detached) {
+  const model = JSON.parse(readFileSync(join(detached, "mixed.json"), "utf8"));
+  const context = await browser.newContext({ offline: true });
+  const page = await context.newPage();
+  try {
+    await page.goto(pathToFileURL(join(detached, "mixed.html")).href);
+    for (const time of [0, 1500, 3000, 4000]) {
+      const slider = page.getByRole("slider", { name: "Progress" });
+      await slider.fill(String(time)); await slider.dispatchEvent("input");
+      const expected = await page.evaluate(svg => { const root = document.createElement("div"); root.innerHTML = svg; return root.querySelector("svg").outerHTML; }, createDiagram(model).renderSvg(time));
+      assert.equal(await page.locator(".flowsvg-canvas svg").evaluate(svg => svg.outerHTML), expected);
+    }
+    const pixels = await page.evaluate(async ({ bytes, svg }) => {
+      const bitmap = await createImageBitmap(new Blob([Uint8Array.from(bytes)], { type: "image/png" }));
+      const canvas = document.createElement("canvas"); canvas.width = bitmap.width; canvas.height = bitmap.height;
+      const context = canvas.getContext("2d"); context.drawImage(bitmap, 0, 0); bitmap.close();
+      const actual = context.getImageData(0, 0, canvas.width, canvas.height).data;
+      const image = new Image(); const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+      try {
+        image.src = url; await image.decode(); context.clearRect(0, 0, canvas.width, canvas.height); context.drawImage(image, 0, 0);
+        const expected = context.getImageData(0, 0, canvas.width, canvas.height).data;
+        const difference = actual.reduce((sum, value, index) => sum + Math.abs(value - expected[index]), 0) / actual.length;
+        return { width: canvas.width, height: canvas.height, difference };
+      } finally { URL.revokeObjectURL(url); }
+    }, { bytes: Array.from(readFileSync(join(detached, "mixed.png"))), svg: createDiagram(model).renderSvg(3000) });
+    assert.deepEqual([pixels.width, pixels.height], [1000, 620]);
+    assert.ok(pixels.difference < 0.01, "detached mixed PNG must match installed public SVG pixels");
+    console.log("packed mixed-flow detached Node20 HTML/PNG: four shapes, updates, resize and core SVG parity passed");
+  } finally { await context.close(); }
+}
+
 verifyMetadata(); verifyImportsAndRuntimes();
 assert.ok(CHROMIUM, "Set FLOWSVG_CHROMIUM_PATH to prepared Chromium; release checks never install a browser.");
 const basic = await renderHtml(document);
 assert.doesNotMatch(basic, /GIF89a/);
 const browser = await chromium.launch({ executablePath: CHROMIUM });
-try { await verifyNode(browser);
-  await verifyNodePng(browser); await verifyBrowserPng(browser); await verifyHtml(browser, prepareDetachedTools()); }
+try {
+  await verifyNode(browser); await verifyNodePng(browser); await verifyBrowserPng(browser);
+  const detached = prepareDetachedTools();
+  await verifyHtml(browser, detached); await verifyMixed(browser, detached);
+}
 finally { await browser.close(); }
 console.log("packed portable consumer passed");

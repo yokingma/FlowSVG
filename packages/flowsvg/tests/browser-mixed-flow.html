@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Mixed preset workflow</title>
+<link rel="stylesheet" href="../dist/styles.css">
+<style>
+  body { margin: 0; font: 16px sans-serif; }
+  #host { width: 1000px; height: 620px; }
+  #clips { display: flex; }
+  #clips > div { width: 1000px; height: 180px; flex: none; }
+</style>
+<div id="host"></div><output id="click">none</output><div id="clips"></div>
+<script type="module">
+import { createPlayer } from "../dist/browser.js";
+import { createDiagram } from "../dist/index.js";
+const model = await (await fetch("../examples/mixed-flow.json")).json();
+const theme = new URLSearchParams(location.search).get("theme") === "dark" ? "dark" : "light";
+const options = { theme, controls: false, reducedMotion: false };
+const host = document.querySelector("#host");
+const player = createPlayer(host, model, options);
+host.addEventListener("click", (event) => {
+  if (event instanceof CustomEvent) document.querySelector("#click").textContent = event.detail?.id ?? "none";
+});
+const KINDS = ["diamond", "parallelogram", "document", "predefinedProcess"];
+const variants = [200, 160].map((width) => ({
+  version: 1, viewport: { width: 1000, height: 180 },
+  nodes: KINDS.map((kind, index) => ({
+    id: `same-${index}`, kind, x: 20 + index * 240, y: 20, width, height: 100,
+    label: "AAAAAA\nAAAAAA\nAAAAAA\nAAAAAA\nAAAAAA\nAAAAAA",
+    style: { fill: "#ffffff", stroke: "#ffffff", textColor: "#ff0000" }
+  })),
+  edges: [], scenes: [{ id: "resize", label: "Resize", beats: [
+    { durationMs: 500, actions: [] },
+    { durationMs: 500, transitionMs: 500, actions: KINDS.map((_, index) => ({
+      type: "updateNode", target: `same-${index}`, value: { width: width + 20 }
+    })) }
+  ] }]
+}));
+const clipHosts = variants.map((model) => {
+  const host = document.createElement("div");
+  document.querySelector("#clips").append(host);
+  return { host, model, player: createPlayer(host, model, { controls: false }) };
+});
+window.mixedFixture = {
+  player, model, clipHosts,
+  matchesCore() {
+    const expected = document.createElement("div");
+    expected.innerHTML = createDiagram(model).renderSvg(player.getState().timeMs, options);
+    return host.querySelector("svg").outerHTML === expected.querySelector("svg").outerHTML;
+  },
+  setClipWidth(index, width) {
+    const entry = clipHosts[index];
+    entry.model = { ...entry.model, nodes: entry.model.nodes.map((node) => ({ ...node, width })) };
+    entry.player.load(entry.model);
+  }
+};
+</script></html>
