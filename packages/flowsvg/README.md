@@ -422,7 +422,7 @@ Built-in downloads export the full timeline at `1×`, using the current theme. P
 | `Beat` | `durationMs`, `actions` | `transitionMs`, `caption` |
 
 - **Static documents:** use empty `scenes`.
-- **Node kinds:** `rect`, `roundedRect`, `ellipse`, `cylinder`, `group`; unreleased source also supports `diamond`. Groups have rounded borders by default.
+- **Node kinds:** `rect`, `roundedRect`, `ellipse`, `cylinder`, `group`; unreleased source also supports `diamond` and `parallelogram`. Groups have rounded borders by default.
 - **Edge routes:** `straight` (default), `orthogonal`, `curved`.
 - **Ports:** `top`, `right`, `bottom`, `left`.
 - **Beat timing:** `durationMs` must be positive. `transitionMs` must be in `[0, durationMs]`, defaults to `min(250, durationMs)`, and is capped at effective beat length.
@@ -465,6 +465,8 @@ Call `measureNodeLabel({ kind: "diamond", width, label, typography? })` before a
 
 Cardinal ports, straight/orthogonal/curved connections, hits and diagnostics use the real contour. Invisible clipped text does not enlarge hits or fitted height. Groups, timelines and exports reuse the core result; old kinds and `measureNodeContent` retain their behavior. The [runnable decision example](examples/decision-branch.json) demonstrates measured label updates, resizing and an intentionally clipped node.
 
+`parallelogram` expresses input/output with the same plain-label restrictions, wrapping, clipping and diagnostics. Its top edge slants right by S = min(width / 4, 24) diagram units. The rectangular safe area reserves S + 12 units on both horizontal sides and 12 units on both vertical sides. With complete label height L, `measureNodeLabel` returns L + 24; multiple versions share the largest height. No slant configuration is exposed. Cardinal/automatic connections, hits and diagnostics use the actual slanted outline. See the [input/output example](examples/input-output.json).
+
 ### Structured content and measurement
 
 Rectangles (`rect`), rounded rectangles (`roundedRect`) and cylinders (`cylinder`) support structured `content` with titles, paragraphs, lists, tags and entity graphs.
@@ -500,6 +502,8 @@ Existing-shape labels, edge labels and `wrapText` keep Latin words intact. Overw
 
 After changing sizes, pass the same `typography` to `measureNodeContent` and inspect overflow.
 
+`parallelogram` expresses input/output with the same plain-label restrictions, wrapping, clipping and diagnostics. Its top edge slants right by S = min(width / 4, 24) diagram units. The rectangular safe area reserves S + 12 units on both horizontal sides and 12 units on both vertical sides. With complete label height L, `measureNodeLabel` returns L + 24; multiple versions share the largest height. No slant configuration is exposed. Cardinal/automatic connections, hits and diagnostics use the actual slanted outline. See the [input/output example](examples/input-output.json).
+
 ## Core API — `flowsvg`
 
 All times are milliseconds; positions and dimensions use diagram units.
@@ -515,7 +519,7 @@ All times are milliseconds; positions and dimensions use diagram units.
 | `renderSvg(document: DiagramDocument, timeMs = 0, options?): string` | Compile and render one static SVG. |
 | `validateDocument(input: unknown): ValidationIssue[]` | Check fields and references; return `{ path, message }` issues. An empty array means these checks passed; compilation can still reject non-finite derived flow timing. |
 | `measureNodeContent({ kind, width, content, typography? }): NodeContentMeasurement` | Return `{ height, diagnostics }`; see [content and measurement](#structured-content-and-measurement). |
-| `measureNodeLabel({ kind, width, label, typography? }): NodeLabelMeasurement` | Unreleased: measure shared diamond-label height and unresolved width issues; see [decision labels](#decision-labels-and-measurement). |
+| `measureNodeLabel({ kind, width, label, typography? }): NodeLabelMeasurement` | Unreleased: measure shared diamond/parallelogram label height and unresolved width issues; see [decision labels](#decision-labels-and-measurement). |
 | `wrapText(label: string, maxWidth: number, typography?): string[]` | Estimate wrapping without the DOM. Optional typography supplies all three numeric fields: `fontSize`, `lineHeight`, `charWidth`; omitted uses node typography. |
 
 | Compiled `Diagram` | Result / behavior |

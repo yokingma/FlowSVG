@@ -46,7 +46,7 @@ export function measureNodeLabel(input: NodeLabelMeasurementInput): NodeLabelMea
   let height = 1;
   versions.forEach((label, versionIndex) => {
     const layout = wrapNodeLabel(label, safe.width, metrics);
-    const requiredHeight = (layout.height + NODE_LABEL_PADDING * 2) * 2;
+    const requiredHeight = (layout.height + NODE_LABEL_PADDING * 2) * (input.kind === "diamond" ? 2 : 1);
     if (!Number.isFinite(requiredHeight)) issues.push({ path: `label[${versionIndex}]`, message: "required node height must be finite" });
     height = Math.max(height, requiredHeight);
     if (layout.widthOverflow) diagnostics.push({ versionIndex, path: `label[${versionIndex}]`, dimension: "width",

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add `parallelogram` input/output nodes with fixed slant clearance and safe-area plain-text labels.
+- Measure input/output labels with their full-height rectangular safe area, including multiple versions and unresolved width diagnostics.
+- Reuse the actual slanted parallelogram contour for edge endpoints, pointer hits and visible-geometry diagnostics.
+
 - Add diamond decision nodes with safe-area plain-text labels. Existing node kinds retain their label behavior.
 - Wrap long decision labels without splitting graphemes; report width and height overflow while clipping visible text to the inner rectangle.
 - Export `measureNodeLabel` to reserve a common explicit height for one or more decision labels using the same safe-area layout as playback.

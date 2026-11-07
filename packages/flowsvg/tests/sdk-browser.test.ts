@@ -103,6 +103,48 @@ it.each(["light", "dark"])("plays measured diamond labels and clips real SVG tex
   });
 }, 30_000);
 
+it.each(["light", "dark"])("plays measured parallelogram input/output and clips its real text in %s", async (theme) => {
+  await withPage(async (page, errors) => {
+    const response = await page.goto(`${origin}/tests/browser-parallelogram.html?theme=${theme}`);
+    expect(response?.ok()).toBe(true);
+    await page.waitForFunction("Boolean(window.parallelogramFixture)");
+    const host = await page.locator("#host").boundingBox();
+    if (!host) throw new Error("Expected visible input/output host");
+    await page.mouse.click(host.x + 380, host.y + 112);
+    await expect.poll(() => page.locator("#click").textContent()).toBe("click: input");
+    await page.mouse.click(host.x + 262, host.y + 84);
+    await expect.poll(() => page.locator("#click").textContent()).toBe("click: group");
+    for (const button of ["initial", "resize", "overflow"]) {
+      await page.locator(`#${button}`).click();
+      expect(await page.evaluate("window.parallelogramFixture.matchesCore()")).toBe(true);
+    }
+    const pixels = await page.evaluate(async () => {
+      const fixture: { clippedSvg(): string } = Reflect.get(window, "parallelogramFixture");
+      const svg = fixture.clippedSvg();
+      const image = new Image();
+      const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+      try {
+        image.src = url;
+        await image.decode();
+        const canvas = document.createElement("canvas"); canvas.width = 240; canvas.height = 180;
+        const context = canvas.getContext("2d")!; context.drawImage(image, 0, 0);
+        const data = context.getImageData(0, 0, 240, 180).data;
+        let inside = 0;
+        let outside = 0;
+        for (let y = 0; y < 180; y += 1) for (let x = 0; x < 240; x += 1) {
+          if (data[(y * 240 + x) * 4 + 3] === 0) continue;
+          if (x >= 56 && x < 184 && y >= 32 && y < 44) inside += 1;
+          else outside += 1;
+        }
+        return { inside, outside };
+      } finally { URL.revokeObjectURL(url); }
+    });
+    expect(pixels.inside).toBeGreaterThan(0);
+    expect(pixels.outside).toBe(0);
+    expect(errors).toEqual([]);
+  });
+}, 30_000);
+
 it("centers rendered tag text using real font metrics, including styled spans and wrapping", async () => {
   await withPage(async (page, errors) => {
     await page.goto(`${origin}/tests/browser-controls.html`);

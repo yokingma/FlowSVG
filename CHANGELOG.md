@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add parallelogram input/output nodes using shared safe-area label layout and real-contour geometry.
+
 - Add diamond decision nodes with shared safe-area labels, author-time label measurement, real-contour connections/hits/diagnostics, and a runnable decision-branch example.
 
 - Harden the GitHub Pages workflow with deployment path filters, stale-run cancellation and job timeouts to limit unnecessary Actions usage.

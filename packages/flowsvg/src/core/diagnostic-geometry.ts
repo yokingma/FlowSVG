@@ -94,7 +94,7 @@ export function paintOverlapsPolygon(shape: Paint, points: Polygon): boolean {
 export function nodeFill(node: EvaluatedNode): Paint[] {
   const { x, y, width, height } = node;
   // Only convex outlines can be used as a single clipping paint polygon.
-  if (node.kind === "diamond") return [polygonPaint(nodeOutline(node)!)];
+  if (node.kind === "diamond" || node.kind === "parallelogram") return [polygonPaint(nodeOutline(node)!)];
   const cx = x + width / 2;
   if (node.kind === "ellipse") return [ellipse(cx, y + height / 2, width / 2, height / 2)];
   if (node.kind === "cylinder") {
