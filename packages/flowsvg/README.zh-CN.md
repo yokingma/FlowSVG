@@ -422,7 +422,7 @@ SDK CLI 支持 HTML 和 GIF 输出。PNG 使用 SDK API 导出。
 | `Beat` | `durationMs`、`actions` | `transitionMs`、`caption` |
 
 - **静态文档：**使用空 `scenes`。
-- **节点类型：**`rect`、`roundedRect`、`ellipse`、`cylinder`、`group`；未发布源码还支持 `diamond`。分组边框默认为圆角。
+- **节点类型：**`rect`、`roundedRect`、`ellipse`、`cylinder`、`group`；未发布源码还支持 `diamond` 和 `predefinedProcess`。分组边框默认为圆角。
 - **连线路由：**`straight`（默认）、`orthogonal`、`curved`。
 - **端口方向：**`top`、`right`、`bottom`、`left`。
 - **节拍时长：**`durationMs` 须为正数。`transitionMs` 须位于 `[0, durationMs]`，默认 `min(250, durationMs)`，并受有效节拍时长限制。
@@ -464,6 +464,14 @@ SDK CLI 支持 HTML 和 GIF 输出。PNG 使用 SDK API 导出。
 指定高度前调用 `measureNodeLabel({ kind: "diamond", width, label, typography? })`。`label` 接受单字符串或非空只读版本数组；`typography` 使用文档现有文字配置。返回 `{ height, diagnostics }`，包含共用的有限正数高度及逐版本未解决的宽度问题。每条诊断包含 `versionIndex`、`path`、`dimension: "width"` 和 `message`；增加高度无法解决宽度不足。空标签合法；非法输入或无法表示为有限数的高度抛出 `DiagramValidationError`。从 `flowsvg` 导入类型 `NodeLabelMeasurementInput`、`NodeLabelMeasurement` 与 `NodeLabelMeasurementDiagnostic`。
 
 四方向端口、直线/正交/曲线连接、命中和诊断使用真实轮廓。裁剪掉的文字不扩大命中区或自适应高度。分组、时间线与导出共享核心结果；旧形状及 `measureNodeContent` 保持原行为。[可运行的决策示例](examples/decision-branch.json)展示测量后的标签替换、尺寸变化和一个有意溢出的节点。
+
+### 预定义流程标签
+
+未发布的 `predefinedProcess` 表达调用已定义的子流程。它是一个普通节点，包含矩形外轮廓和两条内部装饰竖线，不执行子流程，也不容纳子节点。竖线距对应外边框的间隔 D = min(宽度 / 6, 12)。相对节点原点，标签安全区为 (D + 12, 12, max(0, 宽度 − 2D − 24), max(0, 高度 − 24))。
+
+使用纯文本 `label`；结构化 `content` 对象会被拒绝，包括空内容块数组。时间线 `content: null` 保留清空语义。标签复用决策标签的居中、完整字素换行、裁剪和溢出诊断规则。调用 `measureNodeLabel({ kind: "predefinedProcess", width: 200, label: ["A", "A\nB"] })` 返回高度 64，建议高度等于完整行框高度加 24。仅外矩形提供连接和路由障碍；点击任一内部竖线都返回所属节点身份。
+
+SDK 自有的[子流程调用示例](examples/subprocess-call.json)包含测量标签、尺寸变化、强调和有意溢出。先运行 `pnpm --filter flowsvg build`，再以 `packages/flowsvg` 为根目录启动静态服务，打开 `/tests/browser-predefined-process.html` 即可播放公开浏览器示例。
 
 ### 结构化内容与测量
 

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Reject distant pointer hits when a tiny preset contour collapses at a large finite origin.
+
+- Add label-only predefined-process nodes with a rectangular contour and capped decorative side lines.
+
 - Add diamond decision nodes with safe-area plain-text labels. Existing node kinds retain their label behavior.
 - Wrap long decision labels without splitting graphemes; report width and height overflow while clipping visible text to the inner rectangle.
 - Export `measureNodeLabel` to reserve a common explicit height for one or more decision labels using the same safe-area layout as playback.

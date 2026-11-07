@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Reject distant pointer hits when a tiny preset contour collapses at a large finite origin.
+
+- Add predefined-process nodes with decorative side lines and shared safe-area labels.
+
 - Add diamond decision nodes with shared safe-area labels, author-time label measurement, real-contour connections/hits/diagnostics, and a runnable decision-branch example.
 
 - Harden the GitHub Pages workflow with deployment path filters, stale-run cancellation and job timeouts to limit unnecessary Actions usage.
