@@ -1,7 +1,7 @@
 # 预置形状扩展设计
 
 日期：2026-11-07  
-状态：设计已确认（2026-11-07）；尚未实现或发布。
+状态：已在源码实现并完成 SDK 交付验证（2026-11-07）；尚未发布到 npm。
 
 背景来自独立 `flow-svg-diagram-skills` 仓库的 `docs/development/flowsvg-shape-expansion-research.md`（2026-11-07）。本文自包含地记录 SDK 侧设计，不要求读取或安装兄弟仓库；调研与本文均不代表 SDK 已发布能力。
 
@@ -49,7 +49,7 @@
 
 ## 标签测量契约
 
-以下是待实现 API 的调用示意，不是当前版本可执行的示例。
+以下调用适用于包含本次改动的源码构建；已发布的 0.2.3 尚不包含此 API。
 
 ```ts
 const measurement = measureNodeLabel({
@@ -103,18 +103,18 @@ const measurement = measureNodeLabel({
 
 实现完成时同步根目录与受影响包的 `CHANGELOG.md`、`PATTERNS.md`，审查并更新受影响的中英文 README 与 SDK 手册；示例覆盖四种形状及测量。SDK 自身完成验证后，独立 Skill 再按精确发布版本升级文档、运行时和验收，不使用私有渲染补丁提前模拟形状。
 
-## 当前 SDK 事实
+## 实施前的 SDK 基线（2026-11-07）
 
 - 公开形状为 `rect`、`roundedRect`、`ellipse`、`cylinder`、`group`。`label` 与 `content` 互斥；`content` 仅支持矩形、圆角矩形和圆柱体。见 [model.ts](../../packages/flowsvg/src/core/model.ts) 与 [node-content.ts](../../packages/flowsvg/src/core/node-content.ts)。
 - 普通节点标签按包围矩形宽度扣除内边距换行，并居中排版；目前不使用形状内接安全区。高度溢出给出警告，文字继续绘制。见 [diagram.ts](../../packages/flowsvg/src/core/diagram.ts)。
 - 节点尺寸校验只要求有限且严格大于零；没有按形状设置最小尺寸的硬错误。见 [validation.ts](../../packages/flowsvg/src/core/validation.ts)。
-- 当前连线并非在所有形状和路由组合中都精确落在真实轮廓上。例如圆柱的自动直线端点仍按包围矩形计算。上述新形状的真实轮廓连接要求属于新增契约。见 [edge-geometry.ts](../../packages/flowsvg/src/core/edge-geometry.ts)。
+- 实施前的连线并非在所有形状和路由组合中都精确落在真实轮廓上。例如圆柱的自动直线端点仍按包围矩形计算。上述新形状的真实轮廓连接要求属于新增契约。见 [edge-geometry.ts](../../packages/flowsvg/src/core/edge-geometry.ts)。
 
 ## 访谈决策状态
 
 Q1–Q12 已逐项确认：流程语义范围、仅使用节点标签、四种形状清单、安全区居中排版、溢出策略、固定轮廓参数、标签测量、多版本支持、公开命名、真实轮廓几何、本次改动范围、具体留白规则及测量输入输出。
 
-Q13 已完成整体确认，包括上述整体验收方案。本轮设计访谈结束，本文作为后续实现基线；实现与发布版本另行安排。
+Q13 已完成整体确认，包括上述整体验收方案。本轮设计访谈结束，本文记录已实施的设计基线；具体 npm 发布版本另行安排。
 
 ## 现有 ADR 约束
 

@@ -1,5 +1,7 @@
 # Workspace patterns
 
+- Keep the mixed preset-shape example SDK-owned. Generate its shared label heights through the public measurement API and reuse its JSON across hosts, offline playback and image acceptance.
+
 ## Ownership
 
 - Keep parallelogram slant clearance proportional for small nodes and bounded for larger nodes; share it with label measurement and contour consumers.

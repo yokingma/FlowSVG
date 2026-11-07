@@ -72,6 +72,8 @@
     "examples/report-generation.json",
     "examples/subprocess-call.json",
     "examples/input-output.json",
+    "examples/mixed-flow.json",
+    "examples/create-mixed-flow.mjs",
     "README.md",
     "README.zh-CN.md",
     "CHANGELOG.md",

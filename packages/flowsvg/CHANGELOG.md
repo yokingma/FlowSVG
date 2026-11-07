@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Ship a measured mixed-shape approval flow and verify shared host, offline playback and decoded image delivery.
+
 - Add `parallelogram` input/output nodes with safe-area plain labels, common-height measurement, clipped overflow and real-contour connections, hits and diagnostics.
 
 - Reject distant pointer hits when a tiny preset contour collapses at a large finite origin.

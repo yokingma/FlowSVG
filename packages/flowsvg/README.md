@@ -516,6 +516,12 @@ Existing-shape labels, edge labels and `wrapText` keep Latin words intact. Overw
 
 After changing sizes, pass the same `typography` to `measureNodeContent` and inspect overflow.
 
+The unreleased [mixed approval flow](examples/mixed-flow.json) combines all four presets, an ordinary node, a group and three route families. It includes label replacement, size and style changes, and one deliberately clipped label. Its [generator](examples/create-mixed-flow.mjs) reserves a shared height for label versions through public `measureNodeLabel`.
+
+After installing an SDK build with this feature, place the script in a writable directory and run `node create-mixed-flow.mjs`, then `npx flowsvg mixed-flow.json --format html --output mixed-flow.html` to generate offline playback.
+
+In this repository, first run `pnpm --filter flowsvg build`, then `node packages/flowsvg/examples/create-mixed-flow.mjs`; serve `packages/flowsvg` and open `/tests/browser-mixed-flow.html`. This capability has not been published to npm.
+
 ## Core API — `flowsvg`
 
 All times are milliseconds; positions and dimensions use diagram units.

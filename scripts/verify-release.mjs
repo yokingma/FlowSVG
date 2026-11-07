@@ -61,7 +61,7 @@ try {
     "docs/images/facts-timeline.png", "docs/images/facts-timeline.zh-CN.png", "docs/images/flowsvg-wordmark.gif",
     "docs/images/job-lifecycle.gif", "docs/images/request-response.gif", "docs/images/web-service-deployment.gif", "docs/images/llm-inference.gif"
   ];
-  const EXAMPLE_FILES = ["examples/job-lifecycle.json", "examples/decision-branch.json", "examples/report-generation.json", "examples/subprocess-call.json", "examples/input-output.json"];
+  const EXAMPLE_FILES = ["examples/job-lifecycle.json", "examples/decision-branch.json", "examples/report-generation.json", "examples/subprocess-call.json", "examples/input-output.json", "examples/mixed-flow.json", "examples/create-mixed-flow.mjs"];
   const portableFiles = [
     "dist/portable/export.js", "dist/portable/LICENSE.gifenc.txt", "dist/portable/player.js", "dist/portable/styles.css", "dist/portable/manifest.json",
     "dist/portable/LICENSE.flowsvg.txt", "dist/portable/LICENSE.esbuild.txt"
@@ -98,6 +98,7 @@ try {
     { ...process.env, PLAYWRIGHT_BROWSERS_PATH: browserInstall });
   if (existsSync(browserInstall)) throw new Error("ordinary npm install unexpectedly prepared a browser");
   run(process.execPath, ["--input-type=module", "--eval", `
+    import { readFileSync } from "node:fs";
     import { createDiagram, measureNodeContent, measureNodeLabel } from "flowsvg";
     import { createPlayer } from "flowsvg/browser";
     import { defineFlowPlayer } from "flowsvg/web-component";
@@ -113,6 +114,12 @@ try {
     if (risks.length !== 1 || risks[0].code !== "edge-node-overlap" || risks[0].relatedObjectIds[0] !== "barrier"
       || JSON.parse(risks[0].warningKey)[1] !== 1 || geometry.evaluateAt(0).warnings.length) {
       throw new Error("DOM-free public geometry diagnostics failed");
+    }
+    const mixedSource = new URL("./node_modules/flowsvg/examples/mixed-flow.json", import.meta.url);
+    const mixed = createDiagram(JSON.parse(readFileSync(mixedSource, "utf8")));
+    if (mixed.evaluateAt(0).warnings.length || mixed.evaluateAt(3000).warnings[0]?.objectId !== "overflow") throw new Error("installed mixed-flow evaluation failed");
+    for (const kind of ["diamond", "parallelogram", "document", "predefinedProcess"]) {
+      if (!mixed.evaluateAt(0).nodes.some(node => node.kind === kind)) throw new Error("installed preset missing " + kind);
     }
     const labelMeasurement = measureNodeLabel({ kind: "diamond", width: 200, label: ["A", "A\\nB"] });
     if (labelMeasurement.height !== 128 || labelMeasurement.diagnostics.length) throw new Error("installed label measurement failed");
@@ -183,6 +190,9 @@ try {
     const processInput: NodeLabelMeasurementInput = { kind: "predefinedProcess", width: 200, label: "Call" };
     const processKind: NodeKind = processInput.kind;
     void [labelDiagnostic, processKind, measureNodeLabel(processInput)];
+    const presetKinds: readonly NodeKind[] = ["diamond", "parallelogram", "document", "predefinedProcess"];
+    const ioInput: NodeLabelMeasurementInput = { kind: "parallelogram", width: 220, label: "Input" };
+    void [presetKinds, measureNodeLabel(ioInput)];
     const reportInput: NodeLabelMeasurementInput = { kind: "document", width: 200, label: "Report" };
     measureNodeLabel(reportInput);
     const diagnostic: NodeContentMeasurementDiagnostic | undefined = measurement.diagnostics[0];
@@ -247,6 +257,18 @@ try {
     const React = (await import("react")).default;
     const { FlowPlayer: ReactPlayer } = await import("flowsvg/react");
     const { createRoot } = await import("react-dom/client");
+    const mixed = JSON.parse(readFileSync(new URL("./node_modules/flowsvg/examples/mixed-flow.json", import.meta.url), "utf8"));
+    function assertMixed(handle, host, name, options = {}, reload = model => handle.load(model)) {
+      reload(mixed);
+      const diagram = createDiagram(mixed);
+      for (const time of [0, 1500, 3000, 4000]) {
+        handle.seek(time);
+        if (JSON.stringify(handle.getState().frame) !== JSON.stringify(diagram.evaluateAt(time, options))) throw new Error(name + " mixed frame differs");
+        const expected=document.createElement("div"); expected.innerHTML=diagram.renderSvg(time, options);
+        if(host.querySelector("svg").outerHTML!==expected.querySelector("svg").outerHTML) throw new Error(name + " mixed SVG differs");
+      }
+      reload(model);
+    }
     function assertContent(handle, host, name) {
       handle.seek(0);
       if (!host.querySelector("[data-content-id=node]")?.textContent.includes("verified")) throw new Error(name + " content did not mount");
@@ -262,6 +284,7 @@ try {
     const player = createPlayer(host, model, { controls: false, reducedMotion: true });
     if (player.getState().timeMs !== 0 || player.getState().totalDuration !== 1_000) throw new Error("native player did not initialize");
     assertContent(player, host, "native");
+    assertMixed(player, host, "native", { reducedMotion: true });
     player.play();
     if (!player.getState().playing) throw new Error("native player did not play");
     player.load(model);
@@ -275,6 +298,7 @@ try {
     const elementState = element.getState();
     if (!elementState || elementState.timeMs !== 0 || elementState.totalDuration !== 1_000) throw new Error("web component did not mount");
     assertContent(element, element, "element");
+    assertMixed(element, element, "element", {}, model => { element.document = model; });
     element.play();
     if (!element.getState()?.playing) throw new Error("web component did not play");
     element.document = model;
@@ -287,6 +311,7 @@ try {
     vueApp.mount(vueHost);
     if (!vueRef.value || !vueHost.querySelector("svg")) throw new Error("Vue player did not mount");
     assertContent(vueRef.value, vueHost, "Vue");
+    assertMixed(vueRef.value, vueHost, "Vue");
     vueApp.unmount();
     if (vueHost.childElementCount || vueRef.value !== null) throw new Error("Vue player did not clean up");
     const reactHost = document.createElement("div"); document.body.append(reactHost);
@@ -302,6 +327,7 @@ try {
     const reactHandle = reactRef.current;
     if (!reactHost.querySelector("svg") || !reactHandle || reactHandle.getState().timeMs !== 250 || reactHandle.getState().speed !== 1.5) throw new Error("React player did not mount with its props");
     assertContent(reactHandle, reactHost, "React");
+    assertMixed(reactHandle, reactHost, "React");
     reactHandle.play();
     if (!reactHandle.getState().playing) throw new Error("React player did not play");
     reactHandle.load(model);
