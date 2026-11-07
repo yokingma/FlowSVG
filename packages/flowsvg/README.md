@@ -422,7 +422,7 @@ Built-in downloads export the full timeline at `1×`, using the current theme. P
 | `Beat` | `durationMs`, `actions` | `transitionMs`, `caption` |
 
 - **Static documents:** use empty `scenes`.
-- **Node kinds:** `rect`, `roundedRect`, `ellipse`, `cylinder`, `group`; unreleased source also supports `diamond`, `document` and `predefinedProcess`. Groups have rounded borders by default.
+- **Node kinds:** `rect`, `roundedRect`, `ellipse`, `cylinder`, `group`; unreleased source also supports `diamond`, `parallelogram`, `document` and `predefinedProcess`. Groups have rounded borders by default.
 - **Edge routes:** `straight` (default), `orthogonal`, `curved`.
 - **Ports:** `top`, `right`, `bottom`, `left`.
 - **Beat timing:** `durationMs` must be positive. `transitionMs` must be in `[0, durationMs]`, defaults to `min(250, durationMs)`, and is capped at effective beat length.
@@ -464,6 +464,8 @@ This is an unreleased source addition, not part of published 0.2.3. `diamond` ex
 Call `measureNodeLabel({ kind: "diamond", width, label, typography? })` before assigning height. `label` accepts one string or a nonempty readonly version array; `typography` uses the document's existing context. The result is `{ height, diagnostics }`, with a shared finite positive height and per-version unresolved width issues. Each diagnostic contains `versionIndex`, `path`, `dimension: "width"`, and `message`; more height cannot fix insufficient width. Empty labels are valid. Invalid input or non-finite computed height throws `DiagramValidationError`. Types `NodeLabelMeasurementInput`, `NodeLabelMeasurement`, and `NodeLabelMeasurementDiagnostic` are exported from `flowsvg`.
 
 Cardinal ports, straight/orthogonal/curved connections, hits and diagnostics use the real contour. Invisible clipped text does not enlarge hits or fitted height. Groups, timelines and exports reuse the core result; old kinds and `measureNodeContent` retain their behavior. The [runnable decision example](examples/decision-branch.json) demonstrates measured label updates, resizing and an intentionally clipped node.
+
+`parallelogram` expresses input/output with the same plain-label restrictions, wrapping, clipping and diagnostics. Its top edge slants right by S = min(width / 4, 24) diagram units. The rectangular safe area reserves S + 12 units on both horizontal sides and 12 units on both vertical sides. With complete label height L, `measureNodeLabel` returns L + 24; multiple versions share the largest height. No slant configuration is exposed. Cardinal/automatic connections, hits and diagnostics use the actual slanted outline. See the [input/output example](examples/input-output.json).
 
 ### Document report labels
 

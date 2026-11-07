@@ -7,17 +7,24 @@ export const DOCUMENT_WAVE_MAX_BAND = 24;
 const DOCUMENT_WAVE_SAMPLES = 256;
 const PREDEFINED_PROCESS_MAX_INSET = 12;
 const PREDEFINED_PROCESS_INSET_DIVISOR = 6;
-export type LabelNodeKind = "diamond" | "document" | "predefinedProcess";
+const PARALLELOGRAM_SLANT_LIMIT = 24;
+const PARALLELOGRAM_SLANT_RATIO = 1 / 4;
+export type LabelNodeKind = "diamond" | "document" | "predefinedProcess" | "parallelogram";
 export interface NodeBounds { kind: NodeKind; x: number; y: number; width: number; height: number }
 
 /** Only these presets use safe-area labels; existing label behavior remains unchanged. */
 export function isLabelNodeKind(kind: unknown): kind is LabelNodeKind {
-  return kind === "diamond" || kind === "document" || kind === "predefinedProcess";
+  return kind === "diamond" || kind === "document" || kind === "predefinedProcess" || kind === "parallelogram";
 }
 
 /** Current absolute rectangular text clip, including fixed contour clearance and padding. */
 export function nodeLabelSafeArea(node: NodeBounds): ContentSafeArea | undefined {
   if (!isLabelNodeKind(node.kind)) return undefined;
+  if (node.kind === "parallelogram") {
+    const slant = Math.min(node.width * PARALLELOGRAM_SLANT_RATIO, PARALLELOGRAM_SLANT_LIMIT);
+    return { x: node.x + slant + NODE_LABEL_PADDING, y: node.y + NODE_LABEL_PADDING,
+      width: Math.max(0, node.width - slant * 2 - NODE_LABEL_PADDING * 2), height: Math.max(0, node.height - NODE_LABEL_PADDING * 2) };
+  }
   if (node.kind === "predefinedProcess") {
     const inset = predefinedProcessInset(node.width);
     return { x: node.x + inset + NODE_LABEL_PADDING, y: node.y + NODE_LABEL_PADDING,
@@ -38,6 +45,11 @@ export function predefinedProcessInset(width: number): number {
 /** Clockwise outer contour shared by SVG, edge attachments, hits and diagnostic paint. */
 export function nodeOutline(node: NodeBounds): readonly DiagramPoint[] | undefined {
   if (!isLabelNodeKind(node.kind)) return undefined;
+  if (node.kind === "parallelogram") {
+    const slant = Math.min(node.width * PARALLELOGRAM_SLANT_RATIO, PARALLELOGRAM_SLANT_LIMIT);
+    return [{ x: node.x + slant, y: node.y }, { x: node.x + node.width, y: node.y },
+      { x: node.x + node.width - slant, y: node.y + node.height }, { x: node.x, y: node.y + node.height }];
+  }
   if (node.kind === "predefinedProcess") return [{ x: node.x, y: node.y }, { x: node.x + node.width, y: node.y },
     { x: node.x + node.width, y: node.y + node.height }, { x: node.x, y: node.y + node.height }];
   if (node.kind === "document") return [{ x: node.x, y: node.y },

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add parallelogram input/output nodes with shared safe-area measurement and true contour geometry.
+
 - Reject distant pointer hits when a tiny preset contour collapses at a large finite origin.
 
 - Add predefined-process nodes with decorative side lines and shared safe-area labels.

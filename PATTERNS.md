@@ -2,6 +2,8 @@
 
 ## Ownership
 
+- Keep parallelogram slant clearance proportional for small nodes and bounded for larger nodes; share it with label measurement and contour consumers.
+
 - Keep predefined-process side lines decorative within one node identity; only its rectangular outer contour supplies attachments and routing obstacles.
 
 - Document labels reserve the complete bottom wave band; diagnostic fill must decompose concave contours into convex paint pieces.

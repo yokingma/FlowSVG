@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add `parallelogram` input/output nodes with safe-area plain labels, common-height measurement, clipped overflow and real-contour connections, hits and diagnostics.
+
 - Reject distant pointer hits when a tiny preset contour collapses at a large finite origin.
 
 - Add label-only predefined-process nodes with a rectangular contour and capped decorative side lines.

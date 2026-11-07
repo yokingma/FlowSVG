@@ -27,6 +27,8 @@ Read the sections for the affected subsystem. For public-contract changes, also 
 
 ## Routing and SVG geometry
 
+- Derive parallelogram slant from one quarter of current width, capped at 24 diagram units; its labels reserve the full height minus two 12-unit paddings.
+
 - Keep predefined-process side lines decorative within one node identity; only its rectangular outer contour supplies attachments and routing obstacles.
 
 - Reject points outside preset bounds before testing contour half planes; representable tiny dimensions may collapse at a large finite origin.

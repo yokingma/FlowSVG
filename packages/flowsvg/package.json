@@ -71,6 +71,7 @@
     "examples/decision-branch.json",
     "examples/report-generation.json",
     "examples/subprocess-call.json",
+    "examples/input-output.json",
     "README.md",
     "README.zh-CN.md",
     "CHANGELOG.md",

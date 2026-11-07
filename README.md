@@ -56,6 +56,7 @@ Reuse one diagram document for static SVG/PNG, animated GIF and interactive or o
 ## Features
 
 - Unreleased source capability: use measured `diamond` decision labels with safe-area clipping and contour-aware connections. See the [decision example](packages/flowsvg/examples/decision-branch.json); this addition is not part of published 0.2.3.
+- Unreleased source: measured `parallelogram` input/output nodes share safe-area labels and contour-aware connections. See the [input/output example](packages/flowsvg/examples/input-output.json).
 - Unreleased source capability: use `predefinedProcess` for a subprocess call, with measured plain labels and decorative side lines. See the [subprocess example](packages/flowsvg/examples/subprocess-call.json).
 - Unreleased source adds measured `document` report labels above a bounded wave, with contour-aware hits. See the [report generation example](packages/flowsvg/examples/report-generation.json).
 

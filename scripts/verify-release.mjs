@@ -61,7 +61,7 @@ try {
     "docs/images/facts-timeline.png", "docs/images/facts-timeline.zh-CN.png", "docs/images/flowsvg-wordmark.gif",
     "docs/images/job-lifecycle.gif", "docs/images/request-response.gif", "docs/images/web-service-deployment.gif", "docs/images/llm-inference.gif"
   ];
-  const EXAMPLE_FILES = ["examples/job-lifecycle.json", "examples/decision-branch.json", "examples/report-generation.json", "examples/subprocess-call.json"];
+  const EXAMPLE_FILES = ["examples/job-lifecycle.json", "examples/decision-branch.json", "examples/report-generation.json", "examples/subprocess-call.json", "examples/input-output.json"];
   const portableFiles = [
     "dist/portable/export.js", "dist/portable/LICENSE.gifenc.txt", "dist/portable/player.js", "dist/portable/styles.css", "dist/portable/manifest.json",
     "dist/portable/LICENSE.flowsvg.txt", "dist/portable/LICENSE.esbuild.txt"
