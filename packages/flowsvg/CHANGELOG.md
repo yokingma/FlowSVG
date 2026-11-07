@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Exclude fully clipped preset labels from overlap diagnostics and include visible predefined-process side-line strokes.
+
 - Ship a measured mixed-shape approval flow and verify shared host, offline playback and decoded image delivery.
 
 - Add `parallelogram` input/output nodes with safe-area plain labels, common-height measurement, clipped overflow and real-contour connections, hits and diagnostics.

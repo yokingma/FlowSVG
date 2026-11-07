@@ -46,6 +46,8 @@ function ordinaryLabels(evaluation: DiagramFrameEvaluation): Label[] {
     kind: "node" | "edge", typography: TextMetrics, painted: boolean, halo = 0): Label[] => {
     if (!object.visible || object.opacity <= 0 || !painted) return [];
     const area = "kind" in object ? nodeLabelSafeArea(object) : undefined;
+    // A collapsed SVG clip paints no text; degenerate polygon edges cannot impose that restriction.
+    if (area && (area.width <= 0 || area.height <= 0)) return [];
     const safe = area ? rectPolygon({ left: area.x, top: area.y, right: area.x + area.width, bottom: area.y + area.height }) : undefined;
     const path = `${kind === "node" ? "nodes" : "edges"}[${index}].label`;
     return object.labelBoxes.flatMap((line, lineIndex) => line.text.length ? [{ objectId: object.id, path,

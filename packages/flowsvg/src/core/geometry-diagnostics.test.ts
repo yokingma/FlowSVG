@@ -36,6 +36,22 @@ describe("on-demand geometry diagnostics", () => {
 
 
 describe("shape-aware path paint", () => {
+  it.each([112, 288])("includes the hollow subprocess side line at x=%s in edge and label paint diagnostics", (lineX) => {
+    const document = documentWith([
+      { id: "call", kind: "predefinedProcess", x: 100, y: 100, width: 200, height: 100,
+        style: { fill: "#0000", stroke: "#000", strokeWidth: 2 } },
+      makeNode("from", lineX - 10, 145, 2, 10), makeNode("to", lineX + 8, 145, 2, 10),
+      { ...makeNode("label", lineX - 4, 160, 8, 20), label: "A", style: { fill: "#0000", stroke: "#0000" } }
+    ], [{ id: "cross", from: "from", to: "to", route: "straight" }]);
+    const warnings = createDiagram(document).diagnoseAt(0);
+    expect(warnings).toContainEqual(expect.objectContaining({ code: "edge-node-overlap", objectId: "cross", relatedObjectIds: ["call"] }));
+    expect(warnings).toContainEqual(expect.objectContaining({ code: "label-node-overlap", objectId: "label", relatedObjectIds: ["call"] }));
+
+    const hollowInterior: DiagramDocument = { ...document, nodes: document.nodes.map((node) => node.id === "call"
+      ? node : { ...node, x: node.x + 200 - lineX }) };
+    expect(createDiagram(hollowInterior).diagnoseAt(0)).toEqual([]);
+  });
+
   it.each(["rect", "roundedRect", "ellipse", "cylinder"] as const)("checks %s filled contours rather than bounds", (kind) => {
     const document = documentWith([
       makeNode("from", 90, 92, 20, 20), makeNode("to", 190, -8, 20, 20),
@@ -71,6 +87,25 @@ describe("shape-aware path paint", () => {
 });
 
 describe("visible ordinary labels", () => {
+  it.each(["diamond", "parallelogram", "document", "predefinedProcess"] as const)(
+    "excludes fully clipped %s labels from painted overlaps while retaining overflow", (kind) => {
+      const diagram = createDiagram(documentWith([
+        { id: "tiny", kind, x: 0, y: 0, width: 1, height: 1, label: "A" },
+        { ...makeNode("other", 10, 5, 10, 20), label: "B" }
+      ]));
+      expect(diagram.evaluateAt(0).warnings).toContainEqual(expect.objectContaining({ code: "text-overflow", objectId: "tiny" }));
+      expect(diagram.renderSvg()).toContain('width="0" height="0"');
+      expect(diagram.diagnoseAt(0)).toEqual([]);
+
+      const visible = createDiagram(documentWith([
+        { id: "label", kind, x: 0, y: 0, width: 200, height: 120, label: "A" },
+        { ...makeNode("other", 95, 45, 10, 20), label: "B" }
+      ]));
+      expect(visible.diagnoseAt(0)).toContainEqual(expect.objectContaining({ code: "label-node-overlap", objectId: "label", relatedObjectIds: ["other"] }));
+      expect(visible.diagnoseAt(0)).toContainEqual(expect.objectContaining({ code: "label-overlap" }));
+    }
+  );
+
   it("reports an overflowing label against unrelated nodes, while excluding its own shape", () => {
     const document = documentWith([
       { ...makeNode("label", 100, 100, 80, 10), label: "one\ntwo\nthree" }, makeNode("barrier", 125, 75, 30, 15)

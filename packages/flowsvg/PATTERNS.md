@@ -31,7 +31,7 @@ Read the sections for the affected subsystem. For public-contract changes, also 
 
 - Derive parallelogram slant from one quarter of current width, capped at 24 diagram units; its labels reserve the full height minus two 12-unit paddings.
 
-- Keep predefined-process side lines decorative within one node identity; only its rectangular outer contour supplies attachments and routing obstacles.
+- Keep predefined-process side lines decorative within one node identity; only its rectangular outer contour supplies attachments and routing obstacles. Include their visible strokes in that node’s diagnostic paint, including transparent-fill styles.
 
 - Reject points outside preset bounds before testing contour half planes; representable tiny dimensions may collapse at a large finite origin.
 
@@ -152,7 +152,7 @@ Read the sections for the affected subsystem. For public-contract changes, also 
 
 - Share the document wave's 256-chord contour across SVG, attachments, hits and stroke paint. Decompose its concave fill into convex strips; never clip against its whole outline.
 
-- Convex preset fills can use their shared outer polygon directly. Do not assume every future outline is convex. Clip safe-area label paint before camera clipping, and exclude invisible overflow from fitting and hit testing.
+- Convex preset fills can use their shared outer polygon directly. Do not assume every future outline is convex. Clip safe-area label paint before camera clipping, omit labels whose safe-area width or height is zero, and exclude invisible overflow from fitting and hit testing.
 
 `Diagram.diagnoseAt` consumes one evaluated frame. Pair checks remain outside evaluation, SVG rendering and playback. The internal diagnostic geometry module owns visible-paint intersections; no public sampler is exposed.
 Filled-node diagnostics use analytic unions of rectangles and ellipses after camera clipping. Curved outline paint uses 256 contour intervals per revolution; rectangle strokes keep square miters. One logical content line retains separate visible span rectangles, clipped by both safeArea and camera, so transparent gaps cannot create paint. Source descriptors retain role, field and line position. Canonical versioned array keys sort label pairs but preserve path/label-to-node direction. Keep message text and caller context out of warning identity; the caller binds source/SDK/time/options separately. New diagnostic types form a discriminated LayoutWarning union; frame.warnings still contains only text overflow.

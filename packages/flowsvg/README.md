@@ -564,6 +564,8 @@ Core query times clamp to `[0, totalDuration]`; non-finite values become zero.
 
 `diagnoseAt` reuses the selected camera, typography, routes and content safe areas. It reports estimated edge–node, label–node and label–label overlap risks.
 
+In unreleased source, preset labels with zero safe-area width or height contribute no painted overlaps; `text-overflow` remains available. Visible `predefinedProcess` side-line strokes participate under the parent node identity, including transparent-fill styles. The hollow interior contributes no fill paint.
+
 | Result field | Meaning |
 | --- | --- |
 | `code` | Risk category |
