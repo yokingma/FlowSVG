@@ -2,6 +2,8 @@
 
 ## Ownership
 
+- Document labels reserve the complete bottom wave band; diagnostic fill must decompose concave contours into convex paint pieces.
+
 - Keep semantic preset label safe areas and contours in the SDK core, shared by frame layout, rendering, measurement and geometry consumers; do not alter ordinary-label rules while adding presets.
 
 - Keep complete Latin words in ordinary node and edge labels. Preserve authored font sizes; resolve label crowding through authored spacing rather than automatic font reduction.

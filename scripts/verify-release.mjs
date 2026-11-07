@@ -61,7 +61,7 @@ try {
     "docs/images/facts-timeline.png", "docs/images/facts-timeline.zh-CN.png", "docs/images/flowsvg-wordmark.gif",
     "docs/images/job-lifecycle.gif", "docs/images/request-response.gif", "docs/images/web-service-deployment.gif", "docs/images/llm-inference.gif"
   ];
-  const EXAMPLE_FILES = ["examples/job-lifecycle.json", "examples/decision-branch.json"];
+  const EXAMPLE_FILES = ["examples/job-lifecycle.json", "examples/decision-branch.json", "examples/report-generation.json"];
   const portableFiles = [
     "dist/portable/export.js", "dist/portable/LICENSE.gifenc.txt", "dist/portable/player.js", "dist/portable/styles.css", "dist/portable/manifest.json",
     "dist/portable/LICENSE.flowsvg.txt", "dist/portable/LICENSE.esbuild.txt"
@@ -118,6 +118,12 @@ try {
     if (labelMeasurement.height !== 128 || labelMeasurement.diagnostics.length) throw new Error("installed label measurement failed");
     const decision = createDiagram({ version: 1, viewport: { width: 300, height: 300 }, nodes: [{ id: "decision", kind: "diamond", x: 0, y: 0, width: 200, height: labelMeasurement.height, label: "A\\nB" }], edges: [], scenes: [] });
     if (decision.evaluateAt(0).warnings.length || !decision.renderSvg().includes("<polygon")) throw new Error("installed decision rendering failed");
+    const reportSize = measureNodeLabel({ kind: "document", width: 200, label: "A\\nB\\nC" });
+    const report = createDiagram({ version: 1, viewport: { width: 300, height: 300 },
+      nodes: [{ id: "report", kind: "document", x: 0, y: 0, width: 200, height: reportSize.height, label: "A\\nB\\nC" }], edges: [], scenes: [] });
+    if (reportSize.height !== 108 || report.evaluateAt(0).warnings.length || !report.renderSvg().includes("<polygon")) {
+      throw new Error("installed document measurement or rendering failed");
+    }
     const content = { blocks: [{ type: "paragraph", text: "A" }] };
     const taller = { blocks: [{ type: "paragraph", text: "A\\nB\\nC" }] };
     const measured = measureNodeContent({ kind: "rect", width: 240, content: Object.freeze([content, taller]) });
@@ -170,6 +176,8 @@ try {
     const labelMeasurement: NodeLabelMeasurement = measureNodeLabel(labelInput);
     const labelDiagnostic: NodeLabelMeasurementDiagnostic | undefined = labelMeasurement.diagnostics[0];
     void labelDiagnostic;
+    const reportInput: NodeLabelMeasurementInput = { kind: "document", width: 200, label: "Report" };
+    measureNodeLabel(reportInput);
     const diagnostic: NodeContentMeasurementDiagnostic | undefined = measurement.diagnostics[0];
     const diagnosticDimension: "width" | "height" | undefined = diagnostic?.dimension;
     void diagnosticDimension;

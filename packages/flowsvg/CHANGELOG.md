@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add document report nodes with labels centered above a bounded bottom wave.
+
 - Add diamond decision nodes with safe-area plain-text labels. Existing node kinds retain their label behavior.
 - Wrap long decision labels without splitting graphemes; report width and height overflow while clipping visible text to the inner rectangle.
 - Export `measureNodeLabel` to reserve a common explicit height for one or more decision labels using the same safe-area layout as playback.

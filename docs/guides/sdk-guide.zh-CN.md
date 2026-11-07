@@ -261,7 +261,7 @@ if (element) element.document = diagramDocument;
 | `title` / `theme` | 可选标题与 `light` / `dark` 文档主题 |
 | `typography` | 可选的节点、连线与流动标记字号，见[文档级字号](#文档级字号) |
 
-节点与连线 ID 全局唯一。形状：`rect`、`roundedRect`、`ellipse`、`cylinder`、`group`；未发布源码还支持 `diamond`。分组边框默认为圆角。`parentId` 指向父分组，子节点坐标相对分组原点。标签为纯文本，`visible` 默认 `true`。节点样式：`fill`、`stroke`、`strokeWidth`、`textColor`、`dashed`（分组边框）；连线样式：`stroke`、`strokeWidth`、`dashed`。颜色使用十六进制 RGB/RGBA，如 `#2563eb`、`#2563eb80`。
+节点与连线 ID 全局唯一。形状：`rect`、`roundedRect`、`ellipse`、`cylinder`、`group`；未发布源码还支持 `diamond` 和 `document`。分组边框默认为圆角。`parentId` 指向父分组，子节点坐标相对分组原点。标签为纯文本，`visible` 默认 `true`。节点样式：`fill`、`stroke`、`strokeWidth`、`textColor`、`dashed`（分组边框）；连线样式：`stroke`、`strokeWidth`、`dashed`。颜色使用十六进制 RGB/RGBA，如 `#2563eb`、`#2563eb80`。
 
 路由：`straight`（默认）、`orthogonal`、`curved`。曲线跟随端口切线，不避让其他节点；正交路径默认使用圆角转弯；SVG、流动标记、边界和命中检测共用该几何。圆角按短线段、障碍物与箭头空间收缩。正交路径避开可见普通节点，受阻时固定回退，不保证最短路径或零交叉。`fromPort` / `toPort` 可设为 `top`、`right`、`bottom`、`left`。箭头空间允许时，正交路径优先将跨接线段放在节点间隔中点；相同朝向的端口优先使用单一外侧通道，并为双方各自的祖先分组边框预留空间，共同祖先分组不推动通道外移。正交路径保留向外的端点线段，并按求值后的线宽为箭头预留直线末段；相邻节点空间不足时缩短预留距离。同一目标侧的曲线和正交入线按来源位置分配独立连接位置，来源位置相同时按文档顺序排列；隐藏连线仍保留位置。连接位置限制在该侧的中央区域，节点过小或入线过多时仍需增加空间。曲线端口决定切线。省略时按中心连线主方向选择，椭圆端点位于轮廓。普通标签按估算宽度换行；高度溢出时仍显示全文，并报告 `text-overflow`。
 
@@ -310,7 +310,7 @@ if (element) element.document = diagramDocument;
 | `diagram.renderSvg(timeMs = 0, options?)` | 导出相同求值结果的 SVG |
 | `diagram.hitTest(timeMs, point, options?)` | 在文档坐标中返回 `{ id, type: "node" \| "edge" }` 或 `null` |
 | `measureNodeContent({ kind, width, content, typography? })` | 返回推荐的固定高度及各内容版本未解决的溢出诊断，见[内容尺寸测量](#生成文档前测量节点内容) |
-| `measureNodeLabel({ kind, width, label, typography? })` | 未发布：测量菱形标签的共用高度与宽度诊断，见[决策标签](#决策标签与测量)。 |
+| `measureNodeLabel({ kind, width, label, typography? })` | 未发布：测量预置形状标签的共用高度与宽度诊断，见[决策标签](#决策标签与测量)。 |
 | `wrapText(label, maxWidth, typography?)` | 按固定字宽估算换行，返回文本行数组 |
 
 `validateDocument` 检查作者数据的结构和数值。编译时，SDK 还会在对应节拍的 `durationMs` 路径报告非有限的移动时长或累计时间，并抛出 `DiagramValidationError`。输入文档保留作者设置的时长。
@@ -454,13 +454,19 @@ const diagram = createDiagram({ version: 1, viewport: { width: 300, height: 300 
     height: measurement.height, label: labels[1] }], edges: [], scenes: [] });
 ```
 
-此示例返回高度 128，采用尺寸前先检查 `measurement.diagnostics`。本次源码里程碑的 `measureNodeLabel` 仅接受 `diamond`、有限正数宽度、单字符串或非空只读标签版本数组，以及可选的现有 `DiagramTypography`。返回 `{ height, diagnostics }`；未解决的宽度诊断包含 `versionIndex`、`path`、`dimension: "width"` 和 `message`。单字符串使用版本索引零。从 `flowsvg` 导入类型 `NodeLabelMeasurementInput`、`NodeLabelMeasurement` 与 `NodeLabelMeasurementDiagnostic`。
+此示例返回高度 128，采用尺寸前先检查 `measurement.diagnostics`。本次源码里程碑的 `measureNodeLabel` 接受 `diamond`、`document`、有限正数宽度、单字符串或非空只读标签版本数组，以及可选的现有 `DiagramTypography`。返回 `{ height, diagnostics }`；未解决的宽度诊断包含 `versionIndex`、`path`、`dimension: "width"` 和 `message`。单字符串使用版本索引零。从 `flowsvg` 导入类型 `NodeLabelMeasurementInput`、`NodeLabelMeasurement` 与 `NodeLabelMeasurementDiagnostic`。
 
 多个版本取共同最大高度，包含完整行框。标签行框高为 L 时，菱形高度为 2 × (L + 24)。空标签仍返回带形状留白的正数高度。测量与渲染共享确定性换行，不读取 DOM 字体、不修改输入、不扫描场景。连一个字素也放不下时，按其独占一行测量并保留宽度诊断；增加高度无法解决，请加宽或缩短标签。非法输入或无法表示为有限数的高度通过带有字段/版本位置的 `DiagramValidationError` 报错。
 
 支持中文、显式换行及空行。英文尽量整词换行，超宽单词或 URL 仅在完整字素之间拆分。非空文字超出安全区时裁剪并报告 `text-overflow`，不缩字、不加省略号、不替换源文字、不自动改变节点尺寸。极小正数尺寸合法，非正数或非有限尺寸仍为校验错误；空标签不因安全区为零而溢出。
 
 四方向端口、所有路由类型的自动连接、同侧多入线、命中与诊断遵循真实轮廓。裁剪掉的文字不扩大命中、诊断或自适应高度。分组移动和时间线尺寸变化使用当前几何；时间线仍不可修改节点类型。SVG、播放器和导出共享核心结果。旧形状及 `measureNodeContent` 保持原行为。SDK 附带英文决策分支示例，覆盖测量后的更新和有意溢出。
+
+## 文档形报告标签
+
+未发布的 `document` 预置形状仅用纯文本 `label` 表达报告或文件产物，拒绝结构化 `content`，包括空内容块；时间线 `content: null` 仍可清空文字。顶边及两侧为直线，底部波浪带高度 B = min(height / 4, 24)，单位为图解单位。每侧内边距为 12，标签安全区为 `(12, 12, max(0, width - 24), max(0, height - B - 24))`。标签在波浪带上方整体居中，沿用决策标签的完整字素换行、裁剪和溢出诊断规则。
+
+`measureNodeLabel({ kind: "document", width: 240, label: ["Report ready", "Revenue\nBy region\nFinal report"] })` 返回高度 108。完整行框高度为 L、T = L + 24 时，T ≤ 72 的建议高度为 4T/3，否则为 T + 24。采用建议高度后仍需处理宽度诊断。端口、命中与诊断均沿真实波浪轮廓计算，波浪凹入处下方的空白不属于节点。见[报告生成示例](../../packages/flowsvg/examples/report-generation.json)，其中包含分组运动、尺寸变化、标签替换及刻意溢出。
 
 ## 文档级字号
 
