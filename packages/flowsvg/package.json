@@ -68,6 +68,7 @@
     "docs/images/*.png",
     "docs/images/*.gif",
     "examples/job-lifecycle.json",
+    "examples/decision-branch.json",
     "README.md",
     "README.zh-CN.md",
     "CHANGELOG.md",

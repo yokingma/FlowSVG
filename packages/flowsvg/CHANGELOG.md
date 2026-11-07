@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Add diamond decision nodes with safe-area plain-text labels. Existing node kinds retain their label behavior.
+- Wrap long decision labels without splitting graphemes; report width and height overflow while clipping visible text to the inner rectangle.
+- Export `measureNodeLabel` to reserve a common explicit height for one or more decision labels using the same safe-area layout as playback.
+- Attach decision-node edges and pointer hits to the real diamond contour instead of its bounding rectangle.
+- Reuse diamond contours and clipped visible label paint for diagnostics; invisible label overflow no longer enlarges fitted height for decision nodes.
+
 ## 0.2.3 - 2026-11-06
 
 - Add full-timeline request-response, web-service-deployment and LLM inference showcase GIFs to the package README and npm tarball, rendered at 1.5x speed and 24 fps.

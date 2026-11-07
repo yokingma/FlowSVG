@@ -13,7 +13,7 @@ const PREVIEW_IMAGES = [
   "docs/images/facts-timeline.png", "docs/images/facts-timeline.zh-CN.png", "docs/images/flowsvg-wordmark.gif",
   "docs/images/job-lifecycle.gif", "docs/images/request-response.gif", "docs/images/web-service-deployment.gif", "docs/images/llm-inference.gif"
 ];
-const EXAMPLE_FILES = ["examples/job-lifecycle.json"];
+const EXAMPLE_FILES = ["examples/job-lifecycle.json", "examples/decision-branch.json"];
 const fixtures: string[] = [];
 
 interface Invocation {
@@ -250,6 +250,12 @@ describe("packed release files", () => {
   });
   it("accepts declared nested runtime and declaration files before installing the consumer", () => {
     const result = verifyPackedFiles(["dist/core/diagram.js", "dist/core/edge-geometry.js", "dist/core/edge-geometry.d.ts", "dist/core/svg-number.js", "dist/core/svg-number.d.ts", "dist/core/model.d.ts", "dist/browser/player.js", "dist/browser/export-controls.js", "dist/browser/export-controls.d.ts", "dist/browser/accessibility.d.ts", "dist/adapters/react.js", "dist/adapters/vue.d.ts", "dist/adapters/web-component.js", "dist/styles.css"]);
+    expect(result.stderr).toContain("TEST_CONSUMER_INSTALL_REACHED");
+    expect(result.stderr).not.toContain("unexpected tarball file");
+  });
+  it("accepts preset label runtime, declarations and the decision example in the installed package", () => {
+    const result = verifyPackedFiles(["dist/core/node-shape.js", "dist/core/node-shape.d.ts", "dist/core/node-label.js",
+      "dist/core/node-label.d.ts", "dist/core/node-label-measurement.js", "dist/core/node-label-measurement.d.ts"]);
     expect(result.stderr).toContain("TEST_CONSUMER_INSTALL_REACHED");
     expect(result.stderr).not.toContain("unexpected tarball file");
   });

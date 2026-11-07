@@ -2,7 +2,7 @@
 import type { NodeContent, NodeContentLayout } from "./node-content.js";
 
 /** Supported shapes; a group also supplies the origin and visibility constraints for its children. */
-export type NodeKind = "rect" | "roundedRect" | "ellipse" | "cylinder" | "group";
+export type NodeKind = "rect" | "roundedRect" | "ellipse" | "cylinder" | "group" | "diamond";
 /** Route families generated from node geometry; orthogonal routes avoid obstacles with rounded bends, and curved routes use cubic Bézier controls. */
 export type EdgeRoute = "straight" | "orthogonal" | "curved";
 /** Cardinal node sides used for explicit edge attachments. */
@@ -236,7 +236,8 @@ export interface TextLine {
 /**
  * Node after timeline and ancestor-group evaluation; x/y are absolute document coordinates.
  * visible tracks participation in visibility/routing; it can be true at a reveal start with zero opacity.
- * labelLines/labelBoxes retain overflowing text; drawing and hit testing still require positive opacity.
+ * labelLines/labelBoxes retain overflowing text; preset label paint is clipped to its safe area.
+ * Drawing and hit testing require positive opacity; preset hits exclude invisible overflow.
  */
 export interface EvaluatedNode extends DiagramNode {
   x: number;

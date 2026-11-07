@@ -55,6 +55,8 @@ Reuse one diagram document for static SVG/PNG, animated GIF and interactive or o
 
 ## Features
 
+- Unreleased source capability: use measured `diamond` decision labels with safe-area clipping and contour-aware connections. See the [decision example](packages/flowsvg/examples/decision-branch.json); this addition is not part of published 0.2.3.
+
 - Draw nodes, nested groups and directed straight, orthogonal or curved edges.
 - Compose titles, paragraphs, lists, tags and inline styled text inside nodes; measure content before choosing dimensions.
 - Configure document-level node, edge and flow-marker font sizes across players and exports.

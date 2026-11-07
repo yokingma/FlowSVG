@@ -3,6 +3,8 @@
  * Validation owns document rules; this module owns cloning and freezing and does not read DOM, clocks or network.
  */
 import { diagnoseFrame } from "./geometry-diagnostics.js";
+import { isPointInNodeOutline, nodeLabelSafeArea, nodeOutline } from "./node-shape.js";
+import { NODE_LABEL_OVERFLOW_TOLERANCE, placeNodeLabel, wrapNodeLabel } from "./node-label.js";
 import { layoutNodeContentWithMetrics, type ContentSafeArea, type NodeContent, type NodeContentLayout } from "./node-content.js";
 import { paintContentHighlight } from "./node-content-paint.js";
 import { CompiledTimeline, type TimelineObject, type CompiledFlow } from "./timeline.js";
@@ -167,10 +169,22 @@ class CompiledDiagram implements Diagram {
     const warnings: LayoutWarning[] = [];
     const nodes = [...currentNodes.values()].map((node, index) => {
       const position = this.resolvePosition(node.id, currentNodes);
-      const labelLines = node.label ? wrapText(node.label, Math.max(1, node.width - TEXT_PADDING * 2), nodeTypography) : [];
+      const safeArea = nodeLabelSafeArea({ ...node, ...position });
+      const labelLayout = safeArea ? wrapNodeLabel(node.label ?? "", safeArea.width, nodeTypography) : undefined;
+      if (labelLayout) {
+        assertFiniteTypography("nodeLabel", [labelLayout.height]);
+        for (const text of labelLayout.lines) assertFiniteTypography("nodeLabel", [estimateTextWidth(text, nodeTypography)]);
+      }
+      const labelLines = labelLayout?.lines ?? (node.label ? wrapText(node.label, Math.max(1, node.width - TEXT_PADDING * 2), nodeTypography) : []);
       const labelCenterY = node.kind === "group" ? position.y + 24 : position.y + node.height / 2;
-      const labelBoxes = makeLabelBoxes(labelLines, position.x + node.width / 2, labelCenterY, nodeTypography, "nodeLabel");
-      if (node.label && labelLines.length * nodeTypography.lineHeight > Math.max(0, node.height - TEXT_PADDING * 2)) warnings.push({ path: `nodes[${index}].label`, objectId: node.id, code: "text-overflow", message: `label for node \"${node.id}\" exceeds its height` });
+      const labelBoxes = safeArea ? placeNodeLabel(labelLines, safeArea, nodeTypography)
+        : makeLabelBoxes(labelLines, position.x + node.width / 2, labelCenterY, nodeTypography, "nodeLabel");
+      if (labelLayout && safeArea) {
+        for (const dimension of ["width", "height"] as const) {
+          const overflow = dimension === "width" ? labelLayout.widthOverflow : labelLayout.height > safeArea.height + NODE_LABEL_OVERFLOW_TOLERANCE;
+          if (overflow) warnings.push({ path: `nodes[${index}].label`, objectId: node.id, code: "text-overflow", message: `label for node "${node.id}" exceeds its ${dimension}` });
+        }
+      } else if (node.label && labelLines.length * nodeTypography.lineHeight > Math.max(0, node.height - TEXT_PADDING * 2)) warnings.push({ path: `nodes[${index}].label`, objectId: node.id, code: "text-overflow", message: `label for node \"${node.id}\" exceeds its height` });
       const visual = this.resolveVisibility(node.id, timeline.objects);
       const own = timeline.objects.get(node.id)!;
       const highlight = Math.max(own.highlight, flowHighlights.get(node.id) ?? 0);
@@ -336,7 +350,7 @@ function serializeSvg(document: DiagramDocument, frame: DiagramFrameState, palet
   }).join("");
   const groupShapes = frame.nodes.filter((node) => node.opacity > 0 && node.kind === "group").map((node) => serializeNodeShape(node, palette)).join("");
   const nodeShapes = frame.nodes.filter((node) => node.opacity > 0 && node.kind !== "group").map((node) => serializeNodeShape(node, palette)).join("");
-  const labels = frame.edges.filter((edge) => edge.opacity > 0).map((edge) => serializeLabel(edge.labelLines, edge.labelBoxes, edge.style?.stroke ?? palette.text, edgeTypography, edge.opacity, palette.background)).join("") + frame.nodes.filter((node) => node.opacity > 0).map((node) => serializeLabel(node.labelLines, node.labelBoxes, node.style?.textColor ?? palette.text, nodeTypography, node.opacity)).join("");
+  const labels = frame.edges.filter((edge) => edge.opacity > 0).map((edge) => serializeLabel(edge.labelLines, edge.labelBoxes, edge.style?.stroke ?? palette.text, edgeTypography, edge.opacity, palette.background)).join("") + frame.nodes.filter((node) => node.opacity > 0).map((node, index) => serializeNodeLabel(node, index, palette, nodeTypography)).join("");
   const contents = frame.nodes.filter((node) => node.opacity > 0 && node.contentLayout).map((node, index) => serializeNodeContent(node, index)).join("");
   const flows = frame.edges.filter((edge) => edge.opacity > 0 && edge.flow).map((edge) => serializeFlowMarker(edge.flow!, edge.id, palette, edge.opacity, typography.flowLabel)).join("");
   const marker = `<defs><marker id="diagram-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="${ARROW_MARKER_SIZE}" markerHeight="${ARROW_MARKER_SIZE}" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"/></marker></defs>`;
@@ -344,6 +358,16 @@ function serializeSvg(document: DiagramDocument, frame: DiagramFrameState, palet
   const camera = `${formatNumber(frame.camera.x)} ${formatNumber(frame.camera.y)} ${formatNumber(frame.camera.width)} ${formatNumber(frame.camera.height)}`;
   const background = options.background === "transparent" ? "" : `<rect x="${formatNumber(frame.camera.x)}" y="${formatNumber(frame.camera.y)}" width="${formatNumber(frame.camera.width)}" height="${formatNumber(frame.camera.height)}" fill="${palette.background}"/>`;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${camera}" role="img" aria-label="${ariaLabel}" font-family="${escapeAttribute(DIAGRAM_FONT_FAMILY)}"><title>${title}</title>${marker}${background}${groupShapes}${edgeShapes}${nodeShapes}${labels}${contents}${flows}</svg>`;
+}
+
+/** Serialize preset label paint inside its shape-safe rectangle without discarding source lines. */
+function serializeNodeLabel(node: EvaluatedNode, index: number, palette: ThemePalette, typography: TextMetrics): string {
+  const label = serializeLabel(node.labelLines, node.labelBoxes, node.style?.textColor ?? palette.text, typography, node.opacity);
+  const safe = nodeLabelSafeArea(node);
+  if (!safe || !label) return label;
+  const key = [safe.x, safe.y, safe.width, safe.height].map((value) => String(value).replaceAll("-", "n").replaceAll(".", "p").replaceAll("+", "a")).join("-");
+  const clipId = `diagram-label-clip-${index}-${key}`;
+  return `<defs><clipPath id="${clipId}" clipPathUnits="userSpaceOnUse"><rect x="${formatNumber(safe.x)}" y="${formatNumber(safe.y)}" width="${formatNumber(safe.width)}" height="${formatNumber(safe.height)}"/></clipPath></defs><g clip-path="url(#${clipId})">${label}</g>`;
 }
 
 /** Serialize evaluated text and tag backgrounds inside one clip; authored content cannot introduce SVG markup or CSS. */
@@ -423,6 +447,8 @@ function serializeNodeShape(node: EvaluatedNode, palette: ThemePalette): string 
   const width = node.style?.strokeWidth ?? DEFAULT_NODE_STROKE_WIDTH;
   const dash = node.kind === "group" && node.style?.dashed ? ' stroke-dasharray="10 7"' : "";
   const attrs = `fill="${escapeAttribute(fill)}" stroke="${escapeAttribute(stroke)}" stroke-width="${width}"${dash} data-id="${escapeAttribute(node.id)}" opacity="${node.opacity}"`;
+  const outline = nodeOutline(node);
+  if (outline) return `<polygon points="${outline.map(({ x, y }) => `${formatNumber(x)},${formatNumber(y)}`).join(" ")}" stroke-linejoin="round" ${attrs}/>`;
   if (node.kind === "ellipse") return `<ellipse cx="${formatNumber(node.x + node.width / 2)}" cy="${formatNumber(node.y + node.height / 2)}" rx="${formatNumber(node.width / 2)}" ry="${formatNumber(node.height / 2)}" ${attrs}/>`;
   if (node.kind === "cylinder") {
     const ry = Math.min(CYLINDER_CAP_RADIUS, node.height / 4);
@@ -478,7 +504,8 @@ function fittedHeight(viewport: Viewport, nodes: readonly EvaluatedNode[], edges
   for (const node of nodes) {
     if (node.opacity <= 0) continue;
     bottoms.push(node.y + node.height + (node.style?.strokeWidth ?? DEFAULT_NODE_STROKE_WIDTH) / 2);
-    for (const bottom of labelBottoms(node.labelBoxes, nodeTypography)) bottoms.push(bottom);
+    // Preset labels are clipped inside the node, so invisible line boxes cannot enlarge the viewport.
+    if (!nodeLabelSafeArea(node)) for (const bottom of labelBottoms(node.labelBoxes, nodeTypography)) bottoms.push(bottom);
   }
   for (const edge of edges) {
     if (edge.opacity <= 0) continue;
@@ -565,8 +592,10 @@ function clampCamera(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-/** Include deterministic label bounds so overflowing text remains part of the node's interaction target. */
+/** Presets use their real outline; existing nodes retain visible overflowing-label interaction targets. */
 function isPointInNode(point: DiagramPoint, node: EvaluatedNode, nodeTypography: TextMetrics): boolean {
+  const presetHit = isPointInNodeOutline(node, point);
+  if (presetHit !== undefined) return presetHit;
   const labelHit = node.labelBoxes.some((line) => {
     if (line.text.length === 0) return false;
     const bounds = textLineBounds(line, nodeTypography);

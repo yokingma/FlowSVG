@@ -422,7 +422,7 @@ Built-in downloads export the full timeline at `1×`, using the current theme. P
 | `Beat` | `durationMs`, `actions` | `transitionMs`, `caption` |
 
 - **Static documents:** use empty `scenes`.
-- **Node kinds:** `rect`, `roundedRect`, `ellipse`, `cylinder`, `group`. Groups have rounded borders by default.
+- **Node kinds:** `rect`, `roundedRect`, `ellipse`, `cylinder`, `group`; unreleased source also supports `diamond`. Groups have rounded borders by default.
 - **Edge routes:** `straight` (default), `orthogonal`, `curved`.
 - **Ports:** `top`, `right`, `bottom`, `left`.
 - **Beat timing:** `durationMs` must be positive. `transitionMs` must be in `[0, durationMs]`, defaults to `min(250, durationMs)`, and is capped at effective beat length.
@@ -457,6 +457,14 @@ Read effective boundaries from `compiled.beats`. Use separate no-flow beats for 
 
 `viewport.fitHeight: { padding: 24 }` fits current full-view height for the player, SVG and PNG.
 
+### Decision labels and measurement
+
+This is an unreleased source addition, not part of published 0.2.3. `diamond` expresses decisions with plain `label` only, rejecting structured `content` including empty block arrays. Its centered half-width/half-height inner rectangle reserves 12 diagram units per side. The complete label is centered there; words wrap normally and an overwide word or URL splits only between complete graphemes. Overflow is clipped and reported as `text-overflow`, without shrinking text or resizing the node.
+
+Call `measureNodeLabel({ kind: "diamond", width, label, typography? })` before assigning height. `label` accepts one string or a nonempty readonly version array; `typography` uses the document's existing context. The result is `{ height, diagnostics }`, with a shared finite positive height and per-version unresolved width issues. Each diagnostic contains `versionIndex`, `path`, `dimension: "width"`, and `message`; more height cannot fix insufficient width. Empty labels are valid. Invalid input or non-finite computed height throws `DiagramValidationError`. Types `NodeLabelMeasurementInput`, `NodeLabelMeasurement`, and `NodeLabelMeasurementDiagnostic` are exported from `flowsvg`.
+
+Cardinal ports, straight/orthogonal/curved connections, hits and diagnostics use the real contour. Invisible clipped text does not enlarge hits or fitted height. Groups, timelines and exports reuse the core result; old kinds and `measureNodeContent` retain their behavior. The [runnable decision example](examples/decision-branch.json) demonstrates measured label updates, resizing and an intentionally clipped node.
+
 ### Structured content and measurement
 
 Rectangles (`rect`), rounded rectangles (`roundedRect`) and cylinders (`cylinder`) support structured `content` with titles, paragraphs, lists, tags and entity graphs.
@@ -480,7 +488,7 @@ Set `typography: { nodeLabel: 32, edgeLabel: 24, flowLabel: 20 }` on the documen
 
 **Validation:** values must be positive and finite. Unrepresentable derived text metrics throw `DiagramValidationError` with a `typography.<role>` path.
 
-Ordinary labels and `wrapText` keep Latin words intact. Overwide words can exceed the estimated line width; fonts do not shrink automatically. Purely vertical edge labels use the narrower endpoint width for horizontal wrapping. Increase authored spacing or node width if labels overlap. GIF captions use the same word boundaries with measured font widths.
+Existing-shape labels, edge labels and `wrapText` keep Latin words intact. Overwide words can exceed the estimated line width; fonts do not shrink automatically. Purely vertical edge labels use the narrower endpoint width for horizontal wrapping. Increase authored spacing or node width if labels overlap. GIF captions use the same word boundaries with measured font widths.
 
 **Sizing and inheritance:**
 
@@ -507,6 +515,7 @@ All times are milliseconds; positions and dimensions use diagram units.
 | `renderSvg(document: DiagramDocument, timeMs = 0, options?): string` | Compile and render one static SVG. |
 | `validateDocument(input: unknown): ValidationIssue[]` | Check fields and references; return `{ path, message }` issues. An empty array means these checks passed; compilation can still reject non-finite derived flow timing. |
 | `measureNodeContent({ kind, width, content, typography? }): NodeContentMeasurement` | Return `{ height, diagnostics }`; see [content and measurement](#structured-content-and-measurement). |
+| `measureNodeLabel({ kind, width, label, typography? }): NodeLabelMeasurement` | Unreleased: measure shared diamond-label height and unresolved width issues; see [decision labels](#decision-labels-and-measurement). |
 | `wrapText(label: string, maxWidth: number, typography?): string[]` | Estimate wrapping without the DOM. Optional typography supplies all three numeric fields: `fontSize`, `lineHeight`, `charWidth`; omitted uses node typography. |
 
 | Compiled `Diagram` | Result / behavior |
