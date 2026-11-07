@@ -422,7 +422,7 @@ SDK CLI 支持 HTML 和 GIF 输出。PNG 使用 SDK API 导出。
 | `Beat` | `durationMs`、`actions` | `transitionMs`、`caption` |
 
 - **静态文档：**使用空 `scenes`。
-- **节点类型：**`rect`、`roundedRect`、`ellipse`、`cylinder`、`group`；未发布源码还支持 `diamond` 和 `predefinedProcess`。分组边框默认为圆角。
+- **节点类型：**`rect`、`roundedRect`、`ellipse`、`cylinder`、`group`；未发布源码还支持 `diamond`、`document` 和 `predefinedProcess`。分组边框默认为圆角。
 - **连线路由：**`straight`（默认）、`orthogonal`、`curved`。
 - **端口方向：**`top`、`right`、`bottom`、`left`。
 - **节拍时长：**`durationMs` 须为正数。`transitionMs` 须位于 `[0, durationMs]`，默认 `min(250, durationMs)`，并受有效节拍时长限制。
@@ -464,6 +464,12 @@ SDK CLI 支持 HTML 和 GIF 输出。PNG 使用 SDK API 导出。
 指定高度前调用 `measureNodeLabel({ kind: "diamond", width, label, typography? })`。`label` 接受单字符串或非空只读版本数组；`typography` 使用文档现有文字配置。返回 `{ height, diagnostics }`，包含共用的有限正数高度及逐版本未解决的宽度问题。每条诊断包含 `versionIndex`、`path`、`dimension: "width"` 和 `message`；增加高度无法解决宽度不足。空标签合法；非法输入或无法表示为有限数的高度抛出 `DiagramValidationError`。从 `flowsvg` 导入类型 `NodeLabelMeasurementInput`、`NodeLabelMeasurement` 与 `NodeLabelMeasurementDiagnostic`。
 
 四方向端口、直线/正交/曲线连接、命中和诊断使用真实轮廓。裁剪掉的文字不扩大命中区或自适应高度。分组、时间线与导出共享核心结果；旧形状及 `measureNodeContent` 保持原行为。[可运行的决策示例](examples/decision-branch.json)展示测量后的标签替换、尺寸变化和一个有意溢出的节点。
+
+### 文档形报告标签
+
+未发布的 `document` 预置形状仅用纯文本 `label` 表达报告或文件产物，拒绝结构化 `content`，包括空内容块；时间线 `content: null` 仍可清空文字。顶边及两侧为直线，底部波浪带高度 B = min(height / 4, 24)，单位为图解单位。每侧内边距为 12，标签安全区为 `(12, 12, max(0, width - 24), max(0, height - B - 24))`。标签在波浪带上方整体居中，沿用决策标签的完整字素换行、裁剪和溢出诊断规则。
+
+`measureNodeLabel({ kind: "document", width: 240, label: ["Report ready", "Revenue\nBy region\nFinal report"] })` 返回高度 108。完整行框高度为 L、T = L + 24 时，T ≤ 72 的建议高度为 4T/3，否则为 T + 24。采用建议高度后仍需处理宽度诊断。端口、命中与诊断均沿真实波浪轮廓计算，波浪凹入处下方的空白不属于节点。见[报告生成示例](examples/report-generation.json)，其中包含分组运动、尺寸变化、标签替换及刻意溢出。
 
 ### 预定义流程标签
 
@@ -523,7 +529,7 @@ SDK 自有的[子流程调用示例](examples/subprocess-call.json)包含测量�
 | `renderSvg(document: DiagramDocument, timeMs = 0, options?): string` | 编译并渲染一帧静态 SVG。 |
 | `validateDocument(input: unknown): ValidationIssue[]` | 检查字段与引用，返回 `{ path, message }` 问题列表。空数组表示这些检查通过；编译阶段仍可能拒绝非有限的派生传递时长。 |
 | `measureNodeContent({ kind, width, content, typography? }): NodeContentMeasurement` | 返回 `{ height, diagnostics }`，见[内容与测量](#结构化内容与测量)。 |
-| `measureNodeLabel({ kind, width, label, typography? }): NodeLabelMeasurement` | 未发布：测量菱形标签的共用高度与宽度诊断，见[决策标签](#决策标签与测量)。 |
+| `measureNodeLabel({ kind, width, label, typography? }): NodeLabelMeasurement` | 未发布：测量预置形状标签的共用高度与宽度诊断，见[决策标签](#决策标签与测量)。 |
 | `wrapText(label: string, maxWidth: number, typography?): string[]` | 无 DOM 的估算换行；可选排版对象须包含 `fontSize`、`lineHeight`、`charWidth` 三个数值字段，省略时使用节点排版参数。 |
 
 | 编译后的 `Diagram` | 返回值／行为 |

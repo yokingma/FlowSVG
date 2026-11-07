@@ -6,6 +6,8 @@
 
 - Add predefined-process nodes with decorative side lines and shared safe-area labels.
 
+- Add document report nodes with labels centered above a bounded bottom wave.
+
 - Add diamond decision nodes with shared safe-area labels, author-time label measurement, real-contour connections/hits/diagnostics, and a runnable decision-branch example.
 
 - Harden the GitHub Pages workflow with deployment path filters, stale-run cancellation and job timeouts to limit unnecessary Actions usage.

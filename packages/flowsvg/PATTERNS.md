@@ -146,6 +146,8 @@ Read the sections for the affected subsystem. For public-contract changes, also 
 
 ## On-demand geometry diagnostics
 
+- Share the document wave's 256-chord contour across SVG, attachments, hits and stroke paint. Decompose its concave fill into convex strips; never clip against its whole outline.
+
 - Convex preset fills can use their shared outer polygon directly. Do not assume every future outline is convex. Clip safe-area label paint before camera clipping, and exclude invisible overflow from fitting and hit testing.
 
 `Diagram.diagnoseAt` consumes one evaluated frame. Pair checks remain outside evaluation, SVG rendering and playback. The internal diagnostic geometry module owns visible-paint intersections; no public sampler is exposed.
