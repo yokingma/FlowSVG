@@ -2,7 +2,11 @@
 
 ## Unreleased
 
-- Add parallelogram input/output nodes using shared safe-area label layout and real-contour geometry.
+- Add parallelogram input/output nodes with shared safe-area measurement and true contour geometry.
+
+- Reject distant pointer hits when a tiny preset contour collapses at a large finite origin.
+
+- Add predefined-process nodes with decorative side lines and shared safe-area labels.
 
 - Add diamond decision nodes with shared safe-area labels, author-time label measurement, real-contour connections/hits/diagnostics, and a runnable decision-branch example.
 

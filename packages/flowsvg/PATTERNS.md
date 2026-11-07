@@ -27,7 +27,11 @@ Read the sections for the affected subsystem. For public-contract changes, also 
 
 ## Routing and SVG geometry
 
-- Derive parallelogram slant from one quarter of the current width, capped at 24 diagram units; reuse that contour and its full-height safe-area clearance across SDK consumers.
+- Derive parallelogram slant from one quarter of current width, capped at 24 diagram units; its labels reserve the full height minus two 12-unit paddings.
+
+- Keep predefined-process side lines decorative within one node identity; only its rectangular outer contour supplies attachments and routing obstacles.
+
+- Reject points outside preset bounds before testing contour half planes; representable tiny dimensions may collapse at a large finite origin.
 
 - New semantic presets share one contour definition across serialization, cardinal/ray edge attachments and hits; preserve existing-shape behavior. Keep contour sampling separate from convex diagnostic paint decomposition.
 
@@ -58,7 +62,6 @@ Read the sections for the affected subsystem. For public-contract changes, also 
 - Semantic presets use fixed rectangular label safe areas with 12-unit padding. Keep contour clearance, clipping and label placement in the shared core; ordinary labels retain their current wrapping behavior.
 - Wrap semantic preset labels at grapheme boundaries when a Latin token cannot fit, and clip paint while retaining overflow diagnostics. Preserve ordinary word-safe `wrapText` behavior separately.
 - Measure semantic node labels using the same wrapping and full line boxes as evaluated frames, then invert the shape safe-area height rule; measurement returns suggestions without mutating documents or scanning timelines.
-- Parallelogram labels reserve the full node height minus two 12-unit paddings; their height inverse must not reuse the diamond's half-height factor.
 
 - Keep ordinary node/edge labels and public `wrapText` word-safe for Latin text. Preserve explicit blank lines and code-point wrapping for other scripts; keep an overwide Latin word intact without shrinking its font. For a purely vertical edge, use the narrower endpoint width as the horizontal text budget rather than route length. Rendering, bounds and diagnostics consume the same evaluated lines. Share the internal word-boundary rule with measured GIF captions; caption preflight reports overwide intact words instead of splitting them.
 

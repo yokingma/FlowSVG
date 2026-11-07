@@ -2,9 +2,11 @@
 
 ## Unreleased
 
-- Add `parallelogram` input/output nodes with fixed slant clearance and safe-area plain-text labels.
-- Measure input/output labels with their full-height rectangular safe area, including multiple versions and unresolved width diagnostics.
-- Reuse the actual slanted parallelogram contour for edge endpoints, pointer hits and visible-geometry diagnostics.
+- Add `parallelogram` input/output nodes with safe-area plain labels, common-height measurement, clipped overflow and real-contour connections, hits and diagnostics.
+
+- Reject distant pointer hits when a tiny preset contour collapses at a large finite origin.
+
+- Add label-only predefined-process nodes with a rectangular contour and capped decorative side lines.
 
 - Add diamond decision nodes with safe-area plain-text labels. Existing node kinds retain their label behavior.
 - Wrap long decision labels without splitting graphemes; report width and height overflow while clipping visible text to the inner rectangle.

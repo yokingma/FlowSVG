@@ -422,7 +422,7 @@ Built-in downloads export the full timeline at `1×`, using the current theme. P
 | `Beat` | `durationMs`, `actions` | `transitionMs`, `caption` |
 
 - **Static documents:** use empty `scenes`.
-- **Node kinds:** `rect`, `roundedRect`, `ellipse`, `cylinder`, `group`; unreleased source also supports `diamond` and `parallelogram`. Groups have rounded borders by default.
+- **Node kinds:** `rect`, `roundedRect`, `ellipse`, `cylinder`, `group`; unreleased source also supports `diamond`, `parallelogram` and `predefinedProcess`. Groups have rounded borders by default.
 - **Edge routes:** `straight` (default), `orthogonal`, `curved`.
 - **Ports:** `top`, `right`, `bottom`, `left`.
 - **Beat timing:** `durationMs` must be positive. `transitionMs` must be in `[0, durationMs]`, defaults to `min(250, durationMs)`, and is capped at effective beat length.
@@ -467,6 +467,14 @@ Cardinal ports, straight/orthogonal/curved connections, hits and diagnostics use
 
 `parallelogram` expresses input/output with the same plain-label restrictions, wrapping, clipping and diagnostics. Its top edge slants right by S = min(width / 4, 24) diagram units. The rectangular safe area reserves S + 12 units on both horizontal sides and 12 units on both vertical sides. With complete label height L, `measureNodeLabel` returns L + 24; multiple versions share the largest height. No slant configuration is exposed. Cardinal/automatic connections, hits and diagnostics use the actual slanted outline. See the [input/output example](examples/input-output.json).
 
+### Predefined process labels
+
+The unreleased `predefinedProcess` kind expresses a call to a defined subprocess. It is one ordinary node with a rectangular outer contour and two decorative vertical lines; it does not execute a subprocess or contain child nodes. Each line is inset by D = min(width / 6, 12). The label safe area starts at (D + 12, 12), with width max(0, width − 2D − 24) and height max(0, height − 24), relative to the node.
+
+Use plain `label`; structured `content` objects are rejected, including empty block arrays. Timeline `content: null` keeps its clearing semantics. Labels use the same centering, grapheme wrapping, clipping and overflow diagnostics as decision labels. `measureNodeLabel({ kind: "predefinedProcess", width: 200, label: ["A", "A\nB"] })` returns height 64. The suggested height is the full line-box height plus 24. Only the outer rectangle supplies connections and routing obstacles; clicks on either internal line return the parent node identity.
+
+The SDK-owned [subprocess-call example](examples/subprocess-call.json) includes measured labels, resizing, emphasis and intentional overflow. Run `pnpm --filter flowsvg build`, serve `packages/flowsvg` from the workspace, and open `/tests/browser-predefined-process.html` to play the public browser example.
+
 ### Structured content and measurement
 
 Rectangles (`rect`), rounded rectangles (`roundedRect`) and cylinders (`cylinder`) support structured `content` with titles, paragraphs, lists, tags and entity graphs.
@@ -502,8 +510,6 @@ Existing-shape labels, edge labels and `wrapText` keep Latin words intact. Overw
 
 After changing sizes, pass the same `typography` to `measureNodeContent` and inspect overflow.
 
-`parallelogram` expresses input/output with the same plain-label restrictions, wrapping, clipping and diagnostics. Its top edge slants right by S = min(width / 4, 24) diagram units. The rectangular safe area reserves S + 12 units on both horizontal sides and 12 units on both vertical sides. With complete label height L, `measureNodeLabel` returns L + 24; multiple versions share the largest height. No slant configuration is exposed. Cardinal/automatic connections, hits and diagnostics use the actual slanted outline. See the [input/output example](examples/input-output.json).
-
 ## Core API — `flowsvg`
 
 All times are milliseconds; positions and dimensions use diagram units.
@@ -519,7 +525,7 @@ All times are milliseconds; positions and dimensions use diagram units.
 | `renderSvg(document: DiagramDocument, timeMs = 0, options?): string` | Compile and render one static SVG. |
 | `validateDocument(input: unknown): ValidationIssue[]` | Check fields and references; return `{ path, message }` issues. An empty array means these checks passed; compilation can still reject non-finite derived flow timing. |
 | `measureNodeContent({ kind, width, content, typography? }): NodeContentMeasurement` | Return `{ height, diagnostics }`; see [content and measurement](#structured-content-and-measurement). |
-| `measureNodeLabel({ kind, width, label, typography? }): NodeLabelMeasurement` | Unreleased: measure shared diamond/parallelogram label height and unresolved width issues; see [decision labels](#decision-labels-and-measurement). |
+| `measureNodeLabel({ kind, width, label, typography? }): NodeLabelMeasurement` | Unreleased: measure shared preset-label height and unresolved width issues; see [decision labels](#decision-labels-and-measurement). |
 | `wrapText(label: string, maxWidth: number, typography?): string[]` | Estimate wrapping without the DOM. Optional typography supplies all three numeric fields: `fontSize`, `lineHeight`, `charWidth`; omitted uses node typography. |
 
 | Compiled `Diagram` | Result / behavior |

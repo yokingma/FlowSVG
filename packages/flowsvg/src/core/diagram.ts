@@ -3,7 +3,7 @@
  * Validation owns document rules; this module owns cloning and freezing and does not read DOM, clocks or network.
  */
 import { diagnoseFrame } from "./geometry-diagnostics.js";
-import { isPointInNodeOutline, nodeLabelSafeArea, nodeOutline } from "./node-shape.js";
+import { isPointInNodeOutline, nodeLabelSafeArea, nodeOutline, predefinedProcessInset } from "./node-shape.js";
 import { NODE_LABEL_OVERFLOW_TOLERANCE, placeNodeLabel, wrapNodeLabel } from "./node-label.js";
 import { layoutNodeContentWithMetrics, type ContentSafeArea, type NodeContent, type NodeContentLayout } from "./node-content.js";
 import { paintContentHighlight } from "./node-content-paint.js";
@@ -448,6 +448,15 @@ function serializeNodeShape(node: EvaluatedNode, palette: ThemePalette): string 
   const dash = node.kind === "group" && node.style?.dashed ? ' stroke-dasharray="10 7"' : "";
   const attrs = `fill="${escapeAttribute(fill)}" stroke="${escapeAttribute(stroke)}" stroke-width="${width}"${dash} data-id="${escapeAttribute(node.id)}" opacity="${node.opacity}"`;
   const outline = nodeOutline(node);
+  if (node.kind === "predefinedProcess") {
+    const inset = predefinedProcessInset(node.width);
+    const left = formatNumber(node.x + inset);
+    const right = formatNumber(node.x + node.width - inset);
+    const top = formatNumber(node.y);
+    const bottom = formatNumber(node.y + node.height);
+    // One interaction group owns both the outer contour and decorative lines.
+    return `<g ${attrs}><polygon points="${outline!.map(({ x, y }) => `${formatNumber(x)},${formatNumber(y)}`).join(" ")}" stroke-linejoin="round"/><path d="M ${left} ${top} V ${bottom} M ${right} ${top} V ${bottom}" fill="none"/></g>`;
+  }
   if (outline) return `<polygon points="${outline.map(({ x, y }) => `${formatNumber(x)},${formatNumber(y)}`).join(" ")}" stroke-linejoin="round" ${attrs}/>`;
   if (node.kind === "ellipse") return `<ellipse cx="${formatNumber(node.x + node.width / 2)}" cy="${formatNumber(node.y + node.height / 2)}" rx="${formatNumber(node.width / 2)}" ry="${formatNumber(node.height / 2)}" ${attrs}/>`;
   if (node.kind === "cylinder") {

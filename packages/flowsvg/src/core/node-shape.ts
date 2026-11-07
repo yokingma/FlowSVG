@@ -3,42 +3,52 @@ import type { DiagramPoint, NodeKind, PortDirection } from "./model.js";
 import type { ContentSafeArea } from "./node-content.js";
 
 export const NODE_LABEL_PADDING = 12;
+const PREDEFINED_PROCESS_MAX_INSET = 12;
+const PREDEFINED_PROCESS_INSET_DIVISOR = 6;
 const PARALLELOGRAM_SLANT_LIMIT = 24;
 const PARALLELOGRAM_SLANT_RATIO = 1 / 4;
-export type LabelNodeKind = "diamond" | "parallelogram";
+export type LabelNodeKind = "diamond" | "predefinedProcess" | "parallelogram";
 export interface NodeBounds { kind: NodeKind; x: number; y: number; width: number; height: number }
 
 /** Only these presets use safe-area labels; existing label behavior remains unchanged. */
 export function isLabelNodeKind(kind: unknown): kind is LabelNodeKind {
-  return kind === "diamond" || kind === "parallelogram";
+  return kind === "diamond" || kind === "predefinedProcess" || kind === "parallelogram";
 }
 
 /** Current absolute rectangular text clip, including fixed contour clearance and padding. */
 export function nodeLabelSafeArea(node: NodeBounds): ContentSafeArea | undefined {
   if (!isLabelNodeKind(node.kind)) return undefined;
   if (node.kind === "parallelogram") {
-    const slant = parallelogramSlant(node.width);
+    const slant = Math.min(node.width * PARALLELOGRAM_SLANT_RATIO, PARALLELOGRAM_SLANT_LIMIT);
     return { x: node.x + slant + NODE_LABEL_PADDING, y: node.y + NODE_LABEL_PADDING,
       width: Math.max(0, node.width - slant * 2 - NODE_LABEL_PADDING * 2), height: Math.max(0, node.height - NODE_LABEL_PADDING * 2) };
   }
+  if (node.kind === "predefinedProcess") {
+    const inset = predefinedProcessInset(node.width);
+    return { x: node.x + inset + NODE_LABEL_PADDING, y: node.y + NODE_LABEL_PADDING,
+      width: Math.max(0, node.width - inset * 2 - NODE_LABEL_PADDING * 2), height: Math.max(0, node.height - NODE_LABEL_PADDING * 2) };
+  }
   return { x: node.x + node.width / 4 + NODE_LABEL_PADDING, y: node.y + node.height / 4 + NODE_LABEL_PADDING,
     width: Math.max(0, node.width / 2 - NODE_LABEL_PADDING * 2), height: Math.max(0, node.height / 2 - NODE_LABEL_PADDING * 2) };
+}
+
+/** Decorative line inset is capped independently of node height; never an attachment surface. */
+export function predefinedProcessInset(width: number): number {
+  return Math.min(width / PREDEFINED_PROCESS_INSET_DIVISOR, PREDEFINED_PROCESS_MAX_INSET);
 }
 
 /** Clockwise outer contour shared by SVG, edge attachments, hits and diagnostic paint. */
 export function nodeOutline(node: NodeBounds): readonly DiagramPoint[] | undefined {
   if (!isLabelNodeKind(node.kind)) return undefined;
   if (node.kind === "parallelogram") {
-    const slant = parallelogramSlant(node.width);
+    const slant = Math.min(node.width * PARALLELOGRAM_SLANT_RATIO, PARALLELOGRAM_SLANT_LIMIT);
     return [{ x: node.x + slant, y: node.y }, { x: node.x + node.width, y: node.y },
       { x: node.x + node.width - slant, y: node.y + node.height }, { x: node.x, y: node.y + node.height }];
   }
+  if (node.kind === "predefinedProcess") return [{ x: node.x, y: node.y }, { x: node.x + node.width, y: node.y },
+    { x: node.x + node.width, y: node.y + node.height }, { x: node.x, y: node.y + node.height }];
   return [{ x: node.x + node.width / 2, y: node.y }, { x: node.x + node.width, y: node.y + node.height / 2 },
     { x: node.x + node.width / 2, y: node.y + node.height }, { x: node.x, y: node.y + node.height / 2 }];
-}
-
-function parallelogramSlant(width: number): number {
-  return Math.min(width * PARALLELOGRAM_SLANT_RATIO, PARALLELOGRAM_SLANT_LIMIT);
 }
 
 /** Intersect the center-to-target ray with the preset contour, using normalized coordinates. */
@@ -81,6 +91,8 @@ function intersectOutlineRay(node: NodeBounds, origin: DiagramPoint, toward: Dia
 export function isPointInNodeOutline(node: NodeBounds, point: DiagramPoint): boolean | undefined {
   const points = nodeOutline(node);
   if (!points) return undefined;
+  // Finite tiny dimensions can collapse vertices at a large origin; half planes alone then accept every point.
+  if (point.x < node.x || point.x > node.x + node.width || point.y < node.y || point.y > node.y + node.height) return false;
   return points.every((start, index) => {
     const end = points[(index + 1) % points.length]!;
     return ((end.x - start.x) / node.width) * ((point.y - start.y) / node.height)

@@ -180,6 +180,53 @@ it("centers rendered tag text using real font metrics, including styled spans an
   });
 });
 
+it.each(["light", "dark"])("plays measured predefined-process labels and clips real SVG text in %s", async (theme) => {
+  await withPage(async (page, errors) => {
+    await page.goto(`${origin}/tests/browser-predefined-process.html?theme=${theme}`);
+    await page.waitForFunction("Boolean(window.predefinedProcessFixture)");
+    const host = await page.locator("#host").boundingBox();
+    if (!host) throw new Error("Expected visible predefined-process host");
+    await page.mouse.click(host.x + 262, host.y + 140);
+    await expect.poll(() => page.locator("#click").textContent()).toBe("click: call");
+    expect(await page.locator('[data-id="call"]').count()).toBe(1);
+    await page.mouse.click(host.x + 350, host.y + 140);
+    await expect.poll(() => page.locator("#click").textContent()).toBe("click: call");
+    for (const button of ["initial", "resize", "overflow"]) {
+      await page.locator(`#${button}`).click();
+      expect(await page.evaluate("window.predefinedProcessFixture.matchesCore()")).toBe(true);
+    }
+    await page.addScriptTag({ type: "module", content: "import * as sdk from '/dist/index.js'; window.predefinedProcessSdk = sdk;" });
+    await page.waitForFunction("Boolean(window.predefinedProcessSdk)");
+    const pixels = await page.evaluate(async () => {
+      const sdk: typeof import("../src/index.js") = Reflect.get(window, "predefinedProcessSdk");
+      const diagram = sdk.createDiagram({ version: 1, viewport: { width: 240, height: 180 }, nodes: [
+        { id: "clip", kind: "predefinedProcess", x: 20, y: 20, width: 200, height: 40, label: "A\nA\nA\nA\nA\nA\nA\nA\nA\nA",
+          style: { fill: "#0000", stroke: "#0000", textColor: "#ff0000" } }
+      ], edges: [], scenes: [] });
+      const image = new Image();
+      const url = URL.createObjectURL(new Blob([diagram.renderSvg(0, { background: "transparent" })], { type: "image/svg+xml" }));
+      try {
+        image.src = url;
+        await image.decode();
+        const canvas = document.createElement("canvas"); canvas.width = 240; canvas.height = 180;
+        const context = canvas.getContext("2d")!; context.drawImage(image, 0, 0);
+        const data = context.getImageData(0, 0, 240, 180).data;
+        let inside = 0;
+        let outside = 0;
+        for (let y = 0; y < 180; y += 1) for (let x = 0; x < 240; x += 1) {
+          if (data[(y * 240 + x) * 4 + 3] === 0) continue;
+          if (x >= 44 && x < 196 && y >= 32 && y < 48) inside += 1;
+          else outside += 1;
+        }
+        return { inside, outside };
+      } finally { URL.revokeObjectURL(url); }
+    });
+    expect(pixels.inside).toBeGreaterThan(0);
+    expect(pixels.outside).toBe(0);
+    expect(errors).toEqual([]);
+  });
+}, 30_000);
+
 it.each(PAGES)("passes SDK-only %s browser regressions", async (name, resultKey) => {
   await withPage(async (page, errors) => {
     await page.goto(`${origin}/tests/browser-${name}.html`);

@@ -261,7 +261,7 @@ if (element) element.document = diagramDocument;
 | `title` / `theme` | 可选标题与 `light` / `dark` 文档主题 |
 | `typography` | 可选的节点、连线与流动标记字号，见[文档级字号](#文档级字号) |
 
-节点与连线 ID 全局唯一。形状：`rect`、`roundedRect`、`ellipse`、`cylinder`、`group`；未发布源码还支持 `diamond` 和 `parallelogram`。分组边框默认为圆角。`parentId` 指向父分组，子节点坐标相对分组原点。标签为纯文本，`visible` 默认 `true`。节点样式：`fill`、`stroke`、`strokeWidth`、`textColor`、`dashed`（分组边框）；连线样式：`stroke`、`strokeWidth`、`dashed`。颜色使用十六进制 RGB/RGBA，如 `#2563eb`、`#2563eb80`。
+节点与连线 ID 全局唯一。形状：`rect`、`roundedRect`、`ellipse`、`cylinder`、`group`；未发布源码还支持 `diamond`、`parallelogram` 和 `predefinedProcess`。分组边框默认为圆角。`parentId` 指向父分组，子节点坐标相对分组原点。标签为纯文本，`visible` 默认 `true`。节点样式：`fill`、`stroke`、`strokeWidth`、`textColor`、`dashed`（分组边框）；连线样式：`stroke`、`strokeWidth`、`dashed`。颜色使用十六进制 RGB/RGBA，如 `#2563eb`、`#2563eb80`。
 
 路由：`straight`（默认）、`orthogonal`、`curved`。曲线跟随端口切线，不避让其他节点；正交路径默认使用圆角转弯；SVG、流动标记、边界和命中检测共用该几何。圆角按短线段、障碍物与箭头空间收缩。正交路径避开可见普通节点，受阻时固定回退，不保证最短路径或零交叉。`fromPort` / `toPort` 可设为 `top`、`right`、`bottom`、`left`。箭头空间允许时，正交路径优先将跨接线段放在节点间隔中点；相同朝向的端口优先使用单一外侧通道，并为双方各自的祖先分组边框预留空间，共同祖先分组不推动通道外移。正交路径保留向外的端点线段，并按求值后的线宽为箭头预留直线末段；相邻节点空间不足时缩短预留距离。同一目标侧的曲线和正交入线按来源位置分配独立连接位置，来源位置相同时按文档顺序排列；隐藏连线仍保留位置。连接位置限制在该侧的中央区域，节点过小或入线过多时仍需增加空间。曲线端口决定切线。省略时按中心连线主方向选择，椭圆端点位于轮廓。普通标签按估算宽度换行；高度溢出时仍显示全文，并报告 `text-overflow`。
 
@@ -310,7 +310,7 @@ if (element) element.document = diagramDocument;
 | `diagram.renderSvg(timeMs = 0, options?)` | 导出相同求值结果的 SVG |
 | `diagram.hitTest(timeMs, point, options?)` | 在文档坐标中返回 `{ id, type: "node" \| "edge" }` 或 `null` |
 | `measureNodeContent({ kind, width, content, typography? })` | 返回推荐的固定高度及各内容版本未解决的溢出诊断，见[内容尺寸测量](#生成文档前测量节点内容) |
-| `measureNodeLabel({ kind, width, label, typography? })` | 未发布：测量菱形/平行四边形标签的共用高度与宽度诊断，见[决策标签](#决策标签与测量)。 |
+| `measureNodeLabel({ kind, width, label, typography? })` | 未发布：测量菱形标签的共用高度与宽度诊断，见[决策标签](#决策标签与测量)。 |
 | `wrapText(label, maxWidth, typography?)` | 按固定字宽估算换行，返回文本行数组 |
 
 `validateDocument` 检查作者数据的结构和数值。编译时，SDK 还会在对应节拍的 `durationMs` 路径报告非有限的移动时长或累计时间，并抛出 `DiagramValidationError`。输入文档保留作者设置的时长。
@@ -454,7 +454,7 @@ const diagram = createDiagram({ version: 1, viewport: { width: 300, height: 300 
     height: measurement.height, label: labels[1] }], edges: [], scenes: [] });
 ```
 
-此示例返回高度 128，采用尺寸前先检查 `measurement.diagnostics`。本次源码里程碑的 `measureNodeLabel` 接受 `diamond` 或 `parallelogram`、有限正数宽度、单字符串或非空只读标签版本数组，以及可选的现有 `DiagramTypography`。返回 `{ height, diagnostics }`；未解决的宽度诊断包含 `versionIndex`、`path`、`dimension: "width"` 和 `message`。单字符串使用版本索引零。从 `flowsvg` 导入类型 `NodeLabelMeasurementInput`、`NodeLabelMeasurement` 与 `NodeLabelMeasurementDiagnostic`。
+此示例返回高度 128，采用尺寸前先检查 `measurement.diagnostics`。本次源码里程碑的 `measureNodeLabel` 接受 `diamond`、`parallelogram` 和 `predefinedProcess`、有限正数宽度、单字符串或非空只读标签版本数组，以及可选的现有 `DiagramTypography`。返回 `{ height, diagnostics }`；未解决的宽度诊断包含 `versionIndex`、`path`、`dimension: "width"` 和 `message`。单字符串使用版本索引零。从 `flowsvg` 导入类型 `NodeLabelMeasurementInput`、`NodeLabelMeasurement` 与 `NodeLabelMeasurementDiagnostic`。
 
 多个版本取共同最大高度，包含完整行框。标签行框高为 L 时，菱形高度为 2 × (L + 24)。空标签仍返回带形状留白的正数高度。测量与渲染共享确定性换行，不读取 DOM 字体、不修改输入、不扫描场景。连一个字素也放不下时，按其独占一行测量并保留宽度诊断；增加高度无法解决，请加宽或缩短标签。非法输入或无法表示为有限数的高度通过带有字段/版本位置的 `DiagramValidationError` 报错。
 
@@ -463,6 +463,14 @@ const diagram = createDiagram({ version: 1, viewport: { width: 300, height: 300 
 四方向端口、所有路由类型的自动连接、同侧多入线、命中与诊断遵循真实轮廓。裁剪掉的文字不扩大命中、诊断或自适应高度。分组移动和时间线尺寸变化使用当前几何；时间线仍不可修改节点类型。SVG、播放器和导出共享核心结果。旧形状及 `measureNodeContent` 保持原行为。SDK 附带英文决策分支示例，覆盖测量后的更新和有意溢出。
 
 `parallelogram` 用于输入输出，沿用相同的纯文本限制、换行、裁剪和诊断规则。顶边向右倾斜，偏移 S = min(宽度 / 4, 24) 个图解单位。矩形安全区左右各保留 S + 12、上下各保留 12 个单位。完整标签行框高为 L 时，`measureNodeLabel` 返回 L + 24；多个版本取最大高度。不提供倾斜配置字段。四方向与自动连接、命中和诊断使用实际斜边轮廓。见[输入输出示例](../../packages/flowsvg/examples/input-output.json)。
+
+## 预定义流程标签
+
+未发布的 `predefinedProcess` 表达调用已定义的子流程。它是一个普通节点，包含矩形外轮廓和两条内部装饰竖线，不执行子流程，也不容纳子节点。竖线距对应外边框的间隔 D = min(宽度 / 6, 12)。相对节点原点，标签安全区为 (D + 12, 12, max(0, 宽度 − 2D − 24), max(0, 高度 − 24))。
+
+使用纯文本 `label`；结构化 `content` 对象会被拒绝，包括空内容块数组。时间线 `content: null` 保留清空语义。标签复用决策标签的居中、完整字素换行、裁剪和溢出诊断规则。调用 `measureNodeLabel({ kind: "predefinedProcess", width: 200, label: ["A", "A\nB"] })` 返回高度 64，建议高度等于完整行框高度加 24。仅外矩形提供连接和路由障碍；点击任一内部竖线都返回所属节点身份。
+
+SDK 自有的[子流程调用示例](../../packages/flowsvg/examples/subprocess-call.json)包含测量标签、尺寸变化、强调和有意溢出。先运行 `pnpm --filter flowsvg build`，再以 `packages/flowsvg` 为根目录启动静态服务，打开 `/tests/browser-predefined-process.html` 即可播放公开浏览器示例。
 
 ## 文档级字号
 

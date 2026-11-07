@@ -2,7 +2,9 @@
 
 ## Ownership
 
-- Keep parallelogram slant clearance proportional for small nodes and bounded for larger nodes; use its actual outline for SDK geometry consumers.
+- Keep parallelogram slant clearance proportional for small nodes and bounded for larger nodes; share it with label measurement and contour consumers.
+
+- Keep predefined-process side lines decorative within one node identity; only its rectangular outer contour supplies attachments and routing obstacles.
 
 - Keep semantic preset label safe areas and contours in the SDK core, shared by frame layout, rendering, measurement and geometry consumers; do not alter ordinary-label rules while adding presets.
 
