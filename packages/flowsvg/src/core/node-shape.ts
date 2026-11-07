@@ -3,16 +3,18 @@ import type { DiagramPoint, NodeKind, PortDirection } from "./model.js";
 import type { ContentSafeArea } from "./node-content.js";
 
 export const NODE_LABEL_PADDING = 12;
+export const DOCUMENT_WAVE_MAX_BAND = 24;
+const DOCUMENT_WAVE_SAMPLES = 256;
 const PREDEFINED_PROCESS_MAX_INSET = 12;
 const PREDEFINED_PROCESS_INSET_DIVISOR = 6;
 const PARALLELOGRAM_SLANT_LIMIT = 24;
 const PARALLELOGRAM_SLANT_RATIO = 1 / 4;
-export type LabelNodeKind = "diamond" | "predefinedProcess" | "parallelogram";
+export type LabelNodeKind = "diamond" | "document" | "predefinedProcess" | "parallelogram";
 export interface NodeBounds { kind: NodeKind; x: number; y: number; width: number; height: number }
 
 /** Only these presets use safe-area labels; existing label behavior remains unchanged. */
 export function isLabelNodeKind(kind: unknown): kind is LabelNodeKind {
-  return kind === "diamond" || kind === "predefinedProcess" || kind === "parallelogram";
+  return kind === "diamond" || kind === "document" || kind === "predefinedProcess" || kind === "parallelogram";
 }
 
 /** Current absolute rectangular text clip, including fixed contour clearance and padding. */
@@ -28,6 +30,9 @@ export function nodeLabelSafeArea(node: NodeBounds): ContentSafeArea | undefined
     return { x: node.x + inset + NODE_LABEL_PADDING, y: node.y + NODE_LABEL_PADDING,
       width: Math.max(0, node.width - inset * 2 - NODE_LABEL_PADDING * 2), height: Math.max(0, node.height - NODE_LABEL_PADDING * 2) };
   }
+  if (node.kind === "document") return { x: node.x + NODE_LABEL_PADDING, y: node.y + NODE_LABEL_PADDING,
+    width: Math.max(0, node.width - NODE_LABEL_PADDING * 2),
+    height: Math.max(0, node.height - Math.min(node.height / 4, DOCUMENT_WAVE_MAX_BAND) - NODE_LABEL_PADDING * 2) };
   return { x: node.x + node.width / 4 + NODE_LABEL_PADDING, y: node.y + node.height / 4 + NODE_LABEL_PADDING,
     width: Math.max(0, node.width / 2 - NODE_LABEL_PADDING * 2), height: Math.max(0, node.height / 2 - NODE_LABEL_PADDING * 2) };
 }
@@ -47,8 +52,29 @@ export function nodeOutline(node: NodeBounds): readonly DiagramPoint[] | undefin
   }
   if (node.kind === "predefinedProcess") return [{ x: node.x, y: node.y }, { x: node.x + node.width, y: node.y },
     { x: node.x + node.width, y: node.y + node.height }, { x: node.x, y: node.y + node.height }];
+  if (node.kind === "document") return [{ x: node.x, y: node.y },
+    { x: node.x + node.width, y: node.y }, ...documentWave(node)];
   return [{ x: node.x + node.width / 2, y: node.y }, { x: node.x + node.width, y: node.y + node.height / 2 },
     { x: node.x + node.width / 2, y: node.y + node.height }, { x: node.x, y: node.y + node.height / 2 }];
+}
+
+/** One x-monotone wave, sampled identically for visible outline and every geometry consumer. */
+function documentWave(node: NodeBounds): DiagramPoint[] {
+  const band = Math.min(node.height / 4, DOCUMENT_WAVE_MAX_BAND);
+  return Array.from({ length: DOCUMENT_WAVE_SAMPLES + 1 }, (_, index) => {
+    const fraction = 1 - index / DOCUMENT_WAVE_SAMPLES;
+    return { x: node.x + node.width * fraction,
+      y: node.y + node.height - band + band * (1 + Math.sin(Math.PI * 2 * fraction)) / 2 };
+  });
+}
+
+/** Concave document fill is a union of convex vertical strips; only its outside contour is stroked. */
+export function documentFillPieces(node: NodeBounds): readonly (readonly DiagramPoint[])[] {
+  const wave = documentWave(node);
+  return wave.slice(1).map((left, index) => {
+    const right = wave[index]!;
+    return [{ x: left.x, y: node.y }, { x: right.x, y: node.y }, right, left];
+  });
 }
 
 /** Intersect the center-to-target ray with the preset contour, using normalized coordinates. */
@@ -93,6 +119,25 @@ export function isPointInNodeOutline(node: NodeBounds, point: DiagramPoint): boo
   if (!points) return undefined;
   // Finite tiny dimensions can collapse vertices at a large origin; half planes alone then accept every point.
   if (point.x < node.x || point.x > node.x + node.width || point.y < node.y || point.y > node.y + node.height) return false;
+  if (node.kind === "document") {
+    // Even-odd containment accepts concave lobes; normalized coordinates avoid scale-dependent products.
+    let inside = false;
+    const pointX = (point.x - node.x) / node.width;
+    const pointY = (point.y - node.y) / node.height;
+    for (let index = 0; index < points.length; index += 1) {
+      const start = points[index]!;
+      const end = points[(index + 1) % points.length]!;
+      const ax = (start.x - node.x) / node.width;
+      const ay = (start.y - node.y) / node.height;
+      const bx = (end.x - node.x) / node.width;
+      const by = (end.y - node.y) / node.height;
+      if ((bx - ax) * (pointY - ay) === (by - ay) * (pointX - ax)
+        && pointX >= Math.min(ax, bx) && pointX <= Math.max(ax, bx)
+        && pointY >= Math.min(ay, by) && pointY <= Math.max(ay, by)) return true;
+      if ((ay > pointY) !== (by > pointY) && pointX < ax + (pointY - ay) / (by - ay) * (bx - ax)) inside = !inside;
+    }
+    return inside;
+  }
   return points.every((start, index) => {
     const end = points[(index + 1) % points.length]!;
     return ((end.x - start.x) / node.width) * ((point.y - start.y) / node.height)

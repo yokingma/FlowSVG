@@ -2,7 +2,7 @@
 import type { NodeContent, NodeContentLayout } from "./node-content.js";
 
 /** Supported shapes; a group also supplies the origin and visibility constraints for its children. */
-export type NodeKind = "rect" | "roundedRect" | "ellipse" | "cylinder" | "group" | "diamond" | "predefinedProcess" | "parallelogram";
+export type NodeKind = "rect" | "roundedRect" | "ellipse" | "cylinder" | "group" | "diamond" | "document" | "predefinedProcess" | "parallelogram";
 /** Route families generated from node geometry; orthogonal routes avoid obstacles with rounded bends, and curved routes use cubic Bézier controls. */
 export type EdgeRoute = "straight" | "orthogonal" | "curved";
 /** Cardinal node sides used for explicit edge attachments. */

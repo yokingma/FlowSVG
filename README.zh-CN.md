@@ -58,6 +58,7 @@ FlowSVG 包含三张代表性图解：一张展示简单的请求与响应流程
 - 未发布源码能力：`diamond` 决策节点支持标签尺寸测量、安全区裁剪和真实轮廓连接。见[决策分支示例](packages/flowsvg/examples/decision-branch.json)；此新增能力尚不属于已发布的 0.2.3。
 - 未发布源码：`parallelogram` 输入输出节点支持标签测量、安全区裁剪和真实轮廓连接。见[输入输出示例](packages/flowsvg/examples/input-output.json)。
 - 未发布源码能力：`predefinedProcess` 使用可测量的纯文本标签和两侧装饰竖线表达子流程调用。见[子流程示例](packages/flowsvg/examples/subprocess-call.json)。
+- 未发布源码新增 `document` 文档形：支持波浪带上方的居中标签、尺寸测量及真实轮廓命中。见[报告生成示例](packages/flowsvg/examples/report-generation.json)。
 
 - 绘制节点、嵌套分组，以及直线、正交或曲线有向连线。
 - 在节点中组合标题、段落、列表、标签和混合样式文字，并在设定尺寸前测量内容。

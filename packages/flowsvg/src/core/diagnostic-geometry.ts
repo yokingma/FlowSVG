@@ -1,7 +1,7 @@
 /** Internal convex paint geometry for on-demand diagnostics; no DOM, mutation or public sampler. */
 import type { CameraState, DiagramPoint, EvaluatedNode } from "./model.js";
 import { CYLINDER_CAP_RADIUS, NODE_CORNER_RADIUS } from "./theme.js";
-import { nodeOutline } from "./node-shape.js";
+import { documentFillPieces, nodeOutline } from "./node-shape.js";
 
 export interface Rect { left: number; top: number; right: number; bottom: number }
 export type Polygon = readonly DiagramPoint[];
@@ -95,6 +95,7 @@ export function nodeFill(node: EvaluatedNode): Paint[] {
   const { x, y, width, height } = node;
   // Only convex outlines can be used as a single clipping paint polygon.
   if (node.kind === "diamond" || node.kind === "parallelogram") return [polygonPaint(nodeOutline(node)!)];
+  if (node.kind === "document") return documentFillPieces(node).map(polygonPaint);
   const cx = x + width / 2;
   if (node.kind === "ellipse") return [ellipse(cx, y + height / 2, width / 2, height / 2)];
   if (node.kind === "cylinder") {

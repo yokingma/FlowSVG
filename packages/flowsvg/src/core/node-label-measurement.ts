@@ -1,6 +1,6 @@
 /** Author-time plain-label measurement shares preset text layout and never reads browser font metrics. */
 import type { DiagramTypography, ValidationIssue } from "./model.js";
-import { NODE_LABEL_PADDING, isLabelNodeKind, nodeLabelSafeArea, type LabelNodeKind } from "./node-shape.js";
+import { DOCUMENT_WAVE_MAX_BAND, NODE_LABEL_PADDING, isLabelNodeKind, nodeLabelSafeArea, type LabelNodeKind } from "./node-shape.js";
 import { wrapNodeLabel } from "./node-label.js";
 import { resolveTypography, validateTypography } from "./typography.js";
 import { DiagramValidationError } from "./validation.js";
@@ -46,7 +46,10 @@ export function measureNodeLabel(input: NodeLabelMeasurementInput): NodeLabelMea
   let height = 1;
   versions.forEach((label, versionIndex) => {
     const layout = wrapNodeLabel(label, safe.width, metrics);
-    const requiredHeight = (layout.height + NODE_LABEL_PADDING * 2) * (input.kind === "diamond" ? 2 : 1);
+    const paddedHeight = layout.height + NODE_LABEL_PADDING * 2;
+    const requiredHeight = input.kind === "document"
+      ? paddedHeight <= DOCUMENT_WAVE_MAX_BAND * 3 ? paddedHeight / 3 * 4 : paddedHeight + DOCUMENT_WAVE_MAX_BAND
+      : paddedHeight * (input.kind === "diamond" ? 2 : 1);
     if (!Number.isFinite(requiredHeight)) issues.push({ path: `label[${versionIndex}]`, message: "required node height must be finite" });
     height = Math.max(height, requiredHeight);
     if (layout.widthOverflow) diagnostics.push({ versionIndex, path: `label[${versionIndex}]`, dimension: "width",

@@ -422,7 +422,7 @@ Built-in downloads export the full timeline at `1×`, using the current theme. P
 | `Beat` | `durationMs`, `actions` | `transitionMs`, `caption` |
 
 - **Static documents:** use empty `scenes`.
-- **Node kinds:** `rect`, `roundedRect`, `ellipse`, `cylinder`, `group`; unreleased source also supports `diamond`, `parallelogram` and `predefinedProcess`. Groups have rounded borders by default.
+- **Node kinds:** `rect`, `roundedRect`, `ellipse`, `cylinder`, `group`; unreleased source also supports `diamond`, `parallelogram`, `document` and `predefinedProcess`. Groups have rounded borders by default.
 - **Edge routes:** `straight` (default), `orthogonal`, `curved`.
 - **Ports:** `top`, `right`, `bottom`, `left`.
 - **Beat timing:** `durationMs` must be positive. `transitionMs` must be in `[0, durationMs]`, defaults to `min(250, durationMs)`, and is capped at effective beat length.
@@ -466,6 +466,12 @@ Call `measureNodeLabel({ kind: "diamond", width, label, typography? })` before a
 Cardinal ports, straight/orthogonal/curved connections, hits and diagnostics use the real contour. Invisible clipped text does not enlarge hits or fitted height. Groups, timelines and exports reuse the core result; old kinds and `measureNodeContent` retain their behavior. The [runnable decision example](examples/decision-branch.json) demonstrates measured label updates, resizing and an intentionally clipped node.
 
 `parallelogram` expresses input/output with the same plain-label restrictions, wrapping, clipping and diagnostics. Its top edge slants right by S = min(width / 4, 24) diagram units. The rectangular safe area reserves S + 12 units on both horizontal sides and 12 units on both vertical sides. With complete label height L, `measureNodeLabel` returns L + 24; multiple versions share the largest height. No slant configuration is exposed. Cardinal/automatic connections, hits and diagnostics use the actual slanted outline. See the [input/output example](examples/input-output.json).
+
+### Document report labels
+
+The unreleased `document` preset represents a report or file artifact using plain `label` only. It rejects structured `content`, including empty blocks; timeline `content: null` still clears text. The top and sides are straight. The bottom wave occupies B = min(height / 4, 24) diagram units. With 12-unit padding, the label safe area is `(12, 12, max(0, width - 24), max(0, height - B - 24))`. Labels are centered above the wave, with the same grapheme wrapping, clipping and overflow diagnostics as decision labels.
+
+`measureNodeLabel({ kind: "document", width: 240, label: ["Report ready", "Revenue\nBy region\nFinal report"] })` returns height 108. For complete line-box height L and T = L + 24, the suggested height is 4T/3 when T ≤ 72, otherwise T + 24. Width diagnostics remain actionable after adopting the height. Ports, hits and diagnostics follow the actual wave; the empty space below its raised section is outside the node. See the [report generation example](examples/report-generation.json), including grouped motion, resizing, label changes and deliberate overflow.
 
 ### Predefined process labels
 
