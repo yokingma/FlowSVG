@@ -5,6 +5,7 @@
 ## Ownership
 
 - Keep own visibility and explicit-highlight contracts covered by SDK-owned immutable inputs at public frame/SVG seams. Preserve fixed-baseline expectations and prove new characterization assertions with isolated, reversible mutations.
+- Keep inherited group/descendant, internal/external edge and cross-scene composition coverage in an SDK-owned immutable fixture at the public diagram seams; record reversible mutation evidence when proving the opacity-layer contract.
 
 - Keep parallelogram slant clearance proportional for small nodes and bounded for larger nodes; share it with label measurement and contour consumers.
 
