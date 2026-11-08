@@ -4,6 +4,7 @@
  * surrounding frame state and consumes this internal interface.
  */
 import { CYLINDER_CAP_RADIUS } from "./theme.js";
+import { nodeBoundaryPoint, nodePortPoint } from "./node-shape.js";
 import { formatNumber } from "./svg-number.js";
 import type { DiagramEdge, DiagramPoint, EvaluatedNode, PortDirection } from "./model.js";
 
@@ -428,6 +429,8 @@ function automaticPorts(from: EvaluatedNode, to: EvaluatedNode): { from: PortDir
 
 /** Return the actual outline point for a cardinal side, including ellipse contours. */
 function portPoint(node: EvaluatedNode, direction: PortDirection, offset = 0): Point {
+  const presetPoint = nodePortPoint(node, direction, offset);
+  if (presetPoint) return presetPoint;
   const center = { x: node.x + node.width / 2, y: node.y + node.height / 2 };
   const vertical = direction === "top" || direction === "bottom";
   const radius = (vertical ? node.width : node.height) / 2;
@@ -611,7 +614,7 @@ function uniqueSorted(values: readonly number[]): number[] {
   return [...new Set(values)].sort((left, right) => left - right);
 }
 
-/** Project straight connections onto the ellipse contour, or the bounding rectangle for other shapes. */
+/** Presets use their shared contour; retain existing ellipse and bounding-rectangle projections. */
 function boundaryPoint(node: EvaluatedNode, toward: {
   x: number;
   y: number
@@ -619,6 +622,8 @@ function boundaryPoint(node: EvaluatedNode, toward: {
   x: number;
   y: number
 } {
+  const presetPoint = nodeBoundaryPoint(node, toward);
+  if (presetPoint) return presetPoint;
   const center = { x: node.x + node.width / 2, y: node.y + node.height / 2 };
   const dx = toward.x - center.x;
   const dy = toward.y - center.y;

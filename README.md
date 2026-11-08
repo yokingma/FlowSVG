@@ -55,6 +55,11 @@ Reuse one diagram document for static SVG/PNG, animated GIF and interactive or o
 
 ## Features
 
+- Unreleased source capability: use measured `diamond` decision labels with safe-area clipping and contour-aware connections. See the [decision example](packages/flowsvg/examples/decision-branch.json); this addition is not part of published 0.2.3.
+- Unreleased source: measured `parallelogram` input/output nodes share safe-area labels and contour-aware connections. See the [input/output example](packages/flowsvg/examples/input-output.json).
+- Unreleased source capability: use `predefinedProcess` for a subprocess call, with measured plain labels and decorative side lines. See the [subprocess example](packages/flowsvg/examples/subprocess-call.json).
+- Unreleased source adds measured `document` report labels above a bounded wave, with contour-aware hits. See the [report generation example](packages/flowsvg/examples/report-generation.json).
+
 - Draw nodes, nested groups and directed straight, orthogonal or curved edges.
 - Compose titles, paragraphs, lists, tags and inline styled text inside nodes; measure content before choosing dimensions.
 - Configure document-level node, edge and flow-marker font sizes across players and exports.
@@ -66,6 +71,12 @@ Reuse one diagram document for static SVG/PNG, animated GIF and interactive or o
 - Validate documents with field-level errors and text-overflow warnings; query geometric overlap risks on demand.
 
 Node positions and sizes are authored explicitly. FlowSVG focuses on presentation and playback; drag-and-drop editing and semantic automatic layout are outside its scope. Authoring and deterministic layout-plan tools belong to the independent Skill.
+
+The unreleased [mixed approval flow](packages/flowsvg/examples/mixed-flow.json) combines all four presets, an ordinary node, a group and three route families. It includes label replacement, size and style changes, and one deliberately clipped label. Its [generator](packages/flowsvg/examples/create-mixed-flow.mjs) reserves a shared height for label versions through public `measureNodeLabel`.
+
+After installing an SDK build with this feature, place the script in a writable directory and run `node create-mixed-flow.mjs`, then `npx flowsvg mixed-flow.json --format html --output mixed-flow.html` to generate offline playback.
+
+In this repository, first run `pnpm --filter flowsvg build`, then `node packages/flowsvg/examples/create-mixed-flow.mjs`; serve `packages/flowsvg` and open `/tests/browser-mixed-flow.html`. This capability has not been published to npm.
 
 ## Installation
 

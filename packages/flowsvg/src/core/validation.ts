@@ -145,7 +145,7 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.length > 0;
 }
 function isNodeKind(value: unknown): value is NodeKind {
-  return value === "rect" || value === "roundedRect" || value === "ellipse" || value === "cylinder" || value === "group";
+  return value === "rect" || value === "roundedRect" || value === "ellipse" || value === "cylinder" || value === "group" || value === "diamond" || value === "document" || value === "predefinedProcess" || value === "parallelogram";
 }
 function isPortDirection(value: unknown): value is PortDirection {
   return value === "top" || value === "right" || value === "bottom" || value === "left";

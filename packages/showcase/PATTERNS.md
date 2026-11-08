@@ -22,6 +22,8 @@ Use the relevant sections when changing author inputs, generation or pure sessio
 
 ## Timing and geometry
 
+- In `basic-shapes`, place fixed and measured nodes around shared row centers. Derive each measured node's top from its final height so short same-row connections stay horizontal through label replacement. Keep 24 units below the lowest node inside the group and another 24 units below the group in the viewport.
+
 - Verify full SVG capsule bounds on outside channels after routing changes. Reserve viewport space for both the route and the horizontal capsule width, while keeping authored node geometry stable.
 - Measure structured-content nodes at author time with `measureExampleNode`, passing each explicitly authored replacement and reusing that object in scene updates. Keep authored heights as minimums and reject width diagnostics with node context. Write only final geometry into documents; authors remain responsible for placement, group bounds and route clearance when future content increases a height. Keep the task-state story's shared-height policy for its uniform cards.
 - For measured task-state cards, author initial and all stage content versions before creating the document. Pass those versions to public `measureNodeContent`, reject unresolved diagnostics, and reuse them for beat updates. Keep measurement metadata outside `DiagramDocument`; write only final dimensions and coordinates. Check complete line boxes and tag backgrounds, then preserve row gaps for event labels and cardinal approaches.

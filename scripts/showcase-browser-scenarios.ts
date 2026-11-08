@@ -1,5 +1,5 @@
 /** Shared behavior checks run against independently built, real showcase hosts. */
-import { CATEGORY_STORIES, FORMAL_CATEGORIES, FORMAL_NAMES, inspectCategoryStory } from "./showcase-category-stories.js";
+import { CATEGORY_STORIES, FORMAL_CATEGORIES, FORMAL_NAMES, FORMAL_WORKFLOW_NAMES, inspectCategoryStory } from "./showcase-category-stories.js";
 import { chooseOption } from "./showcase-choice.js";
 import { loadStoryDiagram, sceneTime, beatTime } from "./showcase-timing.js";
 import { execFileSync } from "node:child_process";
@@ -131,7 +131,7 @@ export function registerShowcaseBrowserScenarios(config: { packageName: string }
     expect(await navigation.getByRole("heading", { level: 3 }).allTextContents()).toEqual(FORMAL_CATEGORIES);
     const workflow = navigation.getByRole("group", { name: "Workflow", exact: true });
     const architecture = navigation.getByRole("group", { name: "Architecture", exact: true });
-    expect(await workflow.getByRole("button").allTextContents()).toEqual(["Request and response", "RAG: From sources to answers", "LLM inference: Prefill, decode and KV cache"]);
+    expect(await workflow.getByRole("button").allTextContents()).toEqual(FORMAL_WORKFLOW_NAMES);
     expect(await architecture.getByRole("button").allTextContents()).toEqual(["FlowSVG: How diagrams run", "vllm-metal: Layered inference architecture"]);
     await architecture.getByRole("button", { name: "vllm-metal: Layered inference architecture", exact: true }).click();
     expect(await architecture.getByRole("button", { name: "vllm-metal: Layered inference architecture", exact: true }).getAttribute("aria-current")).toBe("true");
@@ -145,7 +145,7 @@ export function registerShowcaseBrowserScenarios(config: { packageName: string }
   it("opens the formal stories with default styling and downloads the selected RAG document", async () => {
     await page.goto(`${origin}/formal/`);
     expect(await page.getByRole("navigation", { name: "Examples" }).getByRole("button").allTextContents()).toEqual(FORMAL_NAMES);
-    expect(await page.getByRole("heading", { name: "Request and response", exact: true }).count()).toBe(1);
+    expect(await page.getByRole("heading", { name: "Basic shapes: complete catalog", exact: true }).count()).toBe(1);
     expect(await page.getByRole("combobox", { name: "Theme", exact: true }).getAttribute("data-value")).toBe("dark");
     expect(await page.getByRole("combobox", { name: "Speed", exact: true }).getAttribute("data-value")).toBe("1");
     expect(await page.getByRole("checkbox", { name: "Reduce motion", exact: true }).isChecked()).toBe(false);
@@ -165,9 +165,15 @@ export function registerShowcaseBrowserScenarios(config: { packageName: string }
     } finally {
       await themePage.close();
     }
-    const data = await page.request.get(`${origin}/formal/json/request-response.json`);
+    const downloadLink = page.getByRole("link", { name: "Download diagram JSON" });
+    expect(new URL((await downloadLink.getAttribute("href"))!, page.url()).pathname).toBe("/formal/json/basic-shapes.json");
+    const data = await page.request.get(`${origin}/formal/json/basic-shapes.json`);
     expect(data.status()).toBe(200);
-    expect(await data.json()).toMatchObject({ title: "Request and response", version: 1 });
+    const basicShapes: unknown = await data.json();
+    expect(basicShapes).toMatchObject({ title: "Basic shapes: complete catalog", version: 1 });
+    const basicDownload = page.waitForEvent("download");
+    await downloadLink.click();
+    expect(JSON.parse(await readFile((await (await basicDownload).path())!, "utf8"))).toEqual(basicShapes);
     expect((await page.request.get(`${origin}/formal/json/signal-motion.json`)).status()).toBe(404);
 
     await page.getByRole("navigation", { name: "Examples" }).getByRole("button", { name: "RAG: From sources to answers", exact: true }).click();

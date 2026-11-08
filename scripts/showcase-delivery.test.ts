@@ -1,5 +1,5 @@
 /** Verify copied artifacts through separate static origins, including lazy SDK resources. */
-import { CATEGORY_STORIES, FORMAL_CATEGORIES, FORMAL_NAMES, inspectCategoryStory } from "./showcase-category-stories.js";
+import { CATEGORY_STORIES, FORMAL_CATEGORIES, FORMAL_NAMES, FORMAL_WORKFLOW_NAMES, inspectCategoryStory } from "./showcase-category-stories.js";
 import { chooseOption } from "./showcase-choice.js";
 import { loadStoryDiagram, beatTime } from "./showcase-timing.js";
 import { execFileSync } from "node:child_process";
@@ -389,18 +389,23 @@ async function inspectFormalArtifact(page: Page, address: string) {
   expect(await page.getByRole("navigation", { name: "Examples" }).getByRole("button").allTextContents()).toEqual(FORMAL_NAMES);
   const navigation = page.getByRole("navigation", { name: "Examples" });
   expect(await navigation.getByRole("heading", { level: 3 }).allTextContents()).toEqual(FORMAL_CATEGORIES);
-  expect(await navigation.getByRole("group", { name: "Workflow", exact: true }).getByRole("button").allTextContents()).toEqual(["Request and response", "RAG: From sources to answers", "LLM inference: Prefill, decode and KV cache"]);
+  expect(await navigation.getByRole("group", { name: "Workflow", exact: true }).getByRole("button").allTextContents()).toEqual(FORMAL_WORKFLOW_NAMES);
   expect(await navigation.getByRole("group", { name: "Architecture", exact: true }).getByRole("button").allTextContents()).toEqual(["FlowSVG: How diagrams run", "vllm-metal: Layered inference architecture"]);
-  expect(await page.locator("#introduction h2").textContent()).toBe("Request and response");
+  expect(await page.locator("#introduction h2").textContent()).toBe("Basic shapes: complete catalog");
   expect(await page.getByRole("combobox", { name: "Theme", exact: true }).getAttribute("data-value")).toBe("dark");
   expect(await page.getByRole("combobox", { name: "Speed", exact: true }).getAttribute("data-value")).toBe("1");
   expect(await page.getByRole("checkbox", { name: "Reduce motion", exact: true }).isChecked()).toBe(false);
   expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe("0");
-  const response = await page.request.get(`${address}json/request-response.json`);
+  const downloadLink = page.getByRole("link", { name: "Download diagram JSON" });
+  expect(new URL((await downloadLink.getAttribute("href"))!, page.url()).href).toBe(`${address}json/basic-shapes.json`);
+  const response = await page.request.get(`${address}json/basic-shapes.json`);
   expect(response.status()).toBe(200);
   const document: unknown = await response.json();
-  expect(document).toMatchObject({ version: 1, title: "Request and response" });
+  expect(document).toMatchObject({ version: 1, title: "Basic shapes: complete catalog" });
   expect(document).not.toHaveProperty("defaults");
+  const basicDownload = page.waitForEvent("download");
+  await downloadLink.click();
+  expect(JSON.parse(await readFile((await (await basicDownload).path())!, "utf8"))).toEqual(document);
   const svgs: string[] = [];
   for (const state of [
     { time: 1500, theme: "light", reduced: "0" },

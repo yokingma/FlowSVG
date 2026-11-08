@@ -55,6 +55,11 @@ FlowSVG 包含三张代表性图解：一张展示简单的请求与响应流程
 
 ## 能做什么
 
+- 未发布源码能力：`diamond` 决策节点支持标签尺寸测量、安全区裁剪和真实轮廓连接。见[决策分支示例](packages/flowsvg/examples/decision-branch.json)；此新增能力尚不属于已发布的 0.2.3。
+- 未发布源码：`parallelogram` 输入输出节点支持标签测量、安全区裁剪和真实轮廓连接。见[输入输出示例](packages/flowsvg/examples/input-output.json)。
+- 未发布源码能力：`predefinedProcess` 使用可测量的纯文本标签和两侧装饰竖线表达子流程调用。见[子流程示例](packages/flowsvg/examples/subprocess-call.json)。
+- 未发布源码新增 `document` 文档形：支持波浪带上方的居中标签、尺寸测量及真实轮廓命中。见[报告生成示例](packages/flowsvg/examples/report-generation.json)。
+
 - 绘制节点、嵌套分组，以及直线、正交或曲线有向连线。
 - 在节点中组合标题、段落、列表、标签和混合样式文字，并在设定尺寸前测量内容。
 - 统一配置文档级节点、边标签和传递标记字号，用于播放器与导出。
@@ -66,6 +71,12 @@ FlowSVG 包含三张代表性图解：一张展示简单的请求与响应流程
 - 校验文档，报告字段级错误和文字溢出警告；按需检查几何遮挡风险。
 
 节点位置和尺寸由作者指定。FlowSVG 面向图解展示与播放；拖拽编辑和语义自动布局不在当前范围内。独立 Skill 提供创作与确定性布局计划工具。
+
+未发布源码的[混合审批流程](packages/flowsvg/examples/mixed-flow.json)将四种形状、普通节点、分组和三种路由组合在同一图解中；包含标签替换、尺寸与样式变化，以及一个有意裁剪的标签。[生成脚本](packages/flowsvg/examples/create-mixed-flow.mjs)通过公开 `measureNodeLabel` 为多个标签版本预留共同高度。
+
+安装包含此能力的 SDK 后，在可写目录中放置脚本并运行 `node create-mixed-flow.mjs`，再运行 `npx flowsvg mixed-flow.json --format html --output mixed-flow.html` 生成离线播放文件。
+
+仓库内先执行 `pnpm --filter flowsvg build`，然后运行 `node packages/flowsvg/examples/create-mixed-flow.mjs`；以 `packages/flowsvg` 为静态服务根目录时，可打开 `/tests/browser-mixed-flow.html`。这些能力尚未发布到 npm。
 
 ## 安装
 

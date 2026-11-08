@@ -57,6 +57,145 @@ async function withPage(run: (page: Page, errors: string[]) => Promise<void>): P
   try { await run(page, errors); } finally { await page.close(); }
 }
 
+it.each(["light", "dark"])("plays measured diamond labels and clips real SVG text in %s", async (theme) => {
+  await withPage(async (page, errors) => {
+    await page.goto(`${origin}/tests/browser-diamond.html?theme=${theme}`);
+    await page.waitForFunction("Boolean(window.diamondFixture)");
+    const host = await page.locator("#host").boundingBox();
+    if (!host) throw new Error("Expected visible diamond host");
+    await page.mouse.click(host.x + 430, host.y + 264);
+    await expect.poll(() => page.locator("#click").textContent()).toBe("click: decision");
+    await page.mouse.click(host.x + 315, host.y + 165);
+    await expect.poll(() => page.locator("#click").textContent()).toBe("click: group");
+    for (const button of ["initial", "resize", "overflow"]) {
+      await page.locator(`#${button}`).click();
+      expect(await page.evaluate("window.diamondFixture.matchesCore()")).toBe(true);
+    }
+    await page.addScriptTag({ type: "module", content: "import * as sdk from '/dist/index.js'; window.diamondSdk = sdk;" });
+    await page.waitForFunction("Boolean(window.diamondSdk)");
+    const pixels = await page.evaluate(async () => {
+      const sdk: typeof import("../src/index.js") = Reflect.get(window, "diamondSdk");
+      const diagram = sdk.createDiagram({ version: 1, viewport: { width: 240, height: 180 }, nodes: [
+        { id: "clip", kind: "diamond", x: 20, y: 20, width: 200, height: 80, label: "A\nA\nA\nA\nA\nA\nA\nA\nA\nA",
+          style: { fill: "#0000", stroke: "#0000", textColor: "#ff0000" } }
+      ], edges: [], scenes: [] });
+      const image = new Image();
+      const url = URL.createObjectURL(new Blob([diagram.renderSvg(0, { background: "transparent" })], { type: "image/svg+xml" }));
+      try {
+        image.src = url;
+        await image.decode();
+        const canvas = document.createElement("canvas"); canvas.width = 240; canvas.height = 180;
+        const context = canvas.getContext("2d")!; context.drawImage(image, 0, 0);
+        const data = context.getImageData(0, 0, 240, 180).data;
+        let inside = 0;
+        let outside = 0;
+        for (let y = 0; y < 180; y += 1) for (let x = 0; x < 240; x += 1) {
+          if (data[(y * 240 + x) * 4 + 3] === 0) continue;
+          if (x >= 82 && x < 158 && y >= 52 && y < 68) inside += 1;
+          else outside += 1;
+        }
+        return { inside, outside };
+      } finally { URL.revokeObjectURL(url); }
+    });
+    expect(pixels.inside).toBeGreaterThan(0);
+    expect(pixels.outside).toBe(0);
+    expect(errors).toEqual([]);
+  });
+}, 30_000);
+
+it.each(["light", "dark"])("plays measured document labels and clips real SVG text in %s", async (theme) => {
+  await withPage(async (page, errors) => {
+    await page.goto(`${origin}/tests/browser-document.html?theme=${theme}`);
+    await page.waitForFunction("Boolean(window.documentFixture)");
+    const points = await page.evaluate(() => {
+      const svg = document.querySelector<SVGSVGElement>("#host svg")!;
+      return [{ x: 260, y: 286 }, { x: 380, y: 286 }].map(({ x, y }) => {
+        const point = new DOMPoint(x, y).matrixTransform(svg.getScreenCTM()!);
+        return { x: point.x, y: point.y };
+      });
+    });
+    await page.mouse.click(points[0]!.x, points[0]!.y);
+    await expect.poll(() => page.locator("#click").textContent()).toBe("click: report");
+    await page.mouse.click(points[1]!.x, points[1]!.y);
+    await expect.poll(() => page.locator("#click").textContent()).toBe("click: group");
+    for (const button of ["initial", "resize", "overflow"]) {
+      await page.locator(`#${button}`).click();
+      expect(await page.evaluate("window.documentFixture.matchesCore()")).toBe(true);
+    }
+    await page.addScriptTag({ type: "module", content: "import * as sdk from '/dist/index.js'; window.documentSdk = sdk;" });
+    await page.waitForFunction("Boolean(window.documentSdk)");
+    const pixels = await page.evaluate(async () => {
+      const sdk: typeof import("../src/index.js") = Reflect.get(window, "documentSdk");
+      const diagram = sdk.createDiagram({ version: 1, viewport: { width: 240, height: 180 }, nodes: [
+        { id: "clip", kind: "document", x: 20, y: 20, width: 200, height: 80, label: "A\nA\nA\nA\nA\nA\nA\nA\nA\nA",
+          style: { fill: "#0000", stroke: "#0000", textColor: "#ff0000" } }
+      ], edges: [], scenes: [] });
+      const image = new Image();
+      const url = URL.createObjectURL(new Blob([diagram.renderSvg(0, { background: "transparent" })], { type: "image/svg+xml" }));
+      try {
+        image.src = url;
+        await image.decode();
+        const canvas = document.createElement("canvas"); canvas.width = 240; canvas.height = 180;
+        const context = canvas.getContext("2d")!; context.drawImage(image, 0, 0);
+        const data = context.getImageData(0, 0, 240, 180).data;
+        let inside = 0;
+        let outside = 0;
+        for (let y = 0; y < 180; y += 1) for (let x = 0; x < 240; x += 1) {
+          if (data[(y * 240 + x) * 4 + 3] === 0) continue;
+          if (x >= 32 && x < 208 && y >= 32 && y < 68) inside += 1;
+          else outside += 1;
+        }
+        return { inside, outside };
+      } finally { URL.revokeObjectURL(url); }
+    });
+    expect(pixels.inside).toBeGreaterThan(0);
+    expect(pixels.outside).toBe(0);
+    expect(errors).toEqual([]);
+  });
+}, 30_000);
+
+it.each(["light", "dark"])("plays measured parallelogram input/output and clips its real text in %s", async (theme) => {
+  await withPage(async (page, errors) => {
+    const response = await page.goto(`${origin}/tests/browser-parallelogram.html?theme=${theme}`);
+    expect(response?.ok()).toBe(true);
+    await page.waitForFunction("Boolean(window.parallelogramFixture)");
+    const host = await page.locator("#host").boundingBox();
+    if (!host) throw new Error("Expected visible input/output host");
+    await page.mouse.click(host.x + 380, host.y + 112);
+    await expect.poll(() => page.locator("#click").textContent()).toBe("click: input");
+    await page.mouse.click(host.x + 262, host.y + 84);
+    await expect.poll(() => page.locator("#click").textContent()).toBe("click: group");
+    for (const button of ["initial", "resize", "overflow"]) {
+      await page.locator(`#${button}`).click();
+      expect(await page.evaluate("window.parallelogramFixture.matchesCore()")).toBe(true);
+    }
+    const pixels = await page.evaluate(async () => {
+      const fixture: { clippedSvg(): string } = Reflect.get(window, "parallelogramFixture");
+      const svg = fixture.clippedSvg();
+      const image = new Image();
+      const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+      try {
+        image.src = url;
+        await image.decode();
+        const canvas = document.createElement("canvas"); canvas.width = 240; canvas.height = 180;
+        const context = canvas.getContext("2d")!; context.drawImage(image, 0, 0);
+        const data = context.getImageData(0, 0, 240, 180).data;
+        let inside = 0;
+        let outside = 0;
+        for (let y = 0; y < 180; y += 1) for (let x = 0; x < 240; x += 1) {
+          if (data[(y * 240 + x) * 4 + 3] === 0) continue;
+          if (x >= 56 && x < 184 && y >= 32 && y < 44) inside += 1;
+          else outside += 1;
+        }
+        return { inside, outside };
+      } finally { URL.revokeObjectURL(url); }
+    });
+    expect(pixels.inside).toBeGreaterThan(0);
+    expect(pixels.outside).toBe(0);
+    expect(errors).toEqual([]);
+  });
+}, 30_000);
+
 it("centers rendered tag text using real font metrics, including styled spans and wrapping", async () => {
   await withPage(async (page, errors) => {
     await page.goto(`${origin}/tests/browser-controls.html`);
@@ -91,6 +230,53 @@ it("centers rendered tag text using real font metrics, including styled spans an
     expect(errors).toEqual([]);
   });
 });
+
+it.each(["light", "dark"])("plays measured predefined-process labels and clips real SVG text in %s", async (theme) => {
+  await withPage(async (page, errors) => {
+    await page.goto(`${origin}/tests/browser-predefined-process.html?theme=${theme}`);
+    await page.waitForFunction("Boolean(window.predefinedProcessFixture)");
+    const host = await page.locator("#host").boundingBox();
+    if (!host) throw new Error("Expected visible predefined-process host");
+    await page.mouse.click(host.x + 262, host.y + 140);
+    await expect.poll(() => page.locator("#click").textContent()).toBe("click: call");
+    expect(await page.locator('[data-id="call"]').count()).toBe(1);
+    await page.mouse.click(host.x + 350, host.y + 140);
+    await expect.poll(() => page.locator("#click").textContent()).toBe("click: call");
+    for (const button of ["initial", "resize", "overflow"]) {
+      await page.locator(`#${button}`).click();
+      expect(await page.evaluate("window.predefinedProcessFixture.matchesCore()")).toBe(true);
+    }
+    await page.addScriptTag({ type: "module", content: "import * as sdk from '/dist/index.js'; window.predefinedProcessSdk = sdk;" });
+    await page.waitForFunction("Boolean(window.predefinedProcessSdk)");
+    const pixels = await page.evaluate(async () => {
+      const sdk: typeof import("../src/index.js") = Reflect.get(window, "predefinedProcessSdk");
+      const diagram = sdk.createDiagram({ version: 1, viewport: { width: 240, height: 180 }, nodes: [
+        { id: "clip", kind: "predefinedProcess", x: 20, y: 20, width: 200, height: 40, label: "A\nA\nA\nA\nA\nA\nA\nA\nA\nA",
+          style: { fill: "#0000", stroke: "#0000", textColor: "#ff0000" } }
+      ], edges: [], scenes: [] });
+      const image = new Image();
+      const url = URL.createObjectURL(new Blob([diagram.renderSvg(0, { background: "transparent" })], { type: "image/svg+xml" }));
+      try {
+        image.src = url;
+        await image.decode();
+        const canvas = document.createElement("canvas"); canvas.width = 240; canvas.height = 180;
+        const context = canvas.getContext("2d")!; context.drawImage(image, 0, 0);
+        const data = context.getImageData(0, 0, 240, 180).data;
+        let inside = 0;
+        let outside = 0;
+        for (let y = 0; y < 180; y += 1) for (let x = 0; x < 240; x += 1) {
+          if (data[(y * 240 + x) * 4 + 3] === 0) continue;
+          if (x >= 44 && x < 196 && y >= 32 && y < 48) inside += 1;
+          else outside += 1;
+        }
+        return { inside, outside };
+      } finally { URL.revokeObjectURL(url); }
+    });
+    expect(pixels.inside).toBeGreaterThan(0);
+    expect(pixels.outside).toBe(0);
+    expect(errors).toEqual([]);
+  });
+}, 30_000);
 
 it.each(PAGES)("passes SDK-only %s browser regressions", async (name, resultKey) => {
   await withPage(async (page, errors) => {
@@ -168,3 +354,68 @@ it.each(["forward", "reverse"] as const)("keeps rounded %s markers and hits on C
     expect(errors).toEqual([]);
   });
 });
+
+async function assertMixedClipPixels(page: Page, index: number, width: number): Promise<void> {
+  const png = await page.locator(`#clips > div`).nth(index).screenshot();
+  const areas = await page.locator(`#clips > div`).nth(index).evaluate((host, width) => {
+    const svg = host.querySelector("svg")!;
+    const matrix = svg.getScreenCTM()!; const bounds = host.getBoundingClientRect();
+    const source = [
+      { x: 20 + width / 4 + 12, y: 57, width: width / 2 - 24, height: 26 },
+      { x: 296, y: 32, width: width - 72, height: 76 },
+      { x: 512, y: 32, width: width - 24, height: 52 },
+      { x: 764, y: 32, width: width - 48, height: 76 }
+    ];
+    return source.map((area) => {
+      const point = new DOMPoint(area.x, area.y).matrixTransform(matrix);
+      return { x: point.x - bounds.x, y: point.y - bounds.y, width: area.width * matrix.a, height: area.height * matrix.d };
+    });
+  }, width);
+  const pixels = await page.evaluate(async ({ png, areas }) => {
+    const bitmap = await createImageBitmap(new Blob([Uint8Array.from(atob(png), (char) => char.charCodeAt(0))], { type: "image/png" }));
+    const canvas = document.createElement("canvas"); canvas.width = bitmap.width; canvas.height = bitmap.height;
+    const context = canvas.getContext("2d")!; context.drawImage(bitmap, 0, 0); bitmap.close();
+    const data = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    const counts = areas.map(() => 0); let outside = 0; const outsidePoints: [number, number][] = [];
+    for (let y = 0; y < canvas.height; y += 1) for (let x = 0; x < canvas.width; x += 1) {
+      const offset = (y * canvas.width + x) * 4;
+      if (data[offset]! < 180 || data[offset + 1]! > 100 || data[offset + 2]! > 100) continue;
+      const inside = areas.findIndex((area) => x + 1 > area.x && x < area.x + area.width && y + 1 > area.y && y < area.y + area.height);
+      if (inside < 0) { outside += 1; if (outsidePoints.length < 8) outsidePoints.push([x, y]); } else counts[inside]! += 1;
+    }
+    return { counts, outside, outsidePoints };
+  }, { png: png.toString("base64"), areas });
+  expect(pixels.outside, JSON.stringify(pixels)).toBe(0); expect(pixels.counts.every((count) => count > 0)).toBe(true);
+}
+
+it.each(["light", "dark"])("keeps mixed contours, moving pointer mapping and simultaneous clips in %s", async (theme) => {
+  await withPage(async (page, errors) => {
+    await page.setViewportSize({ width: 2040, height: 1000 });
+    await page.goto(`${origin}/tests/browser-mixed-flow.html?theme=${theme}`);
+    await page.waitForFunction("Boolean(window.mixedFixture)");
+    const clickAt = async (x: number, y: number, expected: string) => {
+      const point = await page.locator("#host svg").evaluate((svg, point) => {
+        const mapped = new DOMPoint(point.x, point.y).matrixTransform((svg as SVGSVGElement).getScreenCTM()!);
+        return { x: mapped.x, y: mapped.y };
+      }, { x, y });
+      await page.mouse.click(point.x, point.y);
+      await expect.poll(() => page.locator("#click").textContent()).toBe(expected);
+    };
+    // Empty bounding-box corners, the document wave notch and a decorative process line.
+    await clickAt(352, 52, "group"); await clickAt(52, 92, "group");
+    await clickAt(860, 402, "group"); await clickAt(692, 122, "call");
+    await page.mouse.move(2020, 900);
+    for (const time of [0, 999, 1000, 1500, 2000, 2150, 2300, 3000, 4000]) {
+      await page.evaluate((time) => Reflect.get(window, "mixedFixture").player.seek(time), time);
+      expect(await page.evaluate("window.mixedFixture.matchesCore()")).toEqual(true);
+      if (process.env.FLOWSVG_SCREENSHOT_DIR && [0, 1500, 4000].includes(time)) await page.locator("#host").screenshot({ path: resolve(process.env.FLOWSVG_SCREENSHOT_DIR, `mixed-${theme}-${time}.png`) });
+    }
+    await clickAt(712, 134, "call");
+
+    await assertMixedClipPixels(page, 0, 200); await assertMixedClipPixels(page, 1, 160);
+    await page.evaluate("window.mixedFixture.clipHosts[0].player.seek(750)"); await assertMixedClipPixels(page, 0, 210); await assertMixedClipPixels(page, 1, 160);
+    await page.evaluate("window.mixedFixture.setClipWidth(1, 220)"); await assertMixedClipPixels(page, 1, 220); await assertMixedClipPixels(page, 0, 210);
+    await page.evaluate("window.mixedFixture.clipHosts[0].player.destroy()"); await assertMixedClipPixels(page, 1, 220);
+    expect(errors).toEqual([]);
+  });
+}, 30_000);

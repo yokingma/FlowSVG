@@ -21,7 +21,7 @@ pnpm test:all
 
 ## Observable checks
 
-- Verify all nine formal stories, catalog order, defaults, categories and generated JSON.
+- Verify all ten formal stories, catalog order, defaults, categories and generated JSON. Fresh formal entry must select `basic-shapes` and offer its matching standalone JSON download.
 - Exercise selection, playback, seeking, theme, reduced motion, sharing and browser history through each real host.
 - Verify lifecycle failure/retry paths and cancellation of export work when a player is replaced or disposed.
 - Copy built artifacts outside the repository and serve separate root and subpath origins. Verify direct entry, refresh, downloads, SVG parity and local lazy assets.

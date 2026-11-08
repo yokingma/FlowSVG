@@ -261,7 +261,7 @@ Register in a DOM environment. DOM-free imports are safe, but that module instan
 | `title` / `theme` | Optional title and `light` / `dark` document theme |
 | `typography` | Optional node, edge and flow-label sizes; see [document typography](#document-typography) |
 
-Node and edge IDs are globally unique. Shapes: `rect`, `roundedRect`, `ellipse`, `cylinder`, `group`. Group borders are rounded by default. `parentId` names a parent group; child coordinates are group-relative. Labels are plain text; `visible` defaults to `true`. Node styles: `fill`, `stroke`, `strokeWidth`, `textColor`, `dashed` (group borders). Edge styles: `stroke`, `strokeWidth`, `dashed`. Colors use hexadecimal RGB/RGBA, such as `#2563eb` or `#2563eb80`.
+Node and edge IDs are globally unique. Shapes: `rect`, `roundedRect`, `ellipse`, `cylinder`, `group`; unreleased source also supports `diamond`, `parallelogram`, `document` and `predefinedProcess`. Group borders are rounded by default. `parentId` names a parent group; child coordinates are group-relative. Labels are plain text; `visible` defaults to `true`. Node styles: `fill`, `stroke`, `strokeWidth`, `textColor`, `dashed` (group borders). Edge styles: `stroke`, `strokeWidth`, `dashed`. Colors use hexadecimal RGB/RGBA, such as `#2563eb` or `#2563eb80`.
 
 Routes: `straight` (default), `orthogonal`, or `curved`. Curves follow endpoint ports without avoiding other nodes. Orthogonal routes round bends by default; SVG output, flow markers, bounds and hit testing share that geometry. Rounding adapts to short segments and obstacle/arrow clearance. Orthogonal routes avoid visible ordinary nodes and use a fixed fallback if blocked; shortest paths and zero crossings are not guaranteed. Set `fromPort` / `toPort` to `top`, `right`, `bottom`, or `left`. Orthogonal routes prefer bridges at the gap midpoint when arrow space permits and single outside channels for matching port sides. Separate ancestor frames add outside clearance; shared containers remain traversable. Orthogonal routes reserve outward endpoint segments and a straight arrow approach scaled to the evaluated stroke width, shortened when adjacent nodes leave insufficient space. Curved and orthogonal inputs on the same target side receive separate positions ordered by source position, with document order breaking ties; hidden edges keep their positions. Positions use the central portion of the side, so crowded or very small nodes can still require more space. Curved ports set tangents. Omitted ports follow the dominant center-to-center axis; ellipse endpoints lie on the contour. Simple labels wrap by estimated width and remain visible on height overflow, with a `text-overflow` warning.
 
@@ -310,6 +310,7 @@ Import from `flowsvg`:
 | `diagram.renderSvg(timeMs = 0, options?)` | Exports SVG from the same evaluation result |
 | `diagram.hitTest(timeMs, point, options?)` | Returns `{ id, type: "node" \| "edge" }` or `null`, using document coordinates |
 | `measureNodeContent({ kind, width, content, typography? })` | Returns a recommended fixed height and unresolved per-version overflow diagnostics; see [content measurement](#measure-content-before-creating-a-document) |
+| `measureNodeLabel({ kind, width, label, typography? })` | Unreleased: measure shared preset-label height and unresolved width issues; see [decision labels](#decision-labels-and-measurement). |
 | `wrapText(label, maxWidth, typography?)` | Wraps text with fixed width estimates and returns an array of lines |
 
 `validateDocument` checks authored structure and values. Compilation also rejects non-finite derived movement or accumulated timing with `DiagramValidationError` at the affected beat’s `durationMs` path. Input documents retain their authored durations.
@@ -330,6 +331,8 @@ for (const risk of risks) {
 ```
 
 `diagnoseAt` uses `evaluateAt` time and visual options. It returns only `edge-node-overlap`, `label-node-overlap` and `label-overlap`. Ordinary evaluation, SVG rendering and playback do not run these pair checks. `frame.warnings` retains separate `text-overflow` results.
+
+In unreleased source, preset labels with zero safe-area width or height contribute no painted overlaps; `text-overflow` remains available. Visible `predefinedProcess` side-line strokes participate under the parent node identity, including transparent-fill styles. The hollow interior contributes no fill paint.
 
 The SDK checks visible portions inside the effective camera. Ordinary node, group and edge labels can overflow their shapes; structured lines are first clipped to `safeArea`. Inline spans share one label identity, and transparent span gaps do not become visible text. Different lines of one ordinary edge label compare foreground regions, so their shared background halo alone does not create a self-conflict. Halo checks remain active against other label fields, owners and nodes. Own labels and ancestor containment are excluded, while group titles covering children remain eligible. Edge paths exclude endpoints and group boundaries; edge labels have no endpoint exemption. Hidden, zero-opacity and fully transparent paint is excluded. A transparent fill can retain a visible outline; semi-transparent paint and edge-label background halos remain eligible. Flow capsules, content graphics and player captions are outside label checks.
 
@@ -438,6 +441,51 @@ Use this interface only when building host settings; normal player setup and sty
 
 Create `new SelectControl(document, "Theme", onChange)`, append its `element`, then call `render([{ value: "light", label: "Light" }, { value: "dark", label: "Dark" }], "light")`. `SelectChoice` contains string `value` and `label` fields; choice values must be unique within a control. The callback receives a requested value; the caller owns committed state and must call `render` to reflect it. The optional third `render` argument is a disabled flag, defaulting to `false`; an empty choice list also disables the trigger. Call `destroy()` before removing the host to release outside-dismissal listeners and remove the menu element. The menu reuses the imported `flowsvg/styles.css`, color variables and size class above.
 
+## Decision labels and measurement
+
+This unreleased source capability is not in published 0.2.3. `diamond` supports plain `label` only, with no structured `content`, including empty blocks. Timeline `content: null` retains existing clearing semantics. Its four vertices are side midpoints; the centered half-width/half-height inner rectangle reserves a further 12 diagram units on every side. The label is centered as complete line boxes with one fixed width.
+
+```ts
+import { createDiagram, measureNodeLabel } from "flowsvg";
+
+const width = 200;
+const labels = ["Ready?", "One\nTwo"];
+const measurement = measureNodeLabel({ kind: "diamond", width, label: labels });
+const diagram = createDiagram({ version: 1, viewport: { width: 300, height: 300 },
+  nodes: [{ id: "decision", kind: "diamond", x: 20, y: 20, width,
+    height: measurement.height, label: labels[1] }], edges: [], scenes: [] });
+```
+
+This example returns height 128. Inspect `measurement.diagnostics` before adopting the size. `measureNodeLabel` accepts `diamond`, `parallelogram`, `document` and `predefinedProcess` in this source milestone, a finite positive width, a string or nonempty readonly label-version array, and optional existing `DiagramTypography`. It returns `{ height, diagnostics }`; each unresolved width issue contains `versionIndex`, `path`, `dimension: "width"`, and `message`. A single string uses version zero. Import `NodeLabelMeasurementInput`, `NodeLabelMeasurement`, and `NodeLabelMeasurementDiagnostic` from `flowsvg` for typed consumers.
+
+Versions share the maximum required height, including complete line boxes. With label height L, diamond height is 2 × (L + 24). Empty labels still return positive clearance height. Measurement and rendering share deterministic wrapping without DOM font metrics, input mutation or scene scanning. When one grapheme cannot fit, it occupies its own measured line and retains a width diagnostic; increasing height cannot solve that issue. Increase width or shorten the label. Invalid input or a non-finite computed height throws `DiagramValidationError` with field/version paths.
+
+Chinese and explicit newlines/blank lines are supported. Latin words remain whole when possible, but overwide words and URLs split only between complete graphemes. Nonempty text outside the safe area is clipped and reports `text-overflow`, without font reduction, ellipsis, source-text replacement or automatic node resizing. Positive tiny dimensions remain valid; nonpositive/non-finite dimensions are validation errors. Empty labels do not overflow solely because their safe area is zero.
+
+Cardinal and automatic connections in every route family, same-side inputs, hits and diagnostics follow the real contour. Clipped-away text cannot enlarge hit targets, diagnostics or fitted height. Group movement and timeline resizing use current geometry; node kind remains immutable during a timeline. SVG, players and exports reuse the core result. Existing node kinds and `measureNodeContent` keep their current behavior. The SDK ships an English decision-branch example with a measured update and intentional overflow.
+
+`parallelogram` expresses input/output with the same plain-label restrictions, wrapping, clipping and diagnostics. Its top edge slants right by S = min(width / 4, 24) diagram units. The rectangular safe area reserves S + 12 units on both horizontal sides and 12 units on both vertical sides. With complete label height L, `measureNodeLabel` returns L + 24; multiple versions share the largest height. No slant configuration is exposed. Cardinal/automatic connections, hits and diagnostics use the actual slanted outline. See the [input/output example](../../packages/flowsvg/examples/input-output.json).
+
+## Document report labels
+
+The unreleased `document` preset represents a report or file artifact using plain `label` only. It rejects structured `content`, including empty blocks; timeline `content: null` still clears text. The top and sides are straight. The bottom wave occupies B = min(height / 4, 24) diagram units. With 12-unit padding, the label safe area is `(12, 12, max(0, width - 24), max(0, height - B - 24))`. Labels are centered above the wave, with the same grapheme wrapping, clipping and overflow diagnostics as decision labels.
+
+`measureNodeLabel({ kind: "document", width: 240, label: ["Report ready", "Revenue\nBy region\nFinal report"] })` returns height 108. For complete line-box height L and T = L + 24, the suggested height is 4T/3 when T ≤ 72, otherwise T + 24. Width diagnostics remain actionable after adopting the height. Ports, hits and diagnostics follow the actual wave; the empty space below its raised section is outside the node. See the [report generation example](../../packages/flowsvg/examples/report-generation.json), including grouped motion, resizing, label changes and deliberate overflow.
+
+## Predefined process labels
+
+The unreleased `predefinedProcess` kind expresses a call to a defined subprocess. It is one ordinary node with a rectangular outer contour and two decorative vertical lines; it does not execute a subprocess or contain child nodes. Each line is inset by D = min(width / 6, 12). The label safe area starts at (D + 12, 12), with width max(0, width − 2D − 24) and height max(0, height − 24), relative to the node.
+
+Use plain `label`; structured `content` objects are rejected, including empty block arrays. Timeline `content: null` keeps its clearing semantics. Labels use the same centering, grapheme wrapping, clipping and overflow diagnostics as decision labels. `measureNodeLabel({ kind: "predefinedProcess", width: 200, label: ["A", "A\nB"] })` returns height 64. The suggested height is the full line-box height plus 24. Only the outer rectangle supplies connections and routing obstacles; clicks on either internal line return the parent node identity.
+
+The SDK-owned [subprocess-call example](../../packages/flowsvg/examples/subprocess-call.json) includes measured labels, resizing, emphasis and intentional overflow. Run `pnpm --filter flowsvg build`, serve `packages/flowsvg` from the workspace, and open `/tests/browser-predefined-process.html` to play the public browser example.
+
+The unreleased [mixed approval flow](../../packages/flowsvg/examples/mixed-flow.json) combines all four presets, an ordinary node, a group and three route families. It includes label replacement, size and style changes, and one deliberately clipped label. Its [generator](../../packages/flowsvg/examples/create-mixed-flow.mjs) reserves a shared height for label versions through public `measureNodeLabel`.
+
+After installing an SDK build with this feature, place the script in a writable directory and run `node create-mixed-flow.mjs`, then `npx flowsvg mixed-flow.json --format html --output mixed-flow.html` to generate offline playback.
+
+In this repository, first run `pnpm --filter flowsvg build`, then `node packages/flowsvg/examples/create-mixed-flow.mjs`; serve `packages/flowsvg` and open `/tests/browser-mixed-flow.html`. This capability has not been published to npm.
+
 ## Document typography
 
 The optional document `typography` accepts `nodeLabel`, `edgeLabel` and `flowLabel`, defaulting independently to 16, 14 and 12. Sizes use diagram units, rather than PNG pixels or PowerPoint points.
@@ -455,7 +503,7 @@ const diagram = createDiagram({ version: 1, viewport: { width: 1280, height: 720
 
 Ordinary node labels and group headings use the node size; edge labels use the edge size. Wrapping, line height, estimated bounds, node label hits and rendering share these metrics. Transfer text remains single-line. Capsule width, height, baseline and `fitHeight` bounds follow its effective size without adding an interaction target.
 
-Ordinary labels and `wrapText` preserve complete Latin words, including internal apostrophes and hyphens. Break between words when a line is too narrow; keep an overwide word intact even if it exceeds the estimated width. Other scripts retain code-point wrapping, and explicit blank lines remain. Purely vertical edge labels use the narrower endpoint width as their horizontal text budget. Fonts do not shrink automatically; increase authored spacing or node width when labels overlap. GIF captions use the same Latin word boundaries with measured font widths. An overwide caption word produces `caption-overflow`; increase the export width or shorten the caption.
+Existing-shape labels, edge labels and `wrapText` preserve complete Latin words, including internal apostrophes and hyphens. Break between words when a line is too narrow; keep an overwide word intact even if it exceeds the estimated width. Other scripts retain code-point wrapping, and explicit blank lines remain. Purely vertical edge labels use the narrower endpoint width as their horizontal text budget. Fonts do not shrink automatically; increase authored spacing or node width when labels overlap. GIF captions use the same Latin word boundaries with measured font widths. An overwide caption word produces `caption-overflow`; increase the export width or shorten the caption.
 
 Default title, body, auxiliary, tag, status and graph-label sizes scale by `nodeLabel / 16`. Explicit block, list, item and span sizes retain their existing inheritance order. Content retains its line-height rule: `max(20, largest current line size × 1.35)`. Node dimensions, graph coordinates and fixed block heights, padding and gaps do not grow automatically. Remeasure with the same typography; width overflow and graph-internal height overflow can remain unresolved. Multiple content versions share the largest required height.
 
@@ -805,4 +853,4 @@ When a description conflicts with behavior, use the public types, implementation
 
 [MIT](../../packages/flowsvg/LICENSE). Use, modify, and distribute with the license and copyright notice retained.
 
-Repository maintainers can run `pnpm --filter flowsvg test:browser` after preparing Chromium. SDK build, tests and release verification use SDK-owned inputs and require no example builds. 
+Repository maintainers can run `pnpm --filter flowsvg test:browser` after preparing Chromium. SDK build, tests and release verification use SDK-owned inputs and require no example builds.

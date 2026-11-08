@@ -1,6 +1,16 @@
 # Workspace patterns
 
+- Keep the mixed preset-shape example SDK-owned. Generate its shared label heights through the public measurement API and reuse its JSON across hosts, offline playback and image acceptance.
+
 ## Ownership
+
+- Keep parallelogram slant clearance proportional for small nodes and bounded for larger nodes; share it with label measurement and contour consumers.
+
+- Keep predefined-process side lines decorative within one node identity; only its rectangular outer contour supplies attachments and routing obstacles. Include their visible strokes in that node’s diagnostic paint, including transparent-fill styles.
+
+- Document labels reserve the complete bottom wave band; diagnostic fill must decompose concave contours into convex paint pieces.
+
+- Keep semantic preset label safe areas and contours in the SDK core, shared by frame layout, rendering, measurement and geometry consumers; do not alter ordinary-label rules while adding presets.
 
 - Keep complete Latin words in ordinary node and edge labels. Preserve authored font sizes; resolve label crowding through authored spacing rather than automatic font reduction.
 
@@ -25,6 +35,6 @@
 
 - Build selected shared author output and its consumers sequentially: source selection replaces shared generated data. Use the maintained commands in the [showcase verification guide](docs/verification/showcase-verification.md).
 - Verify installed-package behavior through the [SDK gate](docs/verification/sdk-verification.md) and copied host artifacts through the showcase gate. A passing source-level test cannot substitute for either delivery boundary.
-- Keep shared browser navigation expectations aligned with the complete formal catalog and its category order, including newly selected stories.
+- When formal selection changes, update shared browser and copied-artifact expectations for navigation, category order, default selection and its JSON download together. Keep shared expected names in `scripts/showcase-category-stories.ts`.
 - Keep the Pages workflow scoped to deployment inputs, cancel superseded runs and bound build/deploy time so routine documentation pushes do not consume Actions minutes.
 - Before completing an executable change, account for every affected owner and record the checks actually run, their results and any unverified environment.

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Align both `basic-shapes` rows after label measurement. Keep all six same-row connections horizontal throughout playback, including label replacement. Reduce the group height to 460 and viewport height to 508 units, retaining 24-unit bottom insets inside and outside the group.
+
+- Add `basic-shapes` as the first and default showcase example. It demonstrates every public node shape, measured preset labels, group containment, orthogonal connections, highlights, label replacement and reduced-motion playback.
+
 - Keep a subdued LLM inference trail on completed state vectors while restoring full opacity for the currently active layer during prefill and decode.
 
 - Keep the RAG question-to-context arrow as a straight segment to remove the small visual bend at the context card.

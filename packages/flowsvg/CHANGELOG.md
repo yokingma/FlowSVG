@@ -4,6 +4,24 @@
 
 - Use a checked-in CLI launcher so workspace installation can link `flowsvg` before the SDK is built. Report a missing build with a `pnpm build` instruction.
 
+- Exclude fully clipped preset labels from overlap diagnostics and include visible predefined-process side-line strokes.
+
+- Ship a measured mixed-shape approval flow and verify shared host, offline playback and decoded image delivery.
+
+- Add `parallelogram` input/output nodes with safe-area plain labels, common-height measurement, clipped overflow and real-contour connections, hits and diagnostics.
+
+- Reject distant pointer hits when a tiny preset contour collapses at a large finite origin.
+
+- Add label-only predefined-process nodes with a rectangular contour and capped decorative side lines.
+
+- Add document report nodes with labels centered above a bounded bottom wave.
+
+- Add diamond decision nodes with safe-area plain-text labels. Existing node kinds retain their label behavior.
+- Wrap long decision labels without splitting graphemes; report width and height overflow while clipping visible text to the inner rectangle.
+- Export `measureNodeLabel` to reserve a common explicit height for one or more decision labels using the same safe-area layout as playback.
+- Attach decision-node edges and pointer hits to the real diamond contour instead of its bounding rectangle.
+- Reuse diamond contours and clipped visible label paint for diagnostics; invisible label overflow no longer enlarges fitted height for decision nodes.
+
 ## 0.2.3 - 2026-11-06
 
 - Add full-timeline request-response, web-service-deployment and LLM inference showcase GIFs to the package README and npm tarball, rendered at 1.5x speed and 24 fps.

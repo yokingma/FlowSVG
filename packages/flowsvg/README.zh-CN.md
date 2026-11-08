@@ -424,7 +424,7 @@ SDK CLI 支持 HTML 和 GIF 输出。PNG 使用 SDK API 导出。
 | `Beat` | `durationMs`、`actions` | `transitionMs`、`caption` |
 
 - **静态文档：**使用空 `scenes`。
-- **节点类型：**`rect`、`roundedRect`、`ellipse`、`cylinder`、`group`。分组边框默认为圆角。
+- **节点类型：**`rect`、`roundedRect`、`ellipse`、`cylinder`、`group`；未发布源码还支持 `diamond`、`parallelogram`、`document` 和 `predefinedProcess`。分组边框默认为圆角。
 - **连线路由：**`straight`（默认）、`orthogonal`、`curved`。
 - **端口方向：**`top`、`right`、`bottom`、`left`。
 - **节拍时长：**`durationMs` 须为正数。`transitionMs` 须位于 `[0, durationMs]`，默认 `min(250, durationMs)`，并受有效节拍时长限制。
@@ -459,6 +459,30 @@ SDK CLI 支持 HTML 和 GIF 输出。PNG 使用 SDK API 导出。
 
 `viewport.fitHeight: { padding: 24 }` 让播放器、SVG 和 PNG 的完整视图按当前内容调整高度。
 
+### 决策标签与测量
+
+此项是尚未发布的源码新增能力，不属于已发布的 0.2.3。`diamond` 仅用纯文本 `label` 表达决策，拒绝结构化 `content`，包括空内容块数组。居中内接矩形取节点宽高的一半，再向内保留每侧 12 个图解单位。文字整体在安全区内居中，尽量整词换行，超宽单词或 URL 仅在完整字素之间拆分。溢出文字裁剪并报告 `text-overflow`，不自动缩字或改变节点尺寸。
+
+指定高度前调用 `measureNodeLabel({ kind: "diamond", width, label, typography? })`。`label` 接受单字符串或非空只读版本数组；`typography` 使用文档现有文字配置。返回 `{ height, diagnostics }`，包含共用的有限正数高度及逐版本未解决的宽度问题。每条诊断包含 `versionIndex`、`path`、`dimension: "width"` 和 `message`；增加高度无法解决宽度不足。空标签合法；非法输入或无法表示为有限数的高度抛出 `DiagramValidationError`。从 `flowsvg` 导入类型 `NodeLabelMeasurementInput`、`NodeLabelMeasurement` 与 `NodeLabelMeasurementDiagnostic`。
+
+四方向端口、直线/正交/曲线连接、命中和诊断使用真实轮廓。裁剪掉的文字不扩大命中区或自适应高度。分组、时间线与导出共享核心结果；旧形状及 `measureNodeContent` 保持原行为。[可运行的决策示例](examples/decision-branch.json)展示测量后的标签替换、尺寸变化和一个有意溢出的节点。
+
+`parallelogram` 用于输入输出，沿用相同的纯文本限制、换行、裁剪和诊断规则。顶边向右倾斜，偏移 S = min(宽度 / 4, 24) 个图解单位。矩形安全区左右各保留 S + 12、上下各保留 12 个单位。完整标签行框高为 L 时，`measureNodeLabel` 返回 L + 24；多个版本取最大高度。不提供倾斜配置字段。四方向与自动连接、命中和诊断使用实际斜边轮廓。见[输入输出示例](examples/input-output.json)。
+
+### 文档形报告标签
+
+未发布的 `document` 预置形状仅用纯文本 `label` 表达报告或文件产物，拒绝结构化 `content`，包括空内容块；时间线 `content: null` 仍可清空文字。顶边及两侧为直线，底部波浪带高度 B = min(height / 4, 24)，单位为图解单位。每侧内边距为 12，标签安全区为 `(12, 12, max(0, width - 24), max(0, height - B - 24))`。标签在波浪带上方整体居中，沿用决策标签的完整字素换行、裁剪和溢出诊断规则。
+
+`measureNodeLabel({ kind: "document", width: 240, label: ["Report ready", "Revenue\nBy region\nFinal report"] })` 返回高度 108。完整行框高度为 L、T = L + 24 时，T ≤ 72 的建议高度为 4T/3，否则为 T + 24。采用建议高度后仍需处理宽度诊断。端口、命中与诊断均沿真实波浪轮廓计算，波浪凹入处下方的空白不属于节点。见[报告生成示例](examples/report-generation.json)，其中包含分组运动、尺寸变化、标签替换及刻意溢出。
+
+### 预定义流程标签
+
+未发布的 `predefinedProcess` 表达调用已定义的子流程。它是一个普通节点，包含矩形外轮廓和两条内部装饰竖线，不执行子流程，也不容纳子节点。竖线距对应外边框的间隔 D = min(宽度 / 6, 12)。相对节点原点，标签安全区为 (D + 12, 12, max(0, 宽度 − 2D − 24), max(0, 高度 − 24))。
+
+使用纯文本 `label`；结构化 `content` 对象会被拒绝，包括空内容块数组。时间线 `content: null` 保留清空语义。标签复用决策标签的居中、完整字素换行、裁剪和溢出诊断规则。调用 `measureNodeLabel({ kind: "predefinedProcess", width: 200, label: ["A", "A\nB"] })` 返回高度 64，建议高度等于完整行框高度加 24。仅外矩形提供连接和路由障碍；点击任一内部竖线都返回所属节点身份。
+
+SDK 自有的[子流程调用示例](examples/subprocess-call.json)包含测量标签、尺寸变化、强调和有意溢出。先运行 `pnpm --filter flowsvg build`，再以 `packages/flowsvg` 为根目录启动静态服务，打开 `/tests/browser-predefined-process.html` 即可播放公开浏览器示例。
+
 ### 结构化内容与测量
 
 矩形（`rect`）、圆角矩形（`roundedRect`）和圆柱（`cylinder`）支持结构化 `content`，可包含标题、段落、列表、标签和实体关系小图。
@@ -480,7 +504,7 @@ SDK CLI 支持 HTML 和 GIF 输出。PNG 使用 SDK API 导出。
 | `edgeLabel` | `14` | 连线标签 |
 | `flowLabel` | `12` | 单行传递胶囊 |
 
-普通标签和 `wrapText` 保留完整的拉丁字母单词。单个单词超宽时允许超出估算行宽，字号不自动缩小。纯竖向连线标签以两个端点中较窄节点的宽度作为水平排字范围。标签发生遮挡时，请增加节点间距或节点宽度。GIF 说明文字使用相同的单词边界，并按实际字体宽度测量。
+既有形状的标签、边标签和 `wrapText` 保留完整的拉丁字母单词。单个单词超宽时允许超出估算行宽，字号不自动缩小。纯竖向连线标签以两个端点中较窄节点的宽度作为水平排字范围。标签发生遮挡时，请增加节点间距或节点宽度。GIF 说明文字使用相同的单词边界，并按实际字体宽度测量。
 
 **校验：**设置须为有限正数。无法表示的派生文字指标抛出带 `typography.<字段>` 路径的 `DiagramValidationError`。
 
@@ -493,6 +517,12 @@ SDK CLI 支持 HTML 和 GIF 输出。PNG 使用 SDK API 导出。
 - 节点宽高、坐标、padding、gap、实体图块高度和编译时长保持作者指定值。
 
 改变字号后，用相同 `typography` 调用 `measureNodeContent`，再检查溢出。
+
+未发布源码的[混合审批流程](examples/mixed-flow.json)将四种形状、普通节点、分组和三种路由组合在同一图解中；包含标签替换、尺寸与样式变化，以及一个有意裁剪的标签。[生成脚本](examples/create-mixed-flow.mjs)通过公开 `measureNodeLabel` 为多个标签版本预留共同高度。
+
+安装包含此能力的 SDK 后，在可写目录中放置脚本并运行 `node create-mixed-flow.mjs`，再运行 `npx flowsvg mixed-flow.json --format html --output mixed-flow.html` 生成离线播放文件。
+
+仓库内先执行 `pnpm --filter flowsvg build`，然后运行 `node packages/flowsvg/examples/create-mixed-flow.mjs`；以 `packages/flowsvg` 为静态服务根目录时，可打开 `/tests/browser-mixed-flow.html`。这些能力尚未发布到 npm。
 
 ## 核心 API — `flowsvg`
 
@@ -509,6 +539,7 @@ SDK CLI 支持 HTML 和 GIF 输出。PNG 使用 SDK API 导出。
 | `renderSvg(document: DiagramDocument, timeMs = 0, options?): string` | 编译并渲染一帧静态 SVG。 |
 | `validateDocument(input: unknown): ValidationIssue[]` | 检查字段与引用，返回 `{ path, message }` 问题列表。空数组表示这些检查通过；编译阶段仍可能拒绝非有限的派生传递时长。 |
 | `measureNodeContent({ kind, width, content, typography? }): NodeContentMeasurement` | 返回 `{ height, diagnostics }`，见[内容与测量](#结构化内容与测量)。 |
+| `measureNodeLabel({ kind, width, label, typography? }): NodeLabelMeasurement` | 未发布：测量预置形状标签的共用高度与宽度诊断，见[决策标签](#决策标签与测量)。 |
 | `wrapText(label: string, maxWidth: number, typography?): string[]` | 无 DOM 的估算换行；可选排版对象须包含 `fontSize`、`lineHeight`、`charWidth` 三个数值字段，省略时使用节点排版参数。 |
 
 | 编译后的 `Diagram` | 返回值／行为 |
@@ -534,6 +565,8 @@ SDK CLI 支持 HTML 和 GIF 输出。PNG 使用 SDK API 导出。
 ### 几何诊断
 
 `diagnoseAt` 复用该时点的镜头、字号、连线路径和内容安全区，估算连线与节点、标签与节点、标签与标签三类重叠风险。
+
+在未发布源码中，安全区宽度或高度为零的预置形状标签不产生绘制重叠，仍保留 `text-overflow`。`predefinedProcess` 的可见内部竖线以所属节点身份参与检查，包括透明填充样式；空心内部不产生填充绘制区域。
 
 | 结果字段 | 含义 |
 | --- | --- |

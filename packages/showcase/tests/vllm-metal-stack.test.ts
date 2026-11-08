@@ -14,9 +14,9 @@ function getMetalStack() {
 it("offers the layered stack as a fourth standalone example with the original default", () => {
   const { catalog, example, json } = getMetalStack();
   expect(catalog.entries.map(({ id }) => id)).toEqual([
-    "request-response", "rag-workflow", "project-architecture", "vllm-metal-stack", "job-lifecycle", "order-event-pipeline", "web-service-deployment", "cache-aside-sequence", "llm-inference"
+    "basic-shapes", "request-response", "rag-workflow", "project-architecture", "vllm-metal-stack", "job-lifecycle", "order-event-pipeline", "web-service-deployment", "cache-aside-sequence", "llm-inference"
   ]);
-  expect(catalog.defaultId).toBe("request-response");
+  expect(catalog.defaultId).toBe("basic-shapes");
   expect(example.name).toBe("vllm-metal: Layered inference architecture");
   expect(example.durationMs).toBe(createDiagram(example.document).totalDuration);
   expect(example.defaults).toEqual({ speed: 1, theme: "dark", reducedMotion: false });

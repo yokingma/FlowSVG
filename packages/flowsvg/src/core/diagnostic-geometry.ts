@@ -1,6 +1,7 @@
 /** Internal convex paint geometry for on-demand diagnostics; no DOM, mutation or public sampler. */
 import type { CameraState, DiagramPoint, EvaluatedNode } from "./model.js";
 import { CYLINDER_CAP_RADIUS, NODE_CORNER_RADIUS } from "./theme.js";
+import { documentFillPieces, nodeOutline, predefinedProcessInset } from "./node-shape.js";
 
 export interface Rect { left: number; top: number; right: number; bottom: number }
 export type Polygon = readonly DiagramPoint[];
@@ -92,6 +93,9 @@ export function paintOverlapsPolygon(shape: Paint, points: Polygon): boolean {
 
 export function nodeFill(node: EvaluatedNode): Paint[] {
   const { x, y, width, height } = node;
+  // Only convex outlines can be used as a single clipping paint polygon.
+  if (node.kind === "diamond" || node.kind === "parallelogram") return [polygonPaint(nodeOutline(node)!)];
+  if (node.kind === "document") return documentFillPieces(node).map(polygonPaint);
   const cx = x + width / 2;
   if (node.kind === "ellipse") return [ellipse(cx, y + height / 2, width / 2, height / 2)];
   if (node.kind === "cylinder") {
@@ -125,6 +129,8 @@ function ellipseContour(x: number, y: number, rx: number, ry: number, start = 0,
 
 function nodeContours(node: EvaluatedNode): Polygon[] {
   const { x, y, width, height } = node;
+  const outline = nodeOutline(node);
+  if (outline) return [[...outline, outline[0]!]];
   const cx = x + width / 2;
   if (node.kind === "ellipse") return [ellipseContour(cx, y + height / 2, width / 2, height / 2)];
   if (node.kind === "cylinder") {
@@ -147,7 +153,7 @@ function nodeContours(node: EvaluatedNode): Polygon[] {
   return [[...points, points[0]!]];
 }
 
-/** Stroke-only nodes contribute contour strips and joins, never the hollow interior. */
+/** Stroke-only nodes contribute visible contours and decorative segments, never the hollow interior. */
 export function nodeStroke(node: EvaluatedNode): Paint[] {
   const radius = (node.style?.strokeWidth ?? 0) / 2;
   if (node.kind === "rect") {
@@ -158,7 +164,12 @@ export function nodeStroke(node: EvaluatedNode): Paint[] {
       rectangle(x - radius, y + radius, x + radius, y + height - radius),
       rectangle(x + width - radius, y + radius, x + width + radius, y + height - radius)];
   }
-  return nodeContours(node).flatMap((points) => points.slice(1).flatMap((end, index) => [
+  const contours = nodeContours(node).flatMap((points) => points.slice(1).flatMap((end, index) => [
     polygonPaint(segmentStrip(points[index]!, end, radius)), ellipse(end.x, end.y, radius, radius)
   ]));
+  if (node.kind !== "predefinedProcess") return contours;
+  const inset = predefinedProcessInset(node.width);
+  // SVG paints both butt-capped side lines as part of this node; routing still uses only its exterior.
+  return [...contours, ...[node.x + inset, node.x + node.width - inset].map((x) =>
+    polygonPaint(segmentStrip({ x, y: node.y }, { x, y: node.y + node.height }, radius)))];
 }

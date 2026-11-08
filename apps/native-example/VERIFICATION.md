@@ -11,6 +11,6 @@ pnpm test:delivery
 
 Run `pnpm test:examples` for the ordered three-host build and complete example verification. Prepare Chromium and system fonts before browser checks.
 
-Verify all nine formal examples, playback, seeking, themes, reduced motion, direct addresses, sharing, history, player replacement and export cancellation. Check the copied root/subpath artifacts independently of the source checkout.
+Verify all ten formal examples, playback, seeking, themes, reduced motion, direct addresses, sharing, history, player replacement and export cancellation. Check the copied root/subpath artifacts independently of the source checkout.
 
 Shared author tests own narrative data. SDK tests own rendering, geometric and lifecycle behavior. Keep transient inspection logs and screenshots outside version control.

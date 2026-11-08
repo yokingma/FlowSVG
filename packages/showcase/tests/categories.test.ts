@@ -5,14 +5,14 @@ import { catalogSource } from "../src/formal.js";
 it("groups the formal examples by their primary purpose", () => {
   const { catalog, json } = compileCatalog(catalogSource);
   expect(catalog.groups?.map(({ id, label, entries }) => ({ id, label, ids: entries.map((entry) => entry.id) }))).toEqual([
-    { id: "workflow", label: "Workflow", ids: ["request-response", "rag-workflow", "llm-inference"] },
+    { id: "workflow", label: "Workflow", ids: ["basic-shapes", "request-response", "rag-workflow", "llm-inference"] },
     { id: "architecture", label: "Architecture", ids: ["project-architecture", "vllm-metal-stack"] },
     { id: "state", label: "State transitions", ids: ["job-lifecycle"] },
     { id: "data-flow", label: "Data flow", ids: ["order-event-pipeline"] },
     { id: "deployment", label: "Deployment", ids: ["web-service-deployment"] },
     { id: "sequence", label: "Sequence", ids: ["cache-aside-sequence"] }
   ]);
-  expect(catalog.defaultId).toBe("request-response");
+  expect(catalog.defaultId).toBe("basic-shapes");
   for (const entry of catalog.entries) {
     expect(entry.category).toBe(catalog.groups!.find((group) => group.entries.some(({ id }) => id === entry.id))!.id);
     expect(JSON.parse(json.get(entry.jsonPath)!)).not.toHaveProperty("category");

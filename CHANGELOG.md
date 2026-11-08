@@ -2,7 +2,25 @@
 
 ## Unreleased
 
+- Verify `basic-shapes` as the default formal story across Native, React, Vue and copied root/subpath artifacts, including category navigation and its standalone JSON.
+
+- Align the `basic-shapes` example's measured nodes by row center so its six horizontal connections have no unnecessary bends. Reduce its viewport height from 748 to 508 units and fit its group around the nodes.
+
 - Link the workspace CLI on the first install through a checked-in launcher, without requiring `dist` or an install-time build.
+
+- Exclude fully clipped preset labels from overlap diagnostics and include visible predefined-process side-line strokes.
+
+- Ship a measured mixed-shape approval flow and verify shared host, offline playback and decoded image delivery.
+
+- Add parallelogram input/output nodes with shared safe-area measurement and true contour geometry.
+
+- Reject distant pointer hits when a tiny preset contour collapses at a large finite origin.
+
+- Add predefined-process nodes with decorative side lines and shared safe-area labels.
+
+- Add document report nodes with labels centered above a bounded bottom wave.
+
+- Add diamond decision nodes with shared safe-area labels, author-time label measurement, real-contour connections/hits/diagnostics, and a runnable decision-branch example.
 
 - Harden the GitHub Pages workflow with deployment path filters, stale-run cancellation and job timeouts to limit unnecessary Actions usage.
 

@@ -1,5 +1,6 @@
 /** User-selected formal content. Acceptance material never fills this catalog automatically. */
 import type { CatalogSource } from "./model.js";
+import { basicShapesExample } from "./examples/basic-shapes.js";
 import { ragWorkflowExample } from "./examples/rag-workflow.js";
 import { requestResponseExample } from "./examples/request-response.js";
 import { projectArchitectureExample } from "./examples/project-architecture.js";
@@ -12,6 +13,7 @@ import { llmInferenceExample } from "./examples/llm-inference.js";
 
 export const catalogSource: CatalogSource = {
   definitions: [
+    basicShapesExample,
     requestResponseExample,
     ragWorkflowExample,
     projectArchitectureExample,
@@ -23,6 +25,7 @@ export const catalogSource: CatalogSource = {
     llmInferenceExample
   ],
   order: [
+    basicShapesExample.id,
     requestResponseExample.id,
     ragWorkflowExample.id,
     projectArchitectureExample.id,
@@ -33,5 +36,5 @@ export const catalogSource: CatalogSource = {
     cacheAsideSequenceExample.id,
     llmInferenceExample.id
   ],
-  defaultId: requestResponseExample.id
+  defaultId: basicShapesExample.id
 };

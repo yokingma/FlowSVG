@@ -2,6 +2,8 @@
 
 Read the sections for the affected subsystem. For public-contract changes, also read the corresponding [package README](README.md) sections. These rules retain implementation constraints and failure cases.
 
+- Keep the mixed preset-shape example SDK-owned. Generate its shared label heights through the public measurement API and reuse its JSON across hosts, offline playback and image acceptance.
+
 ## Core and timeline
 
 - Derive arrival paint from the shared 200 ms entrance, 100 ms hold and 200 ms departure constants. Keep paint weights separate from logical membership and marker progress: senders paint immediately, receivers use the cubic entrance, and automatic node/edge paint is multiplied by the remaining departure weight before max-merging explicit highlights. Retain logical membership at zero paint. Reduced motion and synchronized multi-flow beats bypass paint interpolation without changing compiled intervals.
@@ -27,6 +29,14 @@ Read the sections for the affected subsystem. For public-contract changes, also 
 
 ## Routing and SVG geometry
 
+- Derive parallelogram slant from one quarter of current width, capped at 24 diagram units; its labels reserve the full height minus two 12-unit paddings.
+
+- Keep predefined-process side lines decorative within one node identity; only its rectangular outer contour supplies attachments and routing obstacles. Include their visible strokes in that node’s diagnostic paint, including transparent-fill styles.
+
+- Reject points outside preset bounds before testing contour half planes; representable tiny dimensions may collapse at a large finite origin.
+
+- New semantic presets share one contour definition across serialization, cardinal/ray edge attachments and hits; preserve existing-shape behavior. Keep contour sampling separate from convex diagnostic paint decomposition.
+
 - Keep SVG background selection separate from frame evaluation. Remove only the whole-diagram background rectangle; preserve object paint and label contrast.
 - Render group borders with the shared rounded-rectangle radius, bounded by one quarter of each dimension. Apply this in core SVG serialization so all hosts and exports share the default; retain group-relative coordinates, dashed styles and unclipped children.
 - Round orthogonal routes after obstacle routing. Serialize quadratic bends and sample the same controls for flow distance, labels, bounds and hits. Clamp neighboring trims, reserve the straight marker approach, and reject control hulls that intersect stroked endpoint or obstacle bounds; tight corridors may reduce a bend to zero.
@@ -50,6 +60,10 @@ Read the sections for the affected subsystem. For public-contract changes, also 
 - Name SVG images directly with escaped `aria-label` and retain a readable `<title>`; document-wide ID references must not couple independent deterministic exports.
 
 ## Structured content and typography
+
+- Semantic presets use fixed rectangular label safe areas with 12-unit padding. Keep contour clearance, clipping and label placement in the shared core; ordinary labels retain their current wrapping behavior.
+- Wrap semantic preset labels at grapheme boundaries when a Latin token cannot fit, and clip paint while retaining overflow diagnostics. Preserve ordinary word-safe `wrapText` behavior separately.
+- Measure semantic node labels using the same wrapping and full line boxes as evaluated frames, then invert the shape safe-area height rule; measurement returns suggestions without mutating documents or scanning timelines.
 
 - Keep ordinary node/edge labels and public `wrapText` word-safe for Latin text. Preserve explicit blank lines and code-point wrapping for other scripts; keep an overwide Latin word intact without shrinking its font. For a purely vertical edge, use the narrower endpoint width as the horizontal text budget rather than route length. Rendering, bounds and diagnostics consume the same evaluated lines. Share the internal word-boundary rule with measured GIF captions; caption preflight reports overwide intact words instead of splitting them.
 
@@ -137,6 +151,10 @@ Read the sections for the affected subsystem. For public-contract changes, also 
 - Run SDK test files sequentially because offline integration files rebuild the shared `dist` directory. Use the independently maintained `gifuct-js` decoder for actual GIF pixels and raw GCE fields for delay assertions; its decompressed delay normalizes zero values and must not be used to verify metadata.
 
 ## On-demand geometry diagnostics
+
+- Share the document wave's 256-chord contour across SVG, attachments, hits and stroke paint. Decompose its concave fill into convex strips; never clip against its whole outline.
+
+- Convex preset fills can use their shared outer polygon directly. Do not assume every future outline is convex. Clip safe-area label paint before camera clipping, omit labels whose safe-area width or height is zero, and exclude invisible overflow from fitting and hit testing.
 
 `Diagram.diagnoseAt` consumes one evaluated frame. Pair checks remain outside evaluation, SVG rendering and playback. The internal diagnostic geometry module owns visible-paint intersections; no public sampler is exposed.
 Filled-node diagnostics use analytic unions of rectangles and ellipses after camera clipping. Curved outline paint uses 256 contour intervals per revolution; rectangle strokes keep square miters. One logical content line retains separate visible span rectangles, clipped by both safeArea and camera, so transparent gaps cannot create paint. Source descriptors retain role, field and line position. Canonical versioned array keys sort label pairs but preserve path/label-to-node direction. Keep message text and caller context out of warning identity; the caller binds source/SDK/time/options separately. New diagnostic types form a discriminated LayoutWarning union; frame.warnings still contains only text overflow.

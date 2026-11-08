@@ -62,7 +62,7 @@ try {
     "docs/images/facts-timeline.png", "docs/images/facts-timeline.zh-CN.png", "docs/images/flowsvg-wordmark.gif",
     "docs/images/job-lifecycle.gif", "docs/images/request-response.gif", "docs/images/web-service-deployment.gif", "docs/images/llm-inference.gif"
   ];
-  const EXAMPLE_FILES = ["examples/job-lifecycle.json"];
+  const EXAMPLE_FILES = ["examples/job-lifecycle.json", "examples/decision-branch.json", "examples/report-generation.json", "examples/subprocess-call.json", "examples/input-output.json", "examples/mixed-flow.json", "examples/create-mixed-flow.mjs"];
   const portableFiles = [
     "dist/portable/export.js", "dist/portable/LICENSE.gifenc.txt", "dist/portable/player.js", "dist/portable/styles.css", "dist/portable/manifest.json",
     "dist/portable/LICENSE.flowsvg.txt", "dist/portable/LICENSE.esbuild.txt"
@@ -79,6 +79,7 @@ try {
     "browser/player", "browser/controls", "browser/select-control", "browser/export-controls", "browser/accessibility", "browser/lifecycle", "browser/svg-dom",
     "core/diagnostic-geometry", "core/geometry-diagnostics", "core/model", "core/typography", "core/validation", "core/diagram", "core/edge-geometry", "core/svg-number", "core/timeline", "core/theme", "core/color",
     "core/node-content", "core/node-content-measurement", "core/node-content-paint",
+    "core/node-shape", "core/node-label", "core/node-label-measurement",
     "adapters/host-lifecycle", "adapters/react", "adapters/vue", "adapters/web-component"
   ];
   const allowedFiles = new Set([
@@ -98,7 +99,8 @@ try {
     { ...process.env, PLAYWRIGHT_BROWSERS_PATH: browserInstall });
   if (existsSync(browserInstall)) throw new Error("ordinary npm install unexpectedly prepared a browser");
   run(process.execPath, ["--input-type=module", "--eval", `
-    import { createDiagram, measureNodeContent } from "flowsvg";
+    import { readFileSync } from "node:fs";
+    import { createDiagram, measureNodeContent, measureNodeLabel } from "flowsvg";
     import { createPlayer } from "flowsvg/browser";
     import { defineFlowPlayer } from "flowsvg/web-component";
     import { defineFlowPlayer as defineElement } from "flowsvg/element";
@@ -114,6 +116,27 @@ try {
       || JSON.parse(risks[0].warningKey)[1] !== 1 || geometry.evaluateAt(0).warnings.length) {
       throw new Error("DOM-free public geometry diagnostics failed");
     }
+    const mixedSource = new URL("./node_modules/flowsvg/examples/mixed-flow.json", import.meta.url);
+    const mixed = createDiagram(JSON.parse(readFileSync(mixedSource, "utf8")));
+    if (mixed.evaluateAt(0).warnings.length || mixed.evaluateAt(3000).warnings[0]?.objectId !== "overflow") throw new Error("installed mixed-flow evaluation failed");
+    for (const kind of ["diamond", "parallelogram", "document", "predefinedProcess"]) {
+      if (!mixed.evaluateAt(0).nodes.some(node => node.kind === kind)) throw new Error("installed preset missing " + kind);
+    }
+    const labelMeasurement = measureNodeLabel({ kind: "diamond", width: 200, label: ["A", "A\\nB"] });
+    if (labelMeasurement.height !== 128 || labelMeasurement.diagnostics.length) throw new Error("installed label measurement failed");
+    const decision = createDiagram({ version: 1, viewport: { width: 300, height: 300 }, nodes: [{ id: "decision", kind: "diamond", x: 0, y: 0, width: 200, height: labelMeasurement.height, label: "A\\nB" }], edges: [], scenes: [] });
+    if (decision.evaluateAt(0).warnings.length || !decision.renderSvg().includes("<polygon")) throw new Error("installed decision rendering failed");
+    const reportSize = measureNodeLabel({ kind: "document", width: 200, label: "A\\nB\\nC" });
+    const report = createDiagram({ version: 1, viewport: { width: 300, height: 300 },
+      nodes: [{ id: "report", kind: "document", x: 0, y: 0, width: 200, height: reportSize.height, label: "A\\nB\\nC" }], edges: [], scenes: [] });
+    if (reportSize.height !== 108 || report.evaluateAt(0).warnings.length || !report.renderSvg().includes("<polygon")) {
+      throw new Error("installed document measurement or rendering failed");
+    }
+    const processMeasurement = measureNodeLabel({ kind: "predefinedProcess", width: 200, label: ["A", "A\\nB"] });
+    if (processMeasurement.height !== 64 || processMeasurement.diagnostics.length) throw new Error("installed subprocess measurement failed");
+    const subprocess = createDiagram({ version: 1, viewport: { width: 300, height: 300 }, nodes: [{ id: "call", kind: "predefinedProcess", x: 0, y: 0, width: 200, height: processMeasurement.height, label: "A\\nB" }], edges: [], scenes: [] });
+    if (subprocess.evaluateAt(0).warnings.length || !subprocess.renderSvg().includes('d="M 12 0 V 64 M 188 0 V 64"')
+      || subprocess.hitTest(0, { x: 12, y: 32 })?.id !== "call") throw new Error("installed subprocess rendering failed");
     const content = { blocks: [{ type: "paragraph", text: "A" }] };
     const taller = { blocks: [{ type: "paragraph", text: "A\\nB\\nC" }] };
     const measured = measureNodeContent({ kind: "rect", width: 240, content: Object.freeze([content, taller]) });
@@ -129,7 +152,7 @@ try {
   `], tempRoot);
   run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", "react", "react-dom", "@types/react", "@types/react-dom", "vue", "jsdom@26.1.0", "typescript", "gifuct-js@2.1.2", "@types/node@22.19.1"], tempRoot);
   writeFileSync(join(tempRoot, "types-smoke.ts"), `
-    import { createDiagram, renderSvg, measureNodeContent, type DiagramDocument, type DiagramTypography, type DiagramBeat, type NodeContent, type NodeContentMeasurementInput, type NodeContentMeasurement, type NodeContentMeasurementDiagnostic } from "flowsvg";
+    import { createDiagram, renderSvg, measureNodeContent, type DiagramDocument, type DiagramTypography, type DiagramBeat, type NodeContent, type NodeContentMeasurementInput, type NodeContentMeasurement, type NodeContentMeasurementDiagnostic, measureNodeLabel, type NodeLabelMeasurementInput, type NodeLabelMeasurement, type NodeLabelMeasurementDiagnostic } from "flowsvg";
     import type { ContentBlock, ContentListItem, ContentListStyle, ContentTag, ContentTagStyle, ContentTagBackground, ContentGraphBlock, ContentGraphNode, ContentGraphEdge, ContentGraphLayout, ContentText, ContentTextSpan, ContentSpanStyle, ContentSpan, ContentTextStyle, ContentAlignment, ContentSafeArea, ContentLine, NodeContentLayout, NodeKind, EdgeRoute, PortDirection, FlowDirection, ThemeName, Viewport, NodeStyle, EdgeStyle, DiagramNode, DiagramEdge, Scene, Beat, NodeVisualState, EdgeVisualState, Action, ValidationIssue, EvaluateOptions, SvgRenderOptions, TextLine, EvaluatedNode, EvaluatedEdge, EdgeFlowMarker, LayoutWarning, GeometryWarning, GeometryWarningCode, TextOverflowWarning, CameraState, HitObjectType, HitObject, DiagramPoint, DiagramFrameState, DiagramValidationError, Diagram } from "flowsvg";
     import type { FlowPlayer, PlayerOptions } from "flowsvg/browser";
     import { renderHtml, exportGif as exportNodeGif, type HtmlRenderOptions, type NodeGifExportOptions, exportPng as exportNodePng, type NodePngExportOptions } from "flowsvg/node";
@@ -162,6 +185,17 @@ try {
     const typography: DiagramTypography = { nodeLabel: 20, edgeLabel: 18, flowLabel: 16 };
     const measurementInput: NodeContentMeasurementInput = { typography, kind: "cylinder", width: 240, content: Object.freeze([content]) };
     const measurement: NodeContentMeasurement = measureNodeContent(measurementInput);
+    const labelInput: NodeLabelMeasurementInput = { kind: "diamond", width: 200, label: Object.freeze(["A", "B"]) };
+    const labelMeasurement: NodeLabelMeasurement = measureNodeLabel(labelInput);
+    const labelDiagnostic: NodeLabelMeasurementDiagnostic | undefined = labelMeasurement.diagnostics[0];
+    const processInput: NodeLabelMeasurementInput = { kind: "predefinedProcess", width: 200, label: "Call" };
+    const processKind: NodeKind = processInput.kind;
+    void [labelDiagnostic, processKind, measureNodeLabel(processInput)];
+    const presetKinds: readonly NodeKind[] = ["diamond", "parallelogram", "document", "predefinedProcess"];
+    const ioInput: NodeLabelMeasurementInput = { kind: "parallelogram", width: 220, label: "Input" };
+    void [presetKinds, measureNodeLabel(ioInput)];
+    const reportInput: NodeLabelMeasurementInput = { kind: "document", width: 200, label: "Report" };
+    measureNodeLabel(reportInput);
     const diagnostic: NodeContentMeasurementDiagnostic | undefined = measurement.diagnostics[0];
     const diagnosticDimension: "width" | "height" | undefined = diagnostic?.dimension;
     void diagnosticDimension;
@@ -224,6 +258,18 @@ try {
     const React = (await import("react")).default;
     const { FlowPlayer: ReactPlayer } = await import("flowsvg/react");
     const { createRoot } = await import("react-dom/client");
+    const mixed = JSON.parse(readFileSync(new URL("./node_modules/flowsvg/examples/mixed-flow.json", import.meta.url), "utf8"));
+    function assertMixed(handle, host, name, options = {}, reload = model => handle.load(model)) {
+      reload(mixed);
+      const diagram = createDiagram(mixed);
+      for (const time of [0, 1500, 3000, 4000]) {
+        handle.seek(time);
+        if (JSON.stringify(handle.getState().frame) !== JSON.stringify(diagram.evaluateAt(time, options))) throw new Error(name + " mixed frame differs");
+        const expected=document.createElement("div"); expected.innerHTML=diagram.renderSvg(time, options);
+        if(host.querySelector("svg").outerHTML!==expected.querySelector("svg").outerHTML) throw new Error(name + " mixed SVG differs");
+      }
+      reload(model);
+    }
     function assertContent(handle, host, name) {
       handle.seek(0);
       if (!host.querySelector("[data-content-id=node]")?.textContent.includes("verified")) throw new Error(name + " content did not mount");
@@ -239,6 +285,7 @@ try {
     const player = createPlayer(host, model, { controls: false, reducedMotion: true });
     if (player.getState().timeMs !== 0 || player.getState().totalDuration !== 1_000) throw new Error("native player did not initialize");
     assertContent(player, host, "native");
+    assertMixed(player, host, "native", { reducedMotion: true });
     player.play();
     if (!player.getState().playing) throw new Error("native player did not play");
     player.load(model);
@@ -252,6 +299,7 @@ try {
     const elementState = element.getState();
     if (!elementState || elementState.timeMs !== 0 || elementState.totalDuration !== 1_000) throw new Error("web component did not mount");
     assertContent(element, element, "element");
+    assertMixed(element, element, "element", {}, model => { element.document = model; });
     element.play();
     if (!element.getState()?.playing) throw new Error("web component did not play");
     element.document = model;
@@ -264,6 +312,7 @@ try {
     vueApp.mount(vueHost);
     if (!vueRef.value || !vueHost.querySelector("svg")) throw new Error("Vue player did not mount");
     assertContent(vueRef.value, vueHost, "Vue");
+    assertMixed(vueRef.value, vueHost, "Vue");
     vueApp.unmount();
     if (vueHost.childElementCount || vueRef.value !== null) throw new Error("Vue player did not clean up");
     const reactHost = document.createElement("div"); document.body.append(reactHost);
@@ -279,6 +328,7 @@ try {
     const reactHandle = reactRef.current;
     if (!reactHost.querySelector("svg") || !reactHandle || reactHandle.getState().timeMs !== 250 || reactHandle.getState().speed !== 1.5) throw new Error("React player did not mount with its props");
     assertContent(reactHandle, reactHost, "React");
+    assertMixed(reactHandle, reactHost, "React");
     reactHandle.play();
     if (!reactHandle.getState().playing) throw new Error("React player did not play");
     reactHandle.load(model);
