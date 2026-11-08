@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add the full-timeline `basic-shapes` GIF to the SDK README previews and package release allowlist.
+
 - Use a checked-in CLI launcher so workspace installation can link `flowsvg` before the SDK is built. Report a missing build with a `pnpm build` instruction.
 
 - Exclude fully clipped preset labels from overlap diagnostics and include visible predefined-process side-line strokes.

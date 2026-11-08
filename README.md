@@ -32,7 +32,11 @@ Try the [live demo](https://yokingma.github.io/FlowSVG/) to browse the example c
 
 ## Featured examples
 
-FlowSVG includes three representative diagrams: a simple request and response flow, a two-replica web service deployment, and an LLM inference walkthrough that makes Transformer layers and KV-cache reuse visible.
+FlowSVG includes a complete public shape catalog, a simple request and response flow, a two-replica web service deployment, and an LLM inference walkthrough that makes Transformer layers and KV-cache reuse visible.
+
+The shape catalog puts every public node shape into one executable flow and demonstrates measured labels, orthogonal connections, highlights, and playback.
+
+<p align="center"><img src="packages/flowsvg/docs/images/basic-shapes.gif" alt="Animated catalog of FlowSVG node shapes" width="700"></p>
 
 <p align="center"><img src="packages/flowsvg/docs/images/request-response.gif" alt="Request and response flow" width="700"></p>
 

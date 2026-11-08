@@ -11,7 +11,7 @@ const PREVIEW_IMAGES = [
   "docs/images/numbered-list.png", "docs/images/numbered-list.zh-CN.png",
   "docs/images/record-tags.png", "docs/images/entity-graph.png",
   "docs/images/facts-timeline.png", "docs/images/facts-timeline.zh-CN.png", "docs/images/flowsvg-wordmark.gif",
-  "docs/images/job-lifecycle.gif", "docs/images/request-response.gif", "docs/images/web-service-deployment.gif", "docs/images/llm-inference.gif"
+  "docs/images/job-lifecycle.gif", "docs/images/basic-shapes.gif", "docs/images/request-response.gif", "docs/images/web-service-deployment.gif", "docs/images/llm-inference.gif"
 ];
 const EXAMPLE_FILES = ["examples/job-lifecycle.json", "examples/decision-branch.json", "examples/report-generation.json", "examples/subprocess-call.json", "examples/input-output.json", "examples/mixed-flow.json", "examples/create-mixed-flow.mjs"];
 const fixtures: string[] = [];
@@ -186,8 +186,8 @@ describe("packed release files", () => {
     expect(result.stderr).not.toContain("unexpected tarball file");
   });
 
-  it.each([...EXAMPLE_FILES, "docs/images/job-lifecycle.gif"])(
-    "rejects a missing lifecycle example artifact %s before installing the consumer", (file) => {
+  it.each([...EXAMPLE_FILES, "docs/images/job-lifecycle.gif", "docs/images/basic-shapes.gif"])(
+    "rejects a missing required example artifact %s before installing the consumer", (file) => {
       const result = verifyPackedFiles([], [file]);
       expect(result.stderr).toContain(`tarball missing ${file}`);
       expect(result.stderr).not.toContain("TEST_CONSUMER_INSTALL_REACHED");

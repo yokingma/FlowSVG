@@ -26,7 +26,13 @@ Node positions and dimensions are explicit. FlowSVG renders and animates the lay
 
 ## Featured examples
 
-These three diagrams show how FlowSVG explains a simple request flow, a deployed service topology and a layered model architecture with the same authored document, playback timeline and export path.
+These four diagrams show how FlowSVG explains a complete node-shape catalog, a simple request flow, a deployed service topology and a layered model architecture with the same authored document, playback timeline and export path.
+
+### Basic shapes
+
+The catalog puts every public node shape into one executable flow and demonstrates measured labels, orthogonal connections, highlights and playback.
+
+<p align="center"><img src="./docs/images/basic-shapes.gif" alt="Animated catalog of FlowSVG node shapes" width="700"></p>
 
 ### Request and response
 

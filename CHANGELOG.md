@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add the full-timeline `basic-shapes` GIF to the root and SDK README previews and package release allowlist.
+
 - Verify `basic-shapes` as the default formal story across Native, React, Vue and copied root/subpath artifacts, including category navigation and its standalone JSON.
 
 - Align the `basic-shapes` example's measured nodes by row center so its six horizontal connections have no unnecessary bends. Reduce its viewport height from 748 to 508 units and fit its group around the nodes.

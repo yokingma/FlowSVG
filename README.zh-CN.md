@@ -32,7 +32,11 @@ FlowSVG 包含 SDK、共享 showcase，以及原生浏览器、React、Vue 集�
 
 ## 典型示例
 
-FlowSVG 包含三张代表性图解：一张展示简单的请求与响应流程，一张展示双副本 Web 服务部署，另一张展示 Transformer 层与 KV Cache 复用的 LLM 推理过程。
+FlowSVG 包含一张完整的公开图形目录，以及简单的请求与响应流程、双副本 Web 服务部署和展示 Transformer 层与 KV Cache 复用的 LLM 推理过程。
+
+图形目录把所有公开节点图形放进同一条可执行流程，并展示测量标签、正交连线、高亮和播放控制。
+
+<p align="center"><img src="packages/flowsvg/docs/images/basic-shapes.gif" alt="FlowSVG 节点图形动画目录" width="700"></p>
 
 <p align="center"><img src="packages/flowsvg/docs/images/request-response.gif" alt="请求与响应流程" width="700"></p>
 

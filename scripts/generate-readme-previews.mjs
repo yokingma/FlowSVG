@@ -4,6 +4,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { createDiagram } from "../packages/flowsvg/dist/index.js";
 import { exportGif } from "../packages/flowsvg/dist/node.js";
+import { basicShapesExample } from "../packages/showcase/dist/examples/basic-shapes.js";
 import { requestResponseExample } from "../packages/showcase/dist/examples/request-response.js";
 import { webServiceDeploymentExample } from "../packages/showcase/dist/examples/web-service-deployment.js";
 import { llmInferenceExample } from "../packages/showcase/dist/examples/llm-inference.js";
@@ -14,6 +15,7 @@ const PREVIEW_SPEED = 1.5;
 await mkdir(output, { recursive: true });
 
 const jobs = [
+  ["basic-shapes.gif", basicShapesExample.document, 700],
   ["request-response.gif", requestResponseExample.document, 700],
   ["web-service-deployment.gif", webServiceDeploymentExample.document, 700],
   ["llm-inference.gif", llmInferenceExample.document, 640]

@@ -24,6 +24,7 @@ Generate the GIF with the current SDK's Node exporter: light theme, width 868, 2
 
 | Image | Source and render settings |
 | --- | --- |
+| `basic-shapes.gif` | `packages/showcase/src/examples/basic-shapes.ts`, full compiled timeline, dark theme, 1.5x speed, 700 px wide, 24 fps, no captions |
 | `request-response.gif` | `packages/showcase/src/examples/request-response.ts`, full compiled timeline, dark theme, 1.5x speed, 700 px wide, 24 fps, no captions |
 | `web-service-deployment.gif` | `packages/showcase/src/examples/web-service-deployment.ts`, full compiled timeline, dark theme, 1.5x speed, 700 px wide, 24 fps, no captions |
 | `llm-inference.gif` | `packages/showcase/src/examples/llm-inference.ts`, full compiled timeline, dark theme, 1.5x speed, 640 px wide, 24 fps, no captions |
