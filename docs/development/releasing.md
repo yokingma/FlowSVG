@@ -94,7 +94,7 @@ tarball 验证先删除 SDK 的 `dist`，再通过 `npm pack` 触发 `prepack` �
 
 核心消费验收还通过已安装包的公开入口验证无 DOM 的 `measureNodeContent` 调用、只读内容版本集合、已知推荐高度及写回尺寸后的求值结果；严格类型检查覆盖三项公开测量类型。
 
-验证通过的同一份 tarball 保存在 `dist/releases/flowsvg-<version>.tgz`，后续预演与上传均使用该文件，不重新打包。发布文件应只有 `package.json`、中英文 README、CHANGELOG、PATTERNS、LICENSE，列出的 `docs/images/*.png` 示例图、`docs/images/job-lifecycle.gif` 教学动画、`docs/images/flowsvg-wordmark.gif` 品牌图和 `examples/job-lifecycle.json` 示例文档，以及公开入口、`dist/core/`、`dist/browser/`、`dist/export/`、`dist/node/` 与 `dist/adapters/` 内部模块的 JavaScript 与类型声明、`dist/styles.css`，以及 `dist/portable/` 的播放器、导出器、CSS、版本清单和许可证。各分入口 TypeScript 编译保留内部目录层级。`scripts/verify-release.mjs` 逐模块列出允许产物；增加内部模块时同步更新允许清单。源 `.ts`、测试产物、fixture 和未声明文件均不得进入 tarball。
+验证通过的同一份 tarball 保存在 `dist/releases/flowsvg-<version>.tgz`，后续预演与上传均使用该文件，不重新打包。发布文件应只有 `package.json`、中英文 README、CHANGELOG、PATTERNS、LICENSE、`bin/flowsvg.mjs` 启动脚本，列出的 `docs/images/*.png` 示例图、`docs/images/job-lifecycle.gif` 教学动画、`docs/images/flowsvg-wordmark.gif` 品牌图和 `examples/job-lifecycle.json` 示例文档，以及公开入口、`dist/core/`、`dist/browser/`、`dist/export/`、`dist/node/` 与 `dist/adapters/` 内部模块的 JavaScript 与类型声明、`dist/styles.css`，以及 `dist/portable/` 的播放器、导出器、CSS、版本清单和许可证。各分入口 TypeScript 编译保留内部目录层级。`scripts/verify-release.mjs` 逐模块列出允许产物；增加内部模块时同步更新允许清单。源 `.ts`、测试产物、fixture 和未声明文件均不得进入 tarball。
 
 ## 登录与上传
 
@@ -134,7 +134,7 @@ npm view flowsvg version exports bin dist.integrity --json --registry=https://re
 
 ## 离线 HTML 与 GIF 资产
 
-构建保留 ESM 与类型声明，另生成 Node 20+ 入口、CLI 和 `dist/portable/` 资产。白名单逐项列出模块、CSS、版本清单和许可证。`esbuild` 是固定版本的构建依赖；HTML 生成和复制后的 HTML 工具无需 `node_modules` 或浏览器。复制工具时须保留完整、同版本的 `dist/`。
+构建保留 ESM 与类型声明，另生成 Node 20+ 入口、CLI 和 `dist/portable/` 资产。包的 `bin` 指向随源码提交的 `bin/flowsvg.mjs`，使首次工作区安装不依赖 `dist`。启动脚本在同一进程中加载 `dist/node/cli.js`；构建产物缺失时提示运行 `pnpm build`。发布白名单和安装后的消费验收同时检查启动脚本与编译后的 CLI。`esbuild` 是固定版本的构建依赖；HTML 生成和复制后的 HTML 工具无需 `node_modules` 或浏览器。复制工具时须保留完整、同版本的 `dist/`，直接调用 `dist/node/cli.js`。
 
 `renderHtml(document, { gifExport: true })` 和 HTML CLI `--gif-export` 在播放器前内嵌匹配的导出器与 worker；默认 HTML 不包含编码器。验收覆盖两种装配的离线 `file://` 播放、恶意嵌入文本和实际下载 GIF 的独立解码。
 

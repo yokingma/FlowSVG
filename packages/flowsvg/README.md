@@ -386,6 +386,8 @@ The SDK CLI supports HTML and GIF output. Use the SDK API for PNG.
 
 To inspect CLI arguments after installation, run `npx --no-install flowsvg --help`.
 
+When using a source checkout, first run `pnpm build` from the repository root. The CLI launcher reports this step if the build output is missing.
+
 For offline HTML, `HtmlRenderOptions` accepts:
 
 | Option | Default |

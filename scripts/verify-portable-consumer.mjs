@@ -35,7 +35,8 @@ function verifyMetadata() {
   const metadata = JSON.parse(readFileSync(join(PACKAGE, "package.json"), "utf8"));
   const manifest = JSON.parse(readFileSync(join(PACKAGE, "dist/portable/manifest.json"), "utf8"));
   assert.equal(manifest.version, metadata.version); assert.equal(manifest.name, metadata.name);
-  assert.equal(metadata.bin.flowsvg, "./dist/node/cli.js");
+  assert.equal(metadata.bin.flowsvg, "./bin/flowsvg.mjs");
+  assert.match(run(NODE20, [join(PACKAGE, metadata.bin.flowsvg), "--help"]), /Usage: flowsvg/);
   assert.equal(metadata.dependencies.gifenc, "1.0.3"); assert.equal(metadata.dependencies["playwright-core"], "1.58.2");
   const automation = JSON.parse(readFileSync(join(ROOT, "node_modules/playwright-core/package.json"), "utf8"));
   assert.equal(automation.version, metadata.dependencies["playwright-core"]);
@@ -74,7 +75,7 @@ function verifyImportsAndRuntimes() {
       try { await operation(${JSON.stringify(document)}); throw Error("unexpected success"); }
       catch (error) { if (!/Node 20/.test(error.message)) throw error; }
     }`]);
-  const low = spawnSync(NODE18, [join(PACKAGE, "dist/node/cli.js"), "input.json", "--output", "unused.html"], { cwd: ROOT, encoding: "utf8" });
+  const low = spawnSync(NODE18, [join(PACKAGE, "bin/flowsvg.mjs"), "input.json", "--output", "unused.html"], { cwd: ROOT, encoding: "utf8" });
   assert.equal(low.status, 1); assert.match(low.stderr, /Node 20/);
 }
 

@@ -209,6 +209,8 @@ pnpm --filter flowsvg-native-example dev
 
 Open the URL printed in the terminal. For React or Vue, replace `flowsvg-native-example` with `flowsvg-react-example` or `flowsvg-vue-example`. Rebuild the SDK after changing its source.
 
+Installation links the CLI through a checked-in launcher and does not build the SDK. Before the first build, invoking the CLI exits with a `pnpm build` instruction.
+
 The shared catalog includes request/response, RAG, architecture, task lifecycle, data flow, deployment and sequence diagrams. Examples use self-contained teaching data. See the [native](apps/native-example/README.md), [React](apps/react-example/README.md) and [Vue](apps/vue-example/README.md) guides for controls and build options. A [background task example](packages/flowsvg/README.md#example-background-task-lifecycle) is also included in the npm package.
 
 Build all three example sites with `pnpm build:examples`. For static hosting and GitHub Pages, see [showcase delivery](docs/verification/showcase-verification.md) and [Pages deployment](docs/development/github-pages.md).

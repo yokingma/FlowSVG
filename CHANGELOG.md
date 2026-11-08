@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Link the workspace CLI on the first install through a checked-in launcher, without requiring `dist` or an install-time build.
+
 - Harden the GitHub Pages workflow with deployment path filters, stale-run cancellation and job timeouts to limit unnecessary Actions usage.
 
 - Add full-timeline request-response, web-service-deployment and LLM inference GIF previews to the repository and SDK READMEs, rendered at 1.5x speed and 24 fps.

@@ -147,7 +147,7 @@ function verifyPackedFiles(extraFiles: string[], omittedFiles: string[] = []) {
     "dist/portable/export.js", "dist/portable/LICENSE.gifenc.txt", "dist/portable/player.js", "dist/portable/styles.css", "dist/portable/manifest.json",
     "dist/portable/LICENSE.flowsvg.txt", "dist/portable/LICENSE.esbuild.txt"
   ];
-  const packedFiles = [...documents, ...PREVIEW_IMAGES, ...EXAMPLE_FILES, ...portableFiles, "dist/node/cli.js", "dist/node.d.ts", "dist/export.d.ts", "dist/export/worker-source.js", ...extraFiles].filter((file) => !omittedFiles.includes(file));
+  const packedFiles = [...documents, ...PREVIEW_IMAGES, ...EXAMPLE_FILES, ...portableFiles, "bin/flowsvg.mjs", "dist/node/cli.js", "dist/node.d.ts", "dist/export.d.ts", "dist/export/worker-source.js", ...extraFiles].filter((file) => !omittedFiles.includes(file));
   writeFileSync(join(fixture.binaries, "npm"), `#!${process.execPath}
     const fs = require("node:fs");
     const path = require("node:path");
@@ -199,7 +199,7 @@ describe("packed release files", () => {
     expect(result.stderr).toContain("TEST_INSTALL_SCRIPTS_ENABLED: true");
   });
 
-  it.each(["dist/portable/manifest.json", "dist/portable/LICENSE.esbuild.txt", "dist/portable/export.js", "dist/portable/LICENSE.gifenc.txt", "dist/node/cli.js", "dist/node.d.ts", "dist/export.d.ts", "dist/export/worker-source.js"])(
+  it.each(["bin/flowsvg.mjs", "dist/portable/manifest.json", "dist/portable/LICENSE.esbuild.txt", "dist/portable/export.js", "dist/portable/LICENSE.gifenc.txt", "dist/node/cli.js", "dist/node.d.ts", "dist/export.d.ts", "dist/export/worker-source.js"])(
     "rejects a missing portable artifact %s before installing the consumer", (file) => {
       const result = verifyPackedFiles([], [file]);
       expect(result.stderr).toContain(`tarball missing ${file}`);

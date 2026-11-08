@@ -14,7 +14,7 @@ pnpm --filter flowsvg test:browser
 pnpm release:verify
 ```
 
-`pnpm test` includes SDK behavior and browser regressions, release-script contracts and the SDK dependency audit. Browser checks serve SDK-owned fixtures. The dependency audit rejects imports outside the SDK boundary.
+`pnpm test` includes SDK behavior and browser regressions, release-script contracts, cold workspace installation and the SDK dependency audit. The installation regression runs pnpm offline without lifecycle scripts or SDK build output and checks that the CLI links without warnings. Browser checks serve SDK-owned fixtures. The dependency audit rejects imports outside the SDK boundary.
 
 `pnpm release:verify` builds and installs an actual tarball. It checks the file allowlist, public exports, strict consumer types, Native/Web Component/React/Vue lifecycles and offline HTML/GIF tools. The verifier also checks additional exports present in that package version. `pnpm release` adds type and behavior checks and an npm publication preview; uploading requires `pnpm release:publish`.
 

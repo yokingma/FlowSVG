@@ -21,6 +21,8 @@
 
 ## Build and verification boundaries
 
+- Keep workspace CLI bin targets in checked-in launchers so a first install can link commands without generated SDK output. Verify cold installation without lifecycle scripts.
+
 - Build selected shared author output and its consumers sequentially: source selection replaces shared generated data. Use the maintained commands in the [showcase verification guide](docs/verification/showcase-verification.md).
 - Verify installed-package behavior through the [SDK gate](docs/verification/sdk-verification.md) and copied host artifacts through the showcase gate. A passing source-level test cannot substitute for either delivery boundary.
 - Keep shared browser navigation expectations aligned with the complete formal catalog and its category order, including newly selected stories.

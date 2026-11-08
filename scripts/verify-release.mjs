@@ -53,6 +53,7 @@ try {
   const sourceTarball = join(tempRoot, packed[0].filename);
   const packedFiles = packed[0].files.map(({ path }) => path);
   const documents = ["package.json", "README.md", "README.zh-CN.md", "CHANGELOG.md", "PATTERNS.md", "LICENSE"];
+  const CLI_LAUNCHER = "bin/flowsvg.mjs";
   // Public README images must travel with the package so private GitHub access is never required.
   const PREVIEW_IMAGES = [
     "docs/images/quick-start.png", "docs/images/node-content.png",
@@ -69,7 +70,7 @@ try {
   const exportTargets = Object.values(packageJson.exports).flatMap((entry) => (
     typeof entry === "string" ? [entry] : Object.values(entry)
   ));
-  for (const file of [...documents, ...PREVIEW_IMAGES, ...EXAMPLE_FILES, ...portableFiles, "dist/node/cli.js", "dist/node.d.ts", "dist/export.d.ts", "dist/export/worker-source.js", ...exportTargets.map((target) => target.replace(/^\.\//, ""))]) {
+  for (const file of [...documents, CLI_LAUNCHER, ...PREVIEW_IMAGES, ...EXAMPLE_FILES, ...portableFiles, "dist/node/cli.js", "dist/node.d.ts", "dist/export.d.ts", "dist/export/worker-source.js", ...exportTargets.map((target) => target.replace(/^\.\//, ""))]) {
     if (!packedFiles.includes(file)) throw new Error(`tarball missing ${file}`);
   }
   const modules = [
@@ -81,7 +82,7 @@ try {
     "adapters/host-lifecycle", "adapters/react", "adapters/vue", "adapters/web-component"
   ];
   const allowedFiles = new Set([
-    ...documents, ...PREVIEW_IMAGES, ...EXAMPLE_FILES, "dist/styles.css",
+    ...documents, CLI_LAUNCHER, ...PREVIEW_IMAGES, ...EXAMPLE_FILES, "dist/styles.css",
     ...portableFiles,
     ...modules.flatMap((module) => [`dist/${module}.js`, `dist/${module}.d.ts`])
   ]);

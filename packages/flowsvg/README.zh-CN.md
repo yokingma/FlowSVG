@@ -386,6 +386,8 @@ SDK CLI 支持 HTML 和 GIF 输出。PNG 使用 SDK API 导出。
 
 安装后运行 `npx --no-install flowsvg --help` 可查看 CLI 参数。
 
+使用源码仓库时，先在仓库根目录运行 `pnpm build`。构建产物缺失时，CLI 启动脚本会提示此步骤。
+
 离线 HTML 的 `HtmlRenderOptions` 支持以下选项：
 
 | 选项 | 默认值 |
