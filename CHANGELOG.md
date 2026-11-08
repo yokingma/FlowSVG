@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Document own visibility and explicit-highlight layers and add SDK-owned fixed-baseline regression checks for simultaneous style updates, content replacement and highlight removal. Preserve runtime behavior and public APIs.
+
 - Add the full-timeline `basic-shapes` GIF to the root and SDK README previews and package release allowlist.
 
 - Verify `basic-shapes` as the default formal story across Native, React, Vue and copied root/subpath artifacts, including category navigation and its standalone JSON.
