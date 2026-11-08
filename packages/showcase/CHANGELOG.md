@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add `basic-shapes` as the first and default showcase example. It demonstrates every public node shape, measured preset labels, group containment, orthogonal connections, highlights, label replacement and reduced-motion playback.
+
 - Keep a subdued LLM inference trail on completed state vectors while restoring full opacity for the currently active layer during prefill and decode.
 
 - Keep the RAG question-to-context arrow as a straight segment to remove the small visual bend at the context card.

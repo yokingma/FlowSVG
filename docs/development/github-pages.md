@@ -2,7 +2,7 @@
 
 > **Document status:** Current entry. The workflow file and app build configuration are the source of truth for deployment behavior. The [showcase verification guide](../verification/showcase-verification.md) describes reproducible checks. Verify the deployed site separately from local build results.
 
-The deployment workflow publishes the Native showcase and its nine formal examples. The intended URL is <https://yokingma.github.io/FlowSVG/>. This URL becomes available after GitHub Pages is enabled and the first deployment succeeds.
+The deployment workflow publishes the Native showcase and its ten formal examples. The intended URL is <https://yokingma.github.io/FlowSVG/>. This URL becomes available after GitHub Pages is enabled and the first deployment succeeds.
 
 ## Enable deployment
 
