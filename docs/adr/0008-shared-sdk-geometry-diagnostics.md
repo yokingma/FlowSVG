@@ -2,7 +2,7 @@
 
 Status: accepted
 
-本 ADR 保留 SDK 提供几何风险诊断、独立 Skill 编排检查的职责分工。SDK 的字段、范围和限制以本仓公开类型、实现、测试及 [SDK 手册](../guides/sdk-guide.zh-CN.md)为准；Skill 的采样、报告和决定由独立项目维护。仓库边界见 [ADR 0016](0016-independent-sdk-and-skill-repositories.md)。
+本 ADR 记录 SDK 提供几何风险诊断、创作工具编排检查的职责分工。SDK 的字段、范围和限制以本仓公开类型、实现、测试及 [SDK 手册](../guides/sdk-guide.zh-CN.md)为准；Skill 项目维护采样、报告和决定。版本与验证职责见 [ADR 0016](0016-independent-sdk-and-skill-repositories.md)。
 
 连线穿过无关节点、标签与无关节点遮挡、标签之间遮挡的新增诊断由 SDK 复用求值和渲染所依据的几何计算，并通过公开结果供 skill 消费。skill 继续编排有限时间点的检查、汇总警告和记录用户决定，不复制内部路径解析或维护另一套文字尺寸估算。相比在 skill 中实现检测，这需要维护 SDK 的诊断合同，但可减少渲染与诊断不一致的风险；诊断仍是风险提示，不构成自动修复、连续覆盖或精确字体像素保证。
 

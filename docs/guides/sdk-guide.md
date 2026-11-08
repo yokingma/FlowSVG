@@ -2,15 +2,19 @@
 
 English | [简体中文](sdk-guide.zh-CN.md)
 
-> **Document status:** Current entry. The public types, implementation, and tests under `packages/flowsvg/` are the source of truth for behavior. This guide is the maintained English task path; verification guides describe reproducible checks and do not replace this contract.
->
-> **Language parity:** The Chinese guide follows this guide's section order and public contract. Update both guides in the same change, including examples, defaults, limits, errors, and links.
+> Public behavior follows the types, implementation, and tests in `packages/flowsvg/`. See the [documentation map](../README.md) for language and ownership policy.
 
 FlowSVG turns JSON or TypeScript documents into animated SVG diagrams. Define nodes, edges, scenes, and beats; play them in a browser, export SVG, PNG or GIF, or share a single offline HTML file.
 
 The ESM SDK includes a DOM-free core and native browser, Vue, React, and Web Component integrations. All integrations share the same document and timeline.
 
-[Install](#installation) · [Quick start](#quick-start) · [Vue](#vue-integration) · [React](#react-integration) · [Native browser](#native-browser) · [Web Component](#web-component) · [Documents](#documents-and-timelines) · [Node content](#structured-node-content) · [Typography](#document-typography) · [API](#api) · [Diagnostics](#on-demand-geometry-diagnostics) · [Controls](#player-controls) · [PNG](#browser-png-and-svg-backgrounds) · [GIF](#browser-gif-export) · [Node PNG](#node-png-export) · [Node GIF / CLI](#node-gif-export-node-20) · [Offline HTML](#offline-html-node-20)
+| Task | Start here |
+| --- | --- |
+| Create and render a diagram | [Installation](#installation) · [Quick start](#quick-start) |
+| Integrate a player | [Vue](#vue-integration) · [React](#react-integration) · [Native browser](#native-browser) · [Web Component](#web-component) |
+| Author a document | [Nodes and routes](#documents-and-timelines) · [Beats and actions](#beats-and-actions) · [Node content](#structured-node-content) · [Typography](#document-typography) |
+| Control and inspect playback | [API](#api) · [Diagnostics](#on-demand-geometry-diagnostics) · [Controls](#player-controls) |
+| Export or share | [Browser PNG](#browser-png-and-svg-backgrounds) · [Browser GIF](#browser-gif-export) · [Node PNG](#node-png-export) · [Node GIF / CLI](#node-gif-export-node-20) · [Offline HTML](#offline-html-node-20) |
 
 ## Installation
 
@@ -20,9 +24,20 @@ Install from npm:
 npm install flowsvg
 ```
 
-ESM only, with TypeScript declarations. Core and native browser entries need no framework. Core: Node.js 18+ or an ES2022-compatible browser. Playback: DOM, SVG, and `requestAnimationFrame`. Frameworks: Vue 3.5+ or React 18+.
+The package is ESM-only and includes TypeScript declarations. Core and native browser entries need no framework.
 
-Browser PNG and GIF export require Canvas 2D, SVG image decoding and locally installed system fonts. GIF also requires Blob workers allowed by the host content security policy. The Node entry and CLI require Node 20+; HTML generation needs no browser, while Node PNG and GIF export need preinstalled Chromium and system fonts.
+| Runtime or feature | Requirements |
+| --- | --- |
+| Core | Node.js 18+ or an ES2022-compatible browser |
+| Playback | DOM, SVG, and `requestAnimationFrame` |
+| Framework integration | Vue 3.5+ or React 18+ |
+
+| Export target | Additional requirements |
+| --- | --- |
+| Browser PNG / GIF | Canvas 2D, SVG image decoding, and installed system fonts |
+| Browser GIF | Host content security policy must allow Blob workers |
+| Node entry / CLI | Node 20+; HTML generation needs no browser |
+| Node PNG / GIF | Preinstalled Chromium and system fonts |
 
 | Import path | Purpose |
 | --- | --- |
@@ -241,9 +256,20 @@ const element = document.querySelector<FlowPlayerElement>("flowsvg-player");
 if (element) element.document = diagramDocument;
 ```
 
-Registration defaults to `<flowsvg-player>` and is idempotent. Assign objects to `element.document`, JSON strings to the HTML `document` attribute, or a JSON URL to `src`. URLs resolve against the page and follow browser CORS rules.
+Registration defaults to `<flowsvg-player>` and is idempotent.
 
-Attributes: `autoplay`, `controls`, `speed`, `theme`, `reduced-motion`, `hover-fill`, `gif-export`, and `loop`. Controls default on; autoplay, loop, hover fill and GIF export default off. Use `controls="false"` to hide controls. Changes to theme, controls, GIF, or motion/hover options preserve time and playback state; `autoplay` explicitly starts or pauses playback. Removal cancels requests and destroys the player; reconnection uses the retained document.
+| Document source | Assignment |
+| --- | --- |
+| JavaScript object | `element.document` |
+| JSON string | HTML `document` attribute |
+| JSON URL | `src`; resolves against the page and follows browser CORS rules |
+
+**Attributes and defaults**
+
+- Supported: `autoplay`, `controls`, `speed`, `theme`, `reduced-motion`, `hover-fill`, `gif-export`, and `loop`.
+- Controls default on. Autoplay, loop, hover fill, and GIF export default off. Use `controls="false"` to hide controls.
+- Theme, controls, GIF, motion, and hover changes preserve time and playback state. `autoplay` explicitly starts or pauses playback.
+- Removing the element cancels requests and destroys the player. Reconnection uses the retained document.
 
 Methods: `play`, `pause`, `seek`, `step`, `setSpeed`, `setLoop`, `getState`, and `destroy`. Update documents through `element.document`. Before mount or after destruction, `getState()` returns `undefined`. Playback/error events bubble across Shadow DOM boundaries.
 
@@ -261,9 +287,46 @@ Register in a DOM environment. DOM-free imports are safe, but that module instan
 | `title` / `theme` | Optional title and `light` / `dark` document theme |
 | `typography` | Optional node, edge and flow-label sizes; see [document typography](#document-typography) |
 
-Node and edge IDs are globally unique. Shapes: `rect`, `roundedRect`, `ellipse`, `cylinder`, `group`; unreleased source also supports `diamond`, `parallelogram`, `document` and `predefinedProcess`. Group borders are rounded by default. `parentId` names a parent group; child coordinates are group-relative. Labels are plain text; `visible` defaults to `true`. Node styles: `fill`, `stroke`, `strokeWidth`, `textColor`, `dashed` (group borders). Edge styles: `stroke`, `strokeWidth`, `dashed`. Colors use hexadecimal RGB/RGBA, such as `#2563eb` or `#2563eb80`.
+### Nodes and styles
 
-Routes: `straight` (default), `orthogonal`, or `curved`. Curves follow endpoint ports without avoiding other nodes. Orthogonal routes round bends by default; SVG output, flow markers, bounds and hit testing share that geometry. Rounding adapts to short segments and obstacle/arrow clearance. Orthogonal routes avoid visible ordinary nodes and use a fixed fallback if blocked; shortest paths and zero crossings are not guaranteed. Set `fromPort` / `toPort` to `top`, `right`, `bottom`, or `left`. Orthogonal routes prefer bridges at the gap midpoint when arrow space permits and single outside channels for matching port sides. Separate ancestor frames add outside clearance; shared containers remain traversable. Orthogonal routes reserve outward endpoint segments and a straight arrow approach scaled to the evaluated stroke width, shortened when adjacent nodes leave insufficient space. Curved and orthogonal inputs on the same target side receive separate positions ordered by source position, with document order breaking ties; hidden edges keep their positions. Positions use the central portion of the side, so crowded or very small nodes can still require more space. Curved ports set tangents. Omitted ports follow the dominant center-to-center axis; ellipse endpoints lie on the contour. Simple labels wrap by estimated width and remain visible on height overflow, with a `text-overflow` warning.
+Node and edge IDs are globally unique. The following basic-shapes example shows the node shapes and their connections:
+
+![Current basic-shapes example with eight ordinary shapes inside a group, horizontal same-row connections, and compact bottom spacing](../assets/basic-shapes.png)
+
+| Node kind | Content mode |
+| --- | --- |
+| `rect`, `roundedRect`, `cylinder` | Plain `label` or structured `content` |
+| `ellipse`, `group` | Plain `label` |
+| `diamond`, `parallelogram`, `document`, `predefinedProcess` | Plain `label`; see [preset label measurement](#decision-labels-and-measurement) |
+
+- `parentId` names a parent group; child coordinates are group-relative. Group borders are rounded by default.
+- Labels are plain text. `visible` defaults to `true`; ordinary label wrapping and overflow follow [document typography](#document-typography).
+- Node styles: `fill`, `stroke`, `strokeWidth`, `textColor`, and `dashed` (group borders).
+- Edge styles: `stroke`, `strokeWidth`, and `dashed`.
+- Colors use hexadecimal RGB/RGBA, such as `#2563eb` or `#2563eb80`.
+
+### Routes and ports
+
+| Route | Behavior |
+| --- | --- |
+| `straight` | Default; connects the endpoints directly |
+| `orthogonal` | Avoids visible ordinary nodes, with rounded bends and a fixed fallback if blocked; shortest paths and zero crossings are not guaranteed |
+| `curved` | Follows endpoint-port tangents without avoiding other nodes |
+
+Set `fromPort` / `toPort` to `top`, `right`, `bottom`, or `left`. Omitted ports follow the dominant center-to-center axis; ellipse endpoints lie on the contour.
+
+**Orthogonal clearance**
+
+- SVG output, flow markers, bounds, and hit testing share the rounded geometry. Bend rounding adapts to short segments and obstacle/arrow clearance.
+- When arrow space permits, routes prefer bridges at the gap midpoint and a single outside channel for matching port sides.
+- Separate ancestor frames add outside clearance; shared containers remain traversable.
+- Outward endpoint segments and a straight arrow approach scale to the evaluated stroke width. Reservations shorten when adjacent nodes leave insufficient space.
+
+**Multiple inputs on one side**
+
+Curved and orthogonal edges targeting the same side receive separate positions, ordered by source position with document order breaking ties. Hidden edges keep their positions.
+
+Positions use the central portion of the side. Crowded or very small nodes can still require more space.
 
 Edges can connect nodes or group boundaries. Group endpoints follow evaluated geometry and explicit ports. Hidden ancestors mask connected edges. Transfers highlight the endpoint group, not its descendants, unless `highlightParticipants: false` disables endpoint highlights. Group frames are excluded from routing obstacles.
 
@@ -275,7 +338,7 @@ Each beat has a positive authored `durationMs` and an `actions` array, with opti
 | --- | --- |
 | `show` / `hide` | `{ type: "show", target: "service" }`; targets a node, group, or edge |
 | `highlight` / `unhighlight` | Changes the highlight layer; removing a highlight reveals the latest ordinary style |
-| `flow` | `{ type: "flow", target: "request", direction: "forward" }`; moves a beat-local marker along an edge. `direction` is `forward` or `reverse`; the static edge arrow does not change. Add `text: "Request"` for a horizontal text capsule; omit `text` for a solid dot. Set `highlightParticipants: false` to keep the marker and edge highlight without automatic endpoint highlights (default `true`). |
+| `flow` | Moves a beat-local marker along an edge; fields are listed below |
 | `updateNode` | `value` supports `x`, `y`, `width`, `height`, `label`, `content`, `fill`, `stroke`, and `opacity` |
 | `updateEdge` | `value` supports `label`, `stroke`, `strokeWidth`, and `opacity` |
 | `focus` | `target` is a node/group ID; `null` restores the current full view |
@@ -284,13 +347,57 @@ Each beat has a positive authored `durationMs` and an `actions` array, with opti
 
 Scenes share a millisecond timeline and inherit the previous scene’s final state. Text changes at beat start; interpolated values change during the transition. Beats include their start and exclude their end; the final time returns the completed frame. Hidden nodes/groups mask connected edges; showing them restores each edge’s saved visibility.
 
-A beat supports one transfer per distinct edge. A beat with one flow targets 180 diagram units/second, with a minimum movement time of 400 ms. The marker holds at the destination for exactly 500 ms. The effective beat duration is movement time plus 500 ms, replacing the authored `durationMs`; later beats shift accordingly. Use separate no-flow beats for longer reading time. Timing uses the routed path at the beat’s target visual state, including inherited updates, parent positions, ports, obstacles and stroke width. During moving layouts, markers follow the current path using that reference duration; camera scaling can change screen speed. Multiple flows share linear progress over the authored `durationMs`, so longer paths move faster. The 500 ms interval is measured at speed 1. Global player speed scales movement, arrival hold and separate reading beats together. Markers and endpoint highlights expire at beat end; the next beat supplies a new transfer group. Explicit highlights and ordinary styles persist. `highlightParticipants: false` leaves node highlighting to explicit actions; it does not disable the marker or temporary edge highlight.
+#### Flow markers
 
-For a single flow, the sender paints immediately. After arrival, the receiver fill and stroke fade in over 200 ms. Automatic node and edge highlights then stay fully painted for 100 ms and fade out over 200 ms before the beat ends. Reverse flows swap sender and receiver. Logical `highlighted` flags and markers last for the whole beat; content, geometry and explicit actions retain their authored timing. Explicit highlights take precedence, and `highlightParticipants: false` disables automatic endpoint paint. Reduced motion skips both fades while preserving the 500 ms post-arrival interval. Multiple flows retain their existing synchronized timing and paint. Player speed scales the fades with the timeline; SVG and export evaluate the same colors.
+Example: `{ type: "flow", target: "request", direction: "forward", text: "Request" }`.
 
-Transfer `text` is escaped, stays horizontal, and uses estimated capsule widths without font measurement. It does not replace the edge label or create an interaction target. An empty string still produces a capsule.
+| Field | Behavior |
+| --- | --- |
+| `target` | Edge ID; one transfer per edge per beat |
+| `direction` | `forward` or `reverse`; leaves the static edge arrow unchanged |
+| `text` | Optional horizontal text capsule; omit for a solid dot; an empty string still produces a capsule |
+| `highlightParticipants` | Default `true`; `false` keeps the marker and edge highlight while disabling automatic endpoint highlights |
 
-Set `viewport.fitHeight: { padding: 24 }` to fit full-view height to current painted nodes, edges, labels and active flow markers plus bottom padding. Padding must be finite and nonnegative. The camera keeps origin `(0, 0)` and authored width, and rounds height outward to whole diagram units. Empty frames use authored height. The browser aspect ratio and static SVG follow the evaluated camera; node size and placement stay authored. Explicit focus retains the authored viewport aspect ratio and bounds; clearing focus returns to the current fitted full view. Nonrepresentable fitted heights throw `DiagramValidationError` during evaluation.
+Transfer text is escaped and uses estimated capsule widths without font measurement. It does not replace the edge label or create an interaction target.
+
+#### Flow timing
+
+A beat supports one transfer per distinct edge.
+
+| Flows in a beat | Effective duration and progress |
+| --- | --- |
+| One | Movement at a target 180 diagram units/second, with a 400 ms minimum, plus a 500 ms destination hold. This replaces authored `durationMs` and shifts later beats. |
+| Multiple | Shared linear progress over authored `durationMs`; longer paths move faster. |
+
+Single-flow timing uses the routed path at the beat's target visual state, including inherited updates, parent positions, ports, obstacles, and stroke width. During moving layouts, the marker follows the current path using that reference duration; camera scaling can change screen speed.
+
+Use separate no-flow beats for longer reading time. All intervals above are at speed 1; player speed scales movement, destination hold, and reading beats together.
+
+Markers and temporary endpoint highlights expire at beat end. Explicit highlights and ordinary styles persist. `highlightParticipants: false` leaves node highlighting to explicit actions while retaining the marker and temporary edge highlight.
+
+#### Arrival highlights
+
+For a single flow, the sender paints immediately. Reverse flows swap sender and receiver.
+
+| After arrival | Automatic paint |
+| --- | --- |
+| First 200 ms | Receiver fill and stroke fade in |
+| Next 100 ms | Node and edge highlights stay fully painted |
+| Final 200 ms | Automatic highlights fade out before the beat ends |
+
+Logical `highlighted` flags and markers last for the whole beat. Content, geometry, and explicit actions retain their authored timing. Explicit highlights take precedence; `highlightParticipants: false` disables automatic endpoint paint.
+
+Reduced motion skips both fades while preserving the 500 ms post-arrival interval. Multiple flows retain synchronized timing and paint. Player speed scales the fades with the timeline; SVG and export evaluate the same colors.
+
+### Fit the full-view height
+
+Set `viewport.fitHeight: { padding: 24 }` to fit full-view height to current painted nodes, edges, labels, and active flow markers plus bottom padding.
+
+- `padding` must be finite and nonnegative.
+- The camera keeps origin `(0, 0)` and authored width; height rounds outward to whole diagram units. Empty frames use authored height.
+- Browser aspect ratio and static SVG follow the evaluated camera. Node size and placement stay authored.
+- Explicit focus retains the authored viewport aspect ratio and bounds. Clearing focus returns to the current fitted full view.
+- Nonrepresentable fitted heights throw `DiagramValidationError` during evaluation.
 
 ## API
 
@@ -310,7 +417,7 @@ Import from `flowsvg`:
 | `diagram.renderSvg(timeMs = 0, options?)` | Exports SVG from the same evaluation result |
 | `diagram.hitTest(timeMs, point, options?)` | Returns `{ id, type: "node" \| "edge" }` or `null`, using document coordinates |
 | `measureNodeContent({ kind, width, content, typography? })` | Returns a recommended fixed height and unresolved per-version overflow diagnostics; see [content measurement](#measure-content-before-creating-a-document) |
-| `measureNodeLabel({ kind, width, label, typography? })` | Unreleased: measure shared preset-label height and unresolved width issues; see [decision labels](#decision-labels-and-measurement). |
+| `measureNodeLabel({ kind, width, label, typography? })` | Measure shared preset-label height and unresolved width issues; see [decision labels](#decision-labels-and-measurement). |
 | `wrapText(label, maxWidth, typography?)` | Wraps text with fixed width estimates and returns an array of lines |
 
 `validateDocument` checks authored structure and values. Compilation also rejects non-finite derived movement or accumulated timing with `DiagramValidationError` at the affected beat’s `durationMs` path. Input documents retain their authored durations.
@@ -319,7 +426,7 @@ Import from `flowsvg`:
 
 `DiagramFrameState` includes time, scene/beat IDs, progress, evaluated nodes/edges, camera, caption, and warnings. Coordinates are absolute. Static documents have `null` scene/beat IDs; beat IDs use `${scene.id}:${beatIndex}` with zero-based indexes. Active edges expose `flow` direction, progress, point, and optional text. Markers are absent after the beat, on hidden edges, or with reduced motion.
 
-Types and member JSDoc are included: `DiagramDocument`, `DiagramNode`, `DiagramEdge`, `Scene`, `Beat`, `DiagramBeat`, `Action`, `Diagram`, `DiagramFrameState`, `EvaluateOptions`, `ValidationIssue`, `LayoutWarning`, `GeometryWarning`, `GeometryWarningCode`, and `TextOverflowWarning`.
+Public types and member JSDoc are included with each entry.
 
 ### On-demand geometry diagnostics
 
@@ -332,13 +439,60 @@ for (const risk of risks) {
 
 `diagnoseAt` uses `evaluateAt` time and visual options. It returns only `edge-node-overlap`, `label-node-overlap` and `label-overlap`. Ordinary evaluation, SVG rendering and playback do not run these pair checks. `frame.warnings` retains separate `text-overflow` results.
 
-In unreleased source, preset labels with zero safe-area width or height contribute no painted overlaps; `text-overflow` remains available. Visible `predefinedProcess` side-line strokes participate under the parent node identity, including transparent-fill styles. The hollow interior contributes no fill paint.
+Preset labels with zero safe-area width or height contribute no painted overlaps; `text-overflow` remains available. Visible `predefinedProcess` side-line strokes participate under the parent node identity, including transparent-fill styles. The hollow interior contributes no fill paint.
 
-The SDK checks visible portions inside the effective camera. Ordinary node, group and edge labels can overflow their shapes; structured lines are first clipped to `safeArea`. Inline spans share one label identity, and transparent span gaps do not become visible text. Different lines of one ordinary edge label compare foreground regions, so their shared background halo alone does not create a self-conflict. Halo checks remain active against other label fields, owners and nodes. Own labels and ancestor containment are excluded, while group titles covering children remain eligible. Edge paths exclude endpoints and group boundaries; edge labels have no endpoint exemption. Hidden, zero-opacity and fully transparent paint is excluded. A transparent fill can retain a visible outline; semi-transparent paint and edge-label background halos remain eligible. Flow capsules, content graphics and player captions are outside label checks.
+#### Checked paint and exclusions
 
-Fill checks use bounding boxes only as a prefilter, then actual rectangle, rounded, ellipse and cylinder contours. Routes reuse SDK samples: 32 intervals per ordinary cubic, 16 per separated cubic segment and 16 per orthogonal bend. Curved node strokes use 256 contour intervals per revolution, retaining the cylinder cap and internal horizontal seam; rectangle strokes retain square miters. Contact tolerance is `1e-6` diagram units. Finite sampling, estimated text rectangles and the lack of pixel analysis for dash gaps can miss risks or flag risks without actual painted-pixel occlusion. Warnings do not prove final-layer pixel occlusion or continuous collision coverage. Review actual outputs at their intended display size.
+The SDK checks visible portions inside the effective camera.
 
-Each result has `code`, `path`, `objectId`, `relatedObjectIds`, `warningKey` and `message`. `warningKey` is a versioned canonical JSON array encoding: `["flowsvg-layout-warning", 1, code, left, right]`. Participants include object type, ID, role, field path and line/subobject position. Label pairs sort participant encodings; label–node and path–node pairs preserve role direction. Different fields and lines retain separate identities, while spans on one line do not create duplicates. Two lines in one node can conflict, so a related ID may equal `objectId`. Prose, coordinates, time and visual options are excluded from the key. Consumers must separately bind source bytes, SDK identity, time and visual options before recording a decision about one occurrence. The SDK never moves, hides or rewrites objects.
+| Paint or relationship | Diagnostic behavior |
+| --- | --- |
+| Ordinary node, group, and edge labels | Can overflow their shapes; structured lines are first clipped to `safeArea` |
+| Inline spans | One label identity per line; transparent span gaps do not become visible text |
+| Lines of one ordinary edge label | Compare foreground regions; the shared background halo alone does not create a self-conflict |
+| Halos against other fields, owners, or nodes | Remain eligible |
+| Own labels and ancestor containment | Excluded; group titles covering children remain eligible |
+| Edge paths | Exclude endpoints and group boundaries; edge labels have no endpoint exemption |
+| Hidden, zero-opacity, or fully transparent paint | Excluded |
+| Visible outline with transparent fill, semi-transparent paint, edge-label halos | Remain eligible |
+| Flow capsules, content graphics, player captions | Outside label checks |
+
+<details>
+<summary>Geometry sampling and accuracy limits</summary>
+
+Fill checks use bounding boxes as a prefilter, then actual rectangle, rounded, ellipse, and cylinder contours.
+
+| Geometry | Sampling or tolerance |
+| --- | --- |
+| Ordinary cubic route | 32 intervals |
+| Separated cubic segment | 16 intervals per segment |
+| Orthogonal bend | 16 intervals |
+| Curved node stroke | 256 contour intervals per revolution, retaining cylinder cap and internal horizontal seam |
+| Rectangle stroke | Square miters |
+| Contact tolerance | `1e-6` diagram units |
+
+Finite sampling, estimated text rectangles, and the lack of pixel analysis for dash gaps can miss risks or report risks without actual painted-pixel occlusion. Warnings do not prove final-layer pixel occlusion or continuous collision coverage. Review actual outputs at their intended display size.
+
+</details>
+
+#### Warning identity
+
+Each result has `code`, `path`, `objectId`, `relatedObjectIds`, `warningKey`, and `message`. The SDK reports risks; the caller decides how to resolve them.
+
+<details>
+<summary>Persisting decisions with warningKey</summary>
+
+`warningKey` is a versioned canonical JSON array encoding: `["flowsvg-layout-warning", 1, code, left, right]`.
+
+- Participants include object type, ID, role, field path, and line/subobject position.
+- Label pairs sort participant encodings. Label–node and path–node pairs preserve role direction.
+- Different fields and lines retain separate identities. Spans on one line do not create duplicates.
+- Two lines in one node can conflict, so a related ID may equal `objectId`.
+- Prose, coordinates, time, and visual options are excluded from the key.
+
+Bind source bytes, SDK identity, time, and visual options separately before recording a decision about one occurrence. The SDK never moves, hides, or rewrites objects.
+
+</details>
 
 ### Player API
 
@@ -356,7 +510,13 @@ Import `createPlayer(host, document, options?)` from `flowsvg/browser`. `PlayerO
 | `getState()` | Returns `PlayerState`: `timeMs`, `totalDuration`, `playing`, `loop`, `speed`, and `frame` |
 | `destroy()` | Idempotently cleans up DOM, listeners, and scheduling; stops events, while state remains readable |
 
-Players start paused at zero with controls enabled. Page hiding pauses playback; returning leaves it paused. Loop defaults to false, so playback stops at the end. Enable `loop: true` or press **Loop** to repeat the whole timeline, retaining elapsed remainder and speed. Manual end seeks and steps pause; pressing Play at the end restarts only when loop is enabled. Successful loads retain loop preference and pause at zero. Static diagrams disable timeline controls. Framework handles expose these methods except `element` and `destroy`.
+**Playback and lifecycle**
+
+- Players start paused at zero with controls enabled. Hiding the page pauses playback; returning leaves it paused.
+- Loop defaults to `false`, so playback stops at the end. Enable `loop: true` or press **Loop** to repeat the whole timeline, retaining elapsed remainder and speed.
+- Manual end seeks and steps pause. Pressing Play at the end restarts only when loop is enabled.
+- Successful loads retain loop preference and pause at zero. Static diagrams disable timeline controls.
+- Framework handles expose the table's methods except `element` and `destroy`.
 
 Hover highlights node borders, including groups. Set `hoverFill: true` to include backgrounds and content paint. Leaving clears hover while retaining flow and explicit highlights. Pointer cancellation, document replacement and destruction also clear hover. `PlayerState.frame` and static SVG exclude hover.
 
@@ -433,17 +593,28 @@ Standard sizing is the default: buttons and choice triggers have a minimum heigh
 <div id="diagram" class="flowsvg-compact" style="width: 100%; height: 360px;"></div>
 ```
 
-Vue, React and Web Component players can also sit inside a container with `flowsvg-compact`. Remove the class to restore standard sizing. Both sizes retain rounded neutral controls, an accent-tinted Play/Pause button and visible hover, pressed, disabled and keyboard-focus states. The progress slider takes a full row on narrow screens. Control transitions respect the system reduced-motion preference; control sizes do not change diagram geometry.
+Vue, React and Web Component players can also sit inside a container with `flowsvg-compact`. Remove the class to restore standard sizing. Both sizes retain rounded neutral controls, an accent-tinted Play/Pause button and visible hover, pressed, disabled and keyboard-focus states. The progress slider takes a full row on narrow screens.
+
+Control transitions respect the system reduced-motion preference; control sizes do not change diagram geometry.
 
 ### Optional advanced use: reuse a choice menu
 
 Use this interface only when building host settings; normal player setup and styling do not require it. `flowsvg/browser` retains the public `SelectControl` and `SelectChoice` exports for hosts that need the player's menu styling and keyboard interaction.
 
-Create `new SelectControl(document, "Theme", onChange)`, append its `element`, then call `render([{ value: "light", label: "Light" }, { value: "dark", label: "Dark" }], "light")`. `SelectChoice` contains string `value` and `label` fields; choice values must be unique within a control. The callback receives a requested value; the caller owns committed state and must call `render` to reflect it. The optional third `render` argument is a disabled flag, defaulting to `false`; an empty choice list also disables the trigger. Call `destroy()` before removing the host to release outside-dismissal listeners and remove the menu element. The menu reuses the imported `flowsvg/styles.css`, color variables and size class above.
+1. Create `new SelectControl(document, "Theme", onChange)` and append its `element`.
+2. Call `render([{ value: "light", label: "Light" }, { value: "dark", label: "Dark" }], "light")` to show the choices and committed value.
+3. On a requested change, update caller-owned state and call `render` again to reflect the committed value.
+4. Before removing the host, call `destroy()` to release outside-dismissal listeners and remove the menu element.
+
+`SelectChoice` contains string `value` and `label` fields; choice values must be unique within a control. The optional third `render` argument is a disabled flag, defaulting to `false`. An empty choice list also disables the trigger.
+
+The menu reuses `flowsvg/styles.css`, the control color variables, and the size class above.
 
 ## Decision labels and measurement
 
-This unreleased source capability is not in published 0.2.3. `diamond` supports plain `label` only, with no structured `content`, including empty blocks. Timeline `content: null` retains existing clearing semantics. Its four vertices are side midpoints; the centered half-width/half-height inner rectangle reserves a further 12 diagram units on every side. The label is centered as complete line boxes with one fixed width.
+`diamond` supports plain `label` only, with no structured `content`, including empty blocks. Timeline `content: null` retains existing clearing semantics. Its four vertices are side midpoints; the centered half-width/half-height inner rectangle reserves a further 12 diagram units on every side.
+
+The label is centered as complete line boxes with one fixed width.
 
 ```ts
 import { createDiagram, measureNodeLabel } from "flowsvg";
@@ -456,35 +627,65 @@ const diagram = createDiagram({ version: 1, viewport: { width: 300, height: 300 
     height: measurement.height, label: labels[1] }], edges: [], scenes: [] });
 ```
 
-This example returns height 128. Inspect `measurement.diagnostics` before adopting the size. `measureNodeLabel` accepts `diamond`, `parallelogram`, `document` and `predefinedProcess` in this source milestone, a finite positive width, a string or nonempty readonly label-version array, and optional existing `DiagramTypography`. It returns `{ height, diagnostics }`; each unresolved width issue contains `versionIndex`, `path`, `dimension: "width"`, and `message`. A single string uses version zero. Import `NodeLabelMeasurementInput`, `NodeLabelMeasurement`, and `NodeLabelMeasurementDiagnostic` from `flowsvg` for typed consumers.
+### Measurement inputs and results
 
-Versions share the maximum required height, including complete line boxes. With label height L, diamond height is 2 × (L + 24). Empty labels still return positive clearance height. Measurement and rendering share deterministic wrapping without DOM font metrics, input mutation or scene scanning. When one grapheme cannot fit, it occupies its own measured line and retains a width diagnostic; increasing height cannot solve that issue. Increase width or shorten the label. Invalid input or a non-finite computed height throws `DiagramValidationError` with field/version paths.
+This example returns height 128. Inspect `measurement.diagnostics` before adopting the size. `measureNodeLabel` accepts `diamond`, `parallelogram`, `document` and `predefinedProcess`, a finite positive width, a string or nonempty readonly label-version array, and optional `DiagramTypography`. It returns `{ height, diagnostics }`; each unresolved width issue contains `versionIndex`, `path`, `dimension: "width"`, and `message`.
 
-Chinese and explicit newlines/blank lines are supported. Latin words remain whole when possible, but overwide words and URLs split only between complete graphemes. Nonempty text outside the safe area is clipped and reports `text-overflow`, without font reduction, ellipsis, source-text replacement or automatic node resizing. Positive tiny dimensions remain valid; nonpositive/non-finite dimensions are validation errors. Empty labels do not overflow solely because their safe area is zero.
+A single string uses version zero. Import `NodeLabelMeasurementInput`, `NodeLabelMeasurement`, and `NodeLabelMeasurementDiagnostic` from `flowsvg` for typed consumers.
 
-Cardinal and automatic connections in every route family, same-side inputs, hits and diagnostics follow the real contour. Clipped-away text cannot enlarge hit targets, diagnostics or fitted height. Group movement and timeline resizing use current geometry; node kind remains immutable during a timeline. SVG, players and exports reuse the core result. Existing node kinds and `measureNodeContent` keep their current behavior. The SDK ships an English decision-branch example with a measured update and intentional overflow.
+### Shared height and measurement errors
 
-`parallelogram` expresses input/output with the same plain-label restrictions, wrapping, clipping and diagnostics. Its top edge slants right by S = min(width / 4, 24) diagram units. The rectangular safe area reserves S + 12 units on both horizontal sides and 12 units on both vertical sides. With complete label height L, `measureNodeLabel` returns L + 24; multiple versions share the largest height. No slant configuration is exposed. Cardinal/automatic connections, hits and diagnostics use the actual slanted outline. See the [input/output example](../../packages/flowsvg/examples/input-output.json).
+Versions share the maximum required height, including complete line boxes. With label height L, diamond height is 2 × (L + 24). Empty labels still return positive clearance height. Measurement and rendering share deterministic wrapping without DOM font metrics, input mutation or scene scanning.
+
+When one grapheme cannot fit, it occupies its own measured line and retains a width diagnostic; increasing height cannot solve that issue. Increase width or shorten the label. Invalid input or a non-finite computed height throws `DiagramValidationError` with field/version paths.
+
+### Wrapping and clipping
+
+Chinese and explicit newlines/blank lines are supported. Latin words remain whole when possible, but overwide words and URLs split only between complete graphemes. Nonempty text outside the safe area is clipped and reports `text-overflow`, without font reduction, ellipsis, source-text replacement or automatic node resizing. Positive tiny dimensions remain valid; nonpositive/non-finite dimensions are validation errors.
+
+Empty labels do not overflow solely because their safe area is zero.
+
+### Geometry and playback
+
+Cardinal and automatic connections in every route family, same-side inputs, hits and diagnostics follow the real contour. Clipped-away text cannot enlarge hit targets, diagnostics or fitted height. Group movement and timeline resizing use current geometry; node kind remains immutable during a timeline. SVG, players and exports reuse the core result.
+
+Use `measureNodeContent` for structured node content; `measureNodeLabel` measures the four preset-label kinds. The SDK ships an English decision-branch example with a measured update and intentional overflow.
+
+### Input/output labels
+
+`parallelogram` expresses input/output with the same plain-label restrictions, wrapping, clipping and diagnostics. Its top edge slants right by S = min(width / 4, 24) diagram units. The rectangular safe area reserves S + 12 units on both horizontal sides and 12 units on both vertical sides.
+
+With complete label height L, `measureNodeLabel` returns L + 24; multiple versions share the largest height. No slant configuration is exposed. Cardinal/automatic connections, hits and diagnostics use the actual slanted outline. See the [input/output example](../../packages/flowsvg/examples/input-output.json).
 
 ## Document report labels
 
-The unreleased `document` preset represents a report or file artifact using plain `label` only. It rejects structured `content`, including empty blocks; timeline `content: null` still clears text. The top and sides are straight. The bottom wave occupies B = min(height / 4, 24) diagram units. With 12-unit padding, the label safe area is `(12, 12, max(0, width - 24), max(0, height - B - 24))`. Labels are centered above the wave, with the same grapheme wrapping, clipping and overflow diagnostics as decision labels.
+The `document` preset represents a report or file artifact using plain `label` only. It rejects structured `content`, including empty blocks; timeline `content: null` still clears text. The top and sides are straight. The bottom wave occupies B = min(height / 4, 24) diagram units.
 
-`measureNodeLabel({ kind: "document", width: 240, label: ["Report ready", "Revenue\nBy region\nFinal report"] })` returns height 108. For complete line-box height L and T = L + 24, the suggested height is 4T/3 when T ≤ 72, otherwise T + 24. Width diagnostics remain actionable after adopting the height. Ports, hits and diagnostics follow the actual wave; the empty space below its raised section is outside the node. See the [report generation example](../../packages/flowsvg/examples/report-generation.json), including grouped motion, resizing, label changes and deliberate overflow.
+With 12-unit padding, the label safe area is `(12, 12, max(0, width - 24), max(0, height - B - 24))`. Labels are centered above the wave, with the same grapheme wrapping, clipping and overflow diagnostics as decision labels.
+
+`measureNodeLabel({ kind: "document", width: 240, label: ["Report ready", "Revenue\nBy region\nFinal report"] })` returns height 108. For complete line-box height L and T = L + 24, the suggested height is 4T/3 when T ≤ 72, otherwise T + 24. Width diagnostics remain actionable after adopting the height.
+
+Ports, hits and diagnostics follow the actual wave; the empty space below its raised section is outside the node. See the [report generation example](../../packages/flowsvg/examples/report-generation.json), including grouped motion, resizing, label changes and deliberate overflow.
 
 ## Predefined process labels
 
-The unreleased `predefinedProcess` kind expresses a call to a defined subprocess. It is one ordinary node with a rectangular outer contour and two decorative vertical lines; it does not execute a subprocess or contain child nodes. Each line is inset by D = min(width / 6, 12). The label safe area starts at (D + 12, 12), with width max(0, width − 2D − 24) and height max(0, height − 24), relative to the node.
+The `predefinedProcess` kind expresses a call to a defined subprocess. It is one ordinary node with a rectangular outer contour and two decorative vertical lines; it does not execute a subprocess or contain child nodes. Each line is inset by D = min(width / 6, 12).
 
-Use plain `label`; structured `content` objects are rejected, including empty block arrays. Timeline `content: null` keeps its clearing semantics. Labels use the same centering, grapheme wrapping, clipping and overflow diagnostics as decision labels. `measureNodeLabel({ kind: "predefinedProcess", width: 200, label: ["A", "A\nB"] })` returns height 64. The suggested height is the full line-box height plus 24. Only the outer rectangle supplies connections and routing obstacles; clicks on either internal line return the parent node identity.
+The label safe area starts at (D + 12, 12), with width max(0, width − 2D − 24) and height max(0, height − 24), relative to the node.
+
+Use plain `label`; structured `content` objects are rejected, including empty block arrays. Timeline `content: null` keeps its clearing semantics. Labels use the same centering, grapheme wrapping, clipping and overflow diagnostics as decision labels. `measureNodeLabel({ kind: "predefinedProcess", width: 200, label: ["A", "A\nB"] })` returns height 64. The suggested height is the full line-box height plus 24.
+
+Only the outer rectangle supplies connections and routing obstacles; clicks on either internal line return the parent node identity.
 
 The SDK-owned [subprocess-call example](../../packages/flowsvg/examples/subprocess-call.json) includes measured labels, resizing, emphasis and intentional overflow. Run `pnpm --filter flowsvg build`, serve `packages/flowsvg` from the workspace, and open `/tests/browser-predefined-process.html` to play the public browser example.
 
-The unreleased [mixed approval flow](../../packages/flowsvg/examples/mixed-flow.json) combines all four presets, an ordinary node, a group and three route families. It includes label replacement, size and style changes, and one deliberately clipped label. Its [generator](../../packages/flowsvg/examples/create-mixed-flow.mjs) reserves a shared height for label versions through public `measureNodeLabel`.
+### Run a mixed-shape example
 
-After installing an SDK build with this feature, place the script in a writable directory and run `node create-mixed-flow.mjs`, then `npx flowsvg mixed-flow.json --format html --output mixed-flow.html` to generate offline playback.
+The [mixed approval flow](../../packages/flowsvg/examples/mixed-flow.json) combines all four presets, an ordinary node, a group and three route families. It includes label replacement, size and style changes, and one deliberately clipped label. Its [generator](../../packages/flowsvg/examples/create-mixed-flow.mjs) reserves a shared height for label versions through public `measureNodeLabel`.
 
-In this repository, first run `pnpm --filter flowsvg build`, then `node packages/flowsvg/examples/create-mixed-flow.mjs`; serve `packages/flowsvg` and open `/tests/browser-mixed-flow.html`. This capability has not been published to npm.
+After installing `flowsvg`, place the script in a writable directory and run `node create-mixed-flow.mjs`, then `npx flowsvg mixed-flow.json --format html --output mixed-flow.html` to generate offline playback.
+
+In this repository, first run `pnpm --filter flowsvg build`, then `node packages/flowsvg/examples/create-mixed-flow.mjs`; serve `packages/flowsvg` and open `/tests/browser-mixed-flow.html`.
 
 ## Document typography
 
@@ -503,13 +704,27 @@ const diagram = createDiagram({ version: 1, viewport: { width: 1280, height: 720
 
 Ordinary node labels and group headings use the node size; edge labels use the edge size. Wrapping, line height, estimated bounds, node label hits and rendering share these metrics. Transfer text remains single-line. Capsule width, height, baseline and `fitHeight` bounds follow its effective size without adding an interaction target.
 
-Existing-shape labels, edge labels and `wrapText` preserve complete Latin words, including internal apostrophes and hyphens. Break between words when a line is too narrow; keep an overwide word intact even if it exceeds the estimated width. Other scripts retain code-point wrapping, and explicit blank lines remain. Purely vertical edge labels use the narrower endpoint width as their horizontal text budget. Fonts do not shrink automatically; increase authored spacing or node width when labels overlap. GIF captions use the same Latin word boundaries with measured font widths. An overwide caption word produces `caption-overflow`; increase the export width or shorten the caption.
+### Wrapping rules
 
-Default title, body, auxiliary, tag, status and graph-label sizes scale by `nodeLabel / 16`. Explicit block, list, item and span sizes retain their existing inheritance order. Content retains its line-height rule: `max(20, largest current line size × 1.35)`. Node dimensions, graph coordinates and fixed block heights, padding and gaps do not grow automatically. Remeasure with the same typography; width overflow and graph-internal height overflow can remain unresolved. Multiple content versions share the largest required height.
+Ordinary labels wrap by estimated width. Height overflow remains visible and reports `text-overflow`.
+
+Ordinary node labels, edge labels and `wrapText` preserve complete Latin words, including internal apostrophes and hyphens. Break between words when a line is too narrow; keep an overwide word intact even if it exceeds the estimated width. Other scripts retain code-point wrapping, and explicit blank lines remain.
+
+Purely vertical edge labels use the narrower endpoint width as their horizontal text budget. Fonts do not shrink automatically; increase authored spacing or node width when labels overlap. GIF captions use the same Latin word boundaries with measured font widths. An overwide caption word produces `caption-overflow`; increase the export width or shorten the caption.
+
+### Scaling structured content
+
+Default title, body, auxiliary, tag, status and graph-label sizes scale by `nodeLabel / 16`. Explicit block, list, item and span sizes retain their existing inheritance order. Content retains its line-height rule: `max(20, largest current line size × 1.35)`. Node dimensions, graph coordinates and fixed block heights, padding and gaps do not grow automatically.
+
+Remeasure with the same typography; width overflow and graph-internal height overflow can remain unresolved. Multiple content versions share the largest required height.
+
+### Timing and output size
 
 Font changes retain scenes, beats and effective compiled duration. Later explicit geometry changes can alter path length, so reread `diagram.beats`. Core, browser players, portable HTML, React, Vue, Web Components and GIF share these rules.
 
 Presentation material can start at 1280×720 with 32/24/20 sizes; Web prose illustrations can start at 960×600 with 20/18/16. The SDK stores concrete dimensions and sizes. Importing a document does not apply a delivery preset. Review text at its intended display size.
+
+### Typography errors
 
 Positive finite source sizes can still overflow derived line heights, whole-text widths or capsules. Validation, compilation or evaluation throws `DiagramValidationError` with `typography.nodeLabel`, `typography.edgeLabel` or `typography.flowLabel`; reduce that size or shorten the text. Measurement shares the same validation and resolution rules.
 
@@ -519,7 +734,9 @@ Theme: explicit option → document theme → light. The core ignores system pre
 
 Both themes use neutral borders and blue highlights. Document styles override ordinary colors; timeline and hover highlights overlay those styles. Explicit content colors and tag fills remain unchanged. Diagram text uses system fonts with Chinese fallbacks.
 
-With canvas focus, Space toggles playback and arrow keys step through beats. The progress slider keeps native keys. Scene and speed use custom select-only comboboxes: arrows open and navigate; Home/End move to the first/last option; Enter/Space commit; Escape cancels; Tab closes without trapping focus. Typing a character highlights a matching option. Outside presses dismiss the menu. Captions use a polite live region; SVGs have accessible names.
+With canvas focus, Space toggles playback and arrow keys step through beats. The progress slider keeps native keys. Scene and speed use custom select-only comboboxes: arrows open and navigate; Home/End move to the first/last option; Enter/Space commit; Escape cancels; Tab closes without trapping focus. Typing a character highlights a matching option. Outside presses dismiss the menu.
+
+Captions use a polite live region; SVGs have accessible names.
 
 ## Validation and errors
 
@@ -529,11 +746,15 @@ Validation rejects unknown fields, bad references, cyclic groups, duplicate beat
 
 ## Built-in GIF downloads
 
-All four hosts accept `gifExport: true`; Web Component markup uses `gif-export` and the element property is `gifExport`. The host integration examples enable it; the default setup example leaves it off. The default is `false`, and `controls: false` hides GIF controls too. The browser exporter loads on the first export click, while normal import and playback do not load it.
+All four hosts accept `gifExport: true`; Web Component markup uses `gif-export` and the element property is `gifExport`. The host integration examples enable it; the default setup example leaves it off. The default is `false`, and `controls: false` hides GIF controls too.
+
+The browser exporter loads on the first export click, while normal import and playback do not load it.
 
 Click **Export GIF** to download the complete timeline at 1× with the task's resolved theme and default export settings. The controls show progress, **Cancel export**, completion and a readable failure message. Downloads use a sanitized document title or `FlowSVG.gif`. Playback, speed and seeking remain independent; hover and controls never enter the GIF.
 
-Each player owns at most one task. A successful document load retains the old task's captured document/theme. Later input-object mutations cannot change that snapshot. Destroying the player, unmounting a component, or rebuilding an adapter for option changes cancels its task and prevents late downloads. Cancellation or failure permits retry. For custom settings and programmatic error handling, use the separate `exportGif` function below.
+Each player owns at most one task. A successful document load retains the old task's captured document/theme. Later input-object mutations cannot change that snapshot. Destroying the player, unmounting a component, or rebuilding an adapter for option changes cancels its task and prevents late downloads. Cancellation or failure permits retry.
+
+For custom settings and programmatic error handling, use the separate `exportGif` function below.
 
 ## Browser PNG and SVG backgrounds
 
@@ -553,13 +774,21 @@ const png = await exportPng(diagramDocument, {
 const svg = compiled.renderSvg(compiled.totalDuration, { background: "transparent" });
 ```
 
-`timeMs` defaults to 0. Nonfinite, negative or out-of-range times fail; static documents accept only 0. The range uses actual compiled duration. `reducedMotion` defaults to false, retaining the selected flow markers and transitions. Explicit true uses existing evaluation semantics without changing timing. Exports contain only the diagram, without controls, caption regions, automatic cropping or added headers.
+### Frame and dimensions
 
-`width` must be positive and finite, defaults to document `viewport.width`, and rounds to at least 1 pixel. Height uses the rounded width and selected effective camera ratio, rounded to at least 1 pixel. PNG retains `fitHeight` and focus. Limits are 8192 pixels per side and 32,000,000 total pixels after rounding. Computable failures precede resource allocation and never shrink output. GIF limits remain separate.
+`timeMs` defaults to 0. Nonfinite, negative or out-of-range times fail; static documents accept only 0. The range uses actual compiled duration. `reducedMotion` defaults to false, retaining the selected flow markers and transitions. Explicit `true` completes transitions and hides flow markers without changing timing. Exports contain only the diagram, without controls, caption regions, automatic cropping or added headers.
+
+`width` must be positive and finite, defaults to document `viewport.width`, and rounds to at least 1 pixel. Height uses the rounded width and selected effective camera ratio, rounded to at least 1 pixel. PNG retains `fitHeight` and focus. Limits are 8192 pixels per side and 32,000,000 total pixels after rounding.
+
+Computable failures precede resource allocation and never shrink output. GIF limits remain separate.
+
+### Background and errors
 
 `background` defaults to `theme`. `transparent` removes both the SVG whole-diagram fill and initial canvas fill while preserving node paint, edge-label halos and other diagram shapes. Core `renderSvg` accepts the same field in `SvgRenderOptions` and remains DOM-free. Ordinary core evaluation retains its existing time-clamping contract. GIF remains opaque.
 
-`PngExportError.code` is `options`, `document`, `limit`, `environment`, `rasterization`, `encoding` or `cancelled`. Browser support requires Canvas 2D, SVG image decoding and locally installed system fonts. Inputs are fixed before the first asynchronous step; success, failure and cancellation release task canvas, image and URL resources. Ordinary SDK and playback imports do not load PNG rasterization. Portable `FlowSVGExport.exportPng` uses the same implementation. The initial release exposes the SDK API without a player PNG button.
+`PngExportError.code` is `options`, `document`, `limit`, `environment`, `rasterization`, `encoding` or `cancelled`. Browser support requires Canvas 2D, SVG image decoding and locally installed system fonts. Inputs are fixed before the first asynchronous step; success, failure and cancellation release task canvas, image and URL resources. Ordinary SDK and playback imports do not load PNG rasterization. Portable `FlowSVGExport.exportPng` uses the same implementation.
+
+Export PNG through `exportPng` from `flowsvg/export`; built-in player download controls export GIF.
 
 ## Browser GIF export
 
@@ -586,18 +815,35 @@ Limits: 120 effective animation seconds, 1800 samples, 1801 encoded frames inclu
 
 ### GIF options
 
-| GIF option | Contract |
-| --- | --- |
-| `startMs`, `endMs` | Compiled timeline milliseconds, default full timeline. Require `0 <= startMs < endMs <= duration`; static documents accept only zero. The range inherits earlier scene state. Ordinary samples exclude the end; intermediate holds show end-left and the global end shows completion. |
-| `speed`, `fps` | Positive finite speed, default 1; integer fps from 1 to 30, default 15. Effective animation duration is range / speed. GIF delays use cumulative centisecond rounding. |
-| `width` | Positive diagram width, rounded to pixels; default `min(viewport.width, 1280)` without upscaling. Height preserves the authored viewport ratio; captions add height below. `viewport.fitHeight` is ignored for GIF frames, keeping pixel dimensions and diagram scale stable. |
-| `includeCaptions`, `captionHeight` | Captions default on with height 80px. Nonnegative height is rounded to pixels. The 16px system font uses 22px lines, 16px horizontal padding and 12px vertical padding. Wrapping preserves explicit newlines. Every effective caption is measured before sampling; overflow reports its scene/beat and requires more space, shorter text or disabled captions. |
-| `loopCount` | Default 0 loops forever; integers 1–65,536 specify total plays. One plays once. Larger values fail explicitly. |
-| `finalHoldMs` | Finite nonnegative extra delay, default 1000ms; zero adds no delay. Global completion still appears with zero delay. Static output lasts at least 10ms. Long holds split into 16-bit GIF delays and count toward the 1801 encoded-frame limit. |
-| `theme`, `reducedMotion` | Theme selects explicit / document / light. Motion defaults to full animation regardless of system preferences. Explicit `reducedMotion: true` completes transitions and hides flow markers while preserving duration. |
-| `signal`, `onProgress` | AbortSignal cancels task-owned work and releases resources. The callback receives phase, completed and total counts; a cancelled task never reports complete. |
+| Option | Default | Contract |
+| --- | --- | --- |
+| `startMs`, `endMs` | Full compiled timeline | `0 <= startMs < endMs <= duration`; static documents accept only zero |
+| `speed` | `1` | Positive finite multiplier; effective duration is range / speed |
+| `fps` | `15` | Integer from 1 to 30; delays use cumulative centisecond rounding |
+| `width` | `min(viewport.width, 1280)` | Positive diagram width rounded to pixels; the default does not upscale |
+| `includeCaptions` | `true` | Adds a caption region below the diagram |
+| `captionHeight` | `80` px | Finite nonnegative height rounded to pixels |
+| `loopCount` | `0` (forever) | Integers 1–65,536 specify total plays; 1 plays once; larger values fail |
+| `finalHoldMs` | `1000` ms | Finite nonnegative extra delay; zero adds no delay |
+| `theme` | Document theme, then light | Explicit `light` / `dark` overrides the fallback |
+| `reducedMotion` | `false` | Full animation regardless of system preference; `true` completes transitions and hides markers, retaining duration |
+| `signal` | None | `AbortSignal` cancels task-owned work and releases resources |
+| `onProgress` | None | Receives phase, completed, and total counts; cancelled tasks never report complete |
 
-Invalid runtime values, empty/out-of-range segments and computable resource limits fail before canvas allocation or sampling. Caption overflow uses `GifExportError.code === "caption-overflow"`; it never silently clips text or shrinks the font. GIF palette quantization and local system fonts can change pixels between environments.
+#### Sampling and fixed dimensions
+
+- A selected range inherits earlier scene state. Ordinary samples exclude the end; intermediate holds show end-left, and the global end shows completion.
+- Height preserves the authored viewport ratio. GIF ignores `viewport.fitHeight` so frames keep stable pixel dimensions and diagram scale; captions add height below.
+- Global completion appears even with zero final hold. Static output lasts at least 10 ms.
+- Long holds split into 16-bit GIF delays and count toward the 1801 encoded-frame limit.
+
+#### Caption layout and failures
+
+Captions use a 16 px system font, 22 px lines, 16 px horizontal padding, and 12 px vertical padding. Wrapping preserves explicit newlines.
+
+Every effective caption is measured before sampling. Overflow reports its scene/beat with `GifExportError.code === "caption-overflow"`. Increase the available space, shorten the text, or disable captions; the exporter does not silently clip text or shrink the font.
+
+Invalid runtime values, empty/out-of-range segments, and computable resource limits fail before canvas allocation or sampling. GIF palette quantization and local system fonts can change pixels between environments.
 
 ## Node PNG export
 
@@ -617,7 +863,9 @@ await writeFile("diagram.png", png);
 
 Node PNG uses the same browser exporter and image options as `flowsvg/export`. It requires Node 20+ and preinstalled Chrome/Chromium. Choose `executablePath` or an existing Playwright `browser`; the options are mutually exclusive. The SDK never downloads a browser and the export context is offline.
 
-The call snapshots the document and settings before asynchronous work. Invalid documents, options and pixel limits fail before browser allocation. Success, failure and cancellation close task contexts, owned browsers and temporary files, including resources acquired after cancellation. A supplied browser remains caller-owned and open. Launch, temporary-file and bridge failures use `PngExportError.code: "environment"`; browser rasterization, encoding and cancellation retain their distinct codes. The API returns bytes; saving them is the caller's responsibility. The SDK CLI has no PNG command.
+The call snapshots the document and settings before asynchronous work. Invalid documents, options and pixel limits fail before browser allocation. Success, failure and cancellation close task contexts, owned browsers and temporary files, including resources acquired after cancellation. A supplied browser remains caller-owned and open.
+
+Launch, temporary-file and bridge failures use `PngExportError.code: "environment"`; browser rasterization, encoding and cancellation retain their distinct codes. The API returns bytes; saving them is the caller's responsibility. The SDK CLI has no PNG command.
 
 ## Node GIF export (Node 20+)
 
@@ -642,7 +890,9 @@ const bytes = await exportGif(diagramDocument, {
 await writeFile("diagram.gif", bytes);
 ```
 
-All browser export options, progress phases, error codes and `AbortSignal` cancellation apply. Use `browser` to supply an already launched or connected Playwright `Browser`, including one obtained with `chromium.connectOverCDP`. Choose `browser` or `executablePath`; passing both is an options error. The function closes its own context/pages and any browser it launches, including on failure or cancellation. It keeps a supplied browser and the caller's pages open. Functions return bytes and do not write files.
+All browser export options, progress phases, error codes and `AbortSignal` cancellation apply. Use `browser` to supply an already launched or connected Playwright `Browser`, including one obtained with `chromium.connectOverCDP`. Choose `browser` or `executablePath`; passing both is an options error. The function closes its own context/pages and any browser it launches, including on failure or cancellation.
+
+It keeps a supplied browser and the caller's pages open. Functions return bytes and do not write files.
 
 The CLI reads a `DiagramDocument` JSON file, not TypeScript source:
 
@@ -650,7 +900,7 @@ The CLI reads a `DiagramDocument` JSON file, not TypeScript source:
 npx --no-install flowsvg diagram.json --output diagram.gif --format gif --executable-path /path/to/chromium --width 640 --fps 15 --loop-count 1
 ```
 
-GIF CLI flags match the [GIF options](#gif-options): `--theme`, `--start-ms`, `--end-ms`, `--speed`, `--width`, `--fps`, `--no-captions`, `--caption-height`, `--loop-count`, `--final-hold-ms`, `--reduced-motion` and `--executable-path`. Run `npx --no-install flowsvg --help` for usage. Progress goes to stderr. Both output formats preserve existing files unless `--overwrite` is set. Failure, SIGINT or SIGTERM exits nonzero without publishing a partial file.
+CLI flags follow the [GIF options](#gif-options). Run `npx --no-install flowsvg --help` for usage. Progress goes to stderr. Both output formats preserve existing files unless `--overwrite` is set. Failure, SIGINT or SIGTERM exits nonzero without publishing a partial file.
 
 ## Offline HTML (Node 20+)
 
@@ -667,9 +917,13 @@ await writeFile("diagram.html", await renderHtml(diagramDocument, { theme: "dark
 npx --no-install flowsvg diagram.json --output diagram.html --format html
 ```
 
-`renderHtml(document, options)` returns `Promise<string>`. All options are optional: `theme: "light" | "dark"`, `autoplay: boolean`, `loop: boolean`, `controls: boolean` and `gifExport: boolean`. Defaults use the document/light theme, pause at zero with loop off and show playback controls and captions. Live loop mode is independent of GIF `loopCount`. The CLI reads document JSON and accepts `--theme`, `--autoplay`, `--no-controls`, `--gif-export` and `--overwrite`.
+`renderHtml(document, options)` returns `Promise<string>`. All options are optional: `theme: "light" | "dark"`, `autoplay: boolean`, `loop: boolean`, `controls: boolean` and `gifExport: boolean`. Defaults use the document/light theme, pause at zero with loop off and show playback controls and captions. Live loop mode is independent of GIF `loopCount`.
 
-GIF export defaults off, so basic HTML excludes the encoder. Set `gifExport: true` or pass `--gif-export` to embed the same-version GIF exporter and its worker. Recipients can download GIFs with progress and cancellation through offline `file://`, without sidecar scripts, remote fonts or network access. Required system fonts must already be installed. Exports use the full timeline at 1× and include captions. `controls: false` hides playback and GIF controls.
+The CLI reads document JSON and accepts `--theme`, `--autoplay`, `--no-controls`, `--gif-export` and `--overwrite`.
+
+GIF export defaults off, so basic HTML excludes the encoder. Set `gifExport: true` or pass `--gif-export` to embed the same-version GIF exporter and its worker. Recipients can download GIFs with progress and cancellation through offline `file://`, without sidecar scripts, remote fonts or network access. Required system fonts must already be installed.
+
+Exports use the full timeline at 1× and include captions. `controls: false` hides playback and GIF controls.
 
 ## Structured node content
 
@@ -681,7 +935,7 @@ GIF export defaults off, so basic HTML excludes the encoder. Set `gifExport: tru
 import type { DiagramNode } from "flowsvg";
 
 const service = {
-  id: "service", kind: "rect", x: 24, y: 24, width: 260, height: 312,
+  id: "service", kind: "rect", x: 24, y: 24, width: 260, height: 182,
   content: {
     style: { padding: 16, blockGap: 14 },
     blocks: [
@@ -698,11 +952,17 @@ The `service` node rendered with the light theme:
 
 ![Fixed-size Order service node with title, auxiliary text, body and a blue right-aligned paragraph](../../packages/flowsvg/docs/images/node-content.png)
 
+#### Text and styles
+
 Text fields accept strings or `ContentTextSpan[]`: `{ text, style?: { fontSize, fontWeight, color } }`. Spans inherit block styles; alignment belongs to the block. Structured-content wrapping preserves newlines and Unicode graphemes, prefers spaces, and breaks long words or URLs as needed. Ordinary node and edge labels use the word-safe rules in [document typography](#document-typography).
 
 Text styles: positive finite `fontSize`, integer `fontWeight` from 100–900, hexadecimal `color`, and `align` (`left`, `center`, `right`). Content `padding` and `blockGap` are finite and nonnegative. Defaults in diagram units: title 20/700, body 14/400, auxiliary 12/400, padding 16, block gap 14.
 
-Lists accept `marker` (`none` by default, `bullet`, or `number`), `items`, and `style`. Items support `tags`, `status`, `body`, `auxiliary`, `style`, `auxiliaryStyle`, and `statusStyle`. List style sets body typography and nonnegative finite `itemGap` (default 12); item styles override it. Auxiliary text defaults to muted 12-unit text. Continuation and auxiliary lines align with the body. Omitted parts take no space; explicit blank text preserves a line.
+#### Lists
+
+Lists accept `marker` (`none` by default, `bullet`, or `number`), `items`, and `style`. Items support `tags`, `status`, `body`, `auxiliary`, `style`, `auxiliaryStyle`, and `statusStyle`. List style sets body typography and nonnegative finite `itemGap` (default 12); item styles override it. Auxiliary text defaults to muted 12-unit text. Continuation and auxiliary lines align with the body.
+
+Omitted parts take no space; explicit blank text preserves a line.
 
 ```ts
 import type { ContentBlock } from "flowsvg";
@@ -713,11 +973,17 @@ const steps: ContentBlock = { type: "list", marker: "number", style: { itemGap: 
 ] };
 ```
 
-The `steps` block rendered in a 300 × 180 rectangle with `content: { blocks: [steps] }`:
+The `steps` block rendered in a 300 × 110 rectangle with `content: { blocks: [steps] }`:
 
 ![Two numbered steps with auxiliary text and bold Save text](../../packages/flowsvg/docs/images/numbered-list.png)
 
-Tags accept `{ text, style?: { fontSize, fontWeight, color, fill, shape } }`, with font size 11 by default. Tag rows start at the item's left edge; each text line is centered inside its own tag background using the rendered font's advance width. `shape` is `rounded` by default; set `shape: "pill"` for capsule corners based on the final tag height. Shape does not change text layout or theme colors. List `tagGap` defaults to 6 and must be finite and nonnegative. Status is right-aligned 12-unit accent text; `statusStyle` accepts `fontSize`, `fontWeight`, and `color`. When space is insufficient, tags wrap and status moves below. Body and auxiliary text follow.
+#### Tags and status
+
+Tags accept `{ text, style?: { fontSize, fontWeight, color, fill, shape } }`, with font size 11 by default. Tag rows start at the item's left edge; each text line is centered inside its own tag background using the rendered font's advance width.
+
+`shape` is `rounded` by default; set `shape: "pill"` for capsule corners based on the final tag height. Shape does not change text layout or theme colors. List `tagGap` defaults to 6 and must be finite and nonnegative. Status is right-aligned 12-unit accent text; `statusStyle` accepts `fontSize`, `fontWeight`, and `color`.
+
+When space is insufficient, tags wrap and status moves below. Body and auxiliary text follow.
 
 ```ts
 import type { ContentBlock } from "flowsvg";
@@ -728,9 +994,11 @@ const records: ContentBlock = { type: "list", items: [{
 }] };
 ```
 
-The `records` block rendered in a 300 × 180 rectangle with `content: { blocks: [records] }`:
+The `records` block rendered in a 300 × 98 rectangle with `content: { blocks: [records] }`:
 
 ![Record with world and experience tags, new status, body and date](../../packages/flowsvg/docs/images/record-tags.png)
+
+#### Overflow and interaction
 
 Content keeps authored node dimensions and clips to a shape-specific safe area. Overflow emits `text-overflow` with the node ID, `nodes[index].content` path and direction. Increase node dimensions or shorten text; fonts do not shrink automatically. Content has one node-level interaction target, with no internal links, buttons, images or HTML. Clipped text adds no hit area.
 
@@ -757,11 +1025,19 @@ const task = {
 } satisfies DiagramNode;
 ```
 
-`single.height` fits the initial content. `shared.height` is the largest required height across both versions, so a later `updateNode.value.content` replacement can keep the same node dimensions. Include every version explicitly: measurement does not inspect documents, scenes, or beats. Call it while generating the document, then store explicit width and height. Add extra space or apply an author-defined minimum with `Math.max(minimumHeight, shared.height)` when needed.
+#### Adopt the measured height
 
-Measurement uses the existing content styles, wrapping, full line boxes, block/item/tag gaps, padded tag backgrounds, fixed graph block heights, and shape safe areas. The result is a positive finite height even for valid empty content. It leaves input objects and arrays unchanged. Evaluation and SVG reuse the same layout; playback never resizes nodes automatically.
+`single.height` fits the initial content. `shared.height` is the largest required height across both versions, so a later `updateNode.value.content` replacement can keep the same node dimensions. Include every version explicitly: measurement does not inspect documents, scenes, or beats. Call it while generating the document, then store explicit width and height.
 
-Inspect `diagnostics` even when a height is returned. Each diagnostic includes zero-based `versionIndex`, `path` such as `content[1].blocks[0]`, `dimension` (`width` or `height`), and `message`. A single input uses version index `0`. Width overflow requires a wider node or changed content. A `height` diagnostic identifies content outside a graph block's own fixed height; increasing the outer node height cannot fix it. Measurement does not shrink fonts, truncate text, change width, or move graph entities. Invalid input throws `DiagramValidationError` with field paths, including nested content validation errors and an empty version collection.
+Add extra space or apply an author-defined minimum with `Math.max(minimumHeight, shared.height)` when needed.
+
+Measurement uses authored content styles, wrapping, full line boxes, block/item/tag gaps, padded tag backgrounds, fixed graph block heights, and shape safe areas. The result is a positive finite height even for valid empty content. It leaves input objects and arrays unchanged. Evaluation and SVG reuse the same layout; playback never resizes nodes automatically.
+
+#### Resolve diagnostics
+
+Inspect `diagnostics` even when a height is returned. Each diagnostic includes zero-based `versionIndex`, `path` such as `content[1].blocks[0]`, `dimension` (`width` or `height`), and `message`. A single input uses version index `0`. Width overflow requires a wider node or changed content.
+
+A `height` diagnostic identifies content outside a graph block's own fixed height; increasing the outer node height cannot fix it. Measurement does not shrink fonts, truncate text, change width, or move graph entities. Invalid input throws `DiagramValidationError` with field paths, including nested content validation errors and an empty version collection.
 
 Finite input values can still produce a required height outside JavaScript’s finite number range. Measurement then throws `DiagramValidationError`; `issues` includes `content[index]` for every affected version. Reduce the relevant font size, padding, block gaps, or graph block heights. Representable finite heights continue to use the same layout rules.
 
@@ -785,7 +1061,7 @@ const entities: ContentGraphBlock = {
 };
 ```
 
-The `entities` block rendered in a 280 × 180 rectangle with `content: { blocks: [entities] }`:
+The `entities` block rendered in a 280 × 162 rectangle with `content: { blocks: [entities] }`:
 
 ![Entity graph with highlighted Alice and Google, and an unselected ML project](../../packages/flowsvg/docs/images/entity-graph.png)
 
@@ -815,8 +1091,8 @@ const updated: NodeContent = { blocks: [
   { type: "list", items: [{ tags: [{ text: "verified" }], status: "done", body: "Payment confirmed", auxiliary: "2026-10-18" }] }
 ] };
 const document: DiagramDocument = {
-  version: 1, viewport: { width: 300, height: 480 },
-  nodes: [{ id: "facts", kind: "cylinder", x: 24, y: 20, width: 240, height: 440, content: facts }], edges: [],
+  version: 1, viewport: { width: 300, height: 270 },
+  nodes: [{ id: "facts", kind: "cylinder", x: 24, y: 20, width: 240, height: 230, content: facts }], edges: [],
   scenes: [{ id: "records", label: "Records", beats: [
     { durationMs: 1000, actions: [] },
     { durationMs: 1000, actions: [{ type: "updateNode", target: "facts", value: { content: updated } }] },
@@ -829,6 +1105,8 @@ const diagram = createDiagram(document);
 console.log(diagram.evaluateAt(1000).warnings);
 const svg = diagram.renderSvg(1000, { theme: "dark", reducedMotion: true });
 ```
+
+Both content versions fit the fixed 230-unit node height, measured with `measureNodeContent`. The two views keep the same dimensions for comparison.
 
 The initial light-theme frame at 0 ms and the updated dark-theme frame at 1000 ms:
 
@@ -845,7 +1123,7 @@ These documentation entries serve different readers and keep different levels of
 | [Published package README](../../packages/flowsvg/README.md) | The self-contained npm installation path, common defaults, limits, and error behavior | Must remain usable from the published package without this repository; link here for repository-only depth |
 | This SDK guide | The complete repository reference for the public API, document model, timeline, playback, export, and diagnostics | The primary source for detailed SDK behavior and cross-host links |
 | [Host READMEs](../../apps/native-example/README.md), [React](../../apps/react-example/README.md), [Vue](../../apps/vue-example/README.md) | Host lifecycle, development commands, build/deploy behavior, and host-specific failure handling | Summarize the compiled timeline and link back here for shared SDK rules |
-| [Flow Diagram Skill](https://github.com/yokingma/flow-diagram-skill) (independent project) | Authoring-tool commands, layout plans, reports, revision history, and review/export workflow | Bundles the execution references for its exact SDK baseline; SDK users can use this guide without installing the Skill. See [repository boundaries](../development/repository-split.md) |
+| [Flow Diagram Skill](https://github.com/yokingma/flow-diagram-skill) | Authoring commands, layout plans, reports, revision history, and review/export workflow | Maintains its authoring workflow and SDK compatibility documentation; see [authoring-tool integration](../development/authoring-tools.md) |
 
 When a description conflicts with behavior, use the public types, implementation, and tests as the fact source. The [documentation map](../README.md) records the language and ownership policy.
 

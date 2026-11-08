@@ -33,7 +33,7 @@
 
 ## 仓库参考
 
-- **架构：** [架构决策](adr/)记录决策及其边界；[仓库边界](development/repository-split.md)说明 SDK 与独立创作工具的职责。
+- **架构：** [架构决策](adr/)记录决策及其边界；[创作工具集成](development/authoring-tools.md)说明 SDK 版本选择与验证职责。
 - **约定：** [术语表](../GLOSSARY.md)定义公共术语；[实现模式](../PATTERNS.md)说明各分支的归属和验证边界；[SDK 版本说明](../packages/flowsvg/CHANGELOG.md)记录包行为变化。
 - **资源：** [图片维护](assets/image-previews.md)和[品牌资源](brand/README.md)说明已提交的视觉输入及刷新步骤。
 - **Agent 规则：** [技术写作](agents/technical-writing.md)、[源码注释](agents/code-comments.md)、[领域文档](agents/domain.md)、[本地任务记录](agents/issue-tracker.md)和[标签映射](agents/triage-labels.md)适用于仓库维护。

@@ -124,7 +124,7 @@ pnpm release:publish
 
 ## 上传后确认
 
-上传成功后查询 `latest` 的版本与导出元数据，确认版本等于本次发布版本，新增入口和 CLI 均存在：
+上传成功后查询 `latest` 的版本与导出元数据，确认版本等于目标发布版本，公开入口和 CLI 均存在：
 
 ```sh
 npm view flowsvg version exports bin dist.integrity --json --registry=https://registry.npmjs.org/
@@ -140,13 +140,13 @@ npm view flowsvg version exports bin dist.integrity --json --registry=https://re
 
 `dist/portable/export.js` 内嵌 gifenc worker，发布白名单同时要求 `LICENSE.gifenc.txt`。导出资产与普通播放器分开装配。
 
-Node GIF 导出把 `playwright-core@1.58.2` 声明为运行依赖，并只在需要启动浏览器时动态加载。普通安装不包含 Chromium，也不自动下载浏览器。HTML 生成和复制后的 HTML 工具无需自动化依赖；复制后的 GIF 工具需要在工具旁安装该版本的 `playwright-core`，并提前准备浏览器、系统库和字体。新增 Node 入口和 CLI 要求 Node 20+；既有核心入口继续要求 Node 18+。
+Node GIF 导出把 `playwright-core@1.58.2` 声明为运行依赖，并只在需要启动浏览器时动态加载。普通安装不包含 Chromium，也不自动下载浏览器。HTML 生成和复制后的 HTML 工具无需自动化依赖；复制后的 GIF 工具需要在工具旁安装该版本的 `playwright-core`，并提前准备浏览器、系统库和字体。Node 入口和 CLI 要求 Node 20+；核心入口要求 Node 18+。
 
 Node 函数通过 `executablePath` 使用预装 Chromium，也可传入已连接的 Playwright `browser`。验收需要核对任务 context 清理且外部会话保留、SIGINT/SIGTERM 取消非零退出，以及 HTML/GIF 原子交付和默认不覆盖。任务不使用浏览器自动化库的默认进程信号处理，避免进程在资源清理前退出。
 
 ## 独立产物验收
 
-`verify-release.mjs` 在缺失 `dist` 时触发冷构建，逐文件检查新增入口、声明、CLI、portable manifest、内嵌 worker 与许可证，然后正常安装真实 tarball。安装允许依赖生命周期脚本；隔离的浏览器目录必须保持不存在。严格类型检查明确加载 Node/React 类型，不跳过依赖声明检查。
+`verify-release.mjs` 在缺失 `dist` 时触发冷构建，逐文件检查公开入口、声明、CLI、portable manifest、内嵌 worker 与许可证，然后正常安装真实 tarball。安装允许依赖生命周期脚本；隔离的浏览器目录必须保持不存在。严格类型检查明确加载 Node/React 类型，不跳过依赖声明检查。
 
 脚本把 `verify-portable-consumer.mjs` 复制到临时消费项目，只调用安装后的公开入口。随后复制完整 `dist/` 和固定版本 `playwright-core` 到独立目录，阻断网络后生成 HTML 和 GIF。在离线 Chromium 中打开 `file://`、播放并下载 GIF；使用独立 `gifuct-js` 解码尺寸、像素、延迟和循环字段。Node API 验收还覆盖区间、速度、帧率、说明、减少动画、资源上限、取消和环境错误。
 

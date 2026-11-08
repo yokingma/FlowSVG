@@ -44,5 +44,5 @@
 - Retire experimental pages and obsolete demonstration narratives from public inputs; keep temporary plans and run evidence outside version control.
 - Add measured content, rounded routes, adaptive canvas height, looping and compiled distance-based timing. See the SDK changelog for versioned behavior and migration details.
 - Share internal host lifecycle coordination and make GIF task resource ownership explicit.
-- Add PNG exports, document typography and geometry diagnostics; maintain authoring tools in an independent project.
+- Add PNG exports, document typography and geometry diagnostics.
 - Refresh the shared presentation shell and start formal examples in the dark theme.

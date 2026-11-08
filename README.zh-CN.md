@@ -14,7 +14,7 @@
 
 <p align="center">
   <a href="https://yokingma.github.io/FlowSVG/">在线演示</a> ·
-  <a href="#独立-skill">Skill</a> ·
+  <a href="#flow-diagram-skill">Skill</a> ·
   <a href="#快速开始">快速开始</a> ·
   <a href="#集成与-api">API</a> ·
   <a href="apps/native-example/README.md">示例</a>
@@ -24,7 +24,7 @@
 
 用同一份可编辑的 JSON 或 TypeScript 文档描述节点、连线、场景和节拍。用静态图解释结构，用动画展示流程推进和状态变化。这份文档可复用于交互式播放器、单文件离线 HTML、SVG、PNG 和 GIF。
 
-FlowSVG 包含 SDK、共享 showcase，以及原生浏览器、React、Vue 集成示例。独立的 [Flow Diagram Skill](#独立-skill) 提供图解创作与复核能力。
+FlowSVG 包含 SDK、共享 showcase，以及原生浏览器、React、Vue 集成示例。[Flow Diagram Skill](#flow-diagram-skill) 提供图解创作与复核能力。
 
 核心使用 TypeScript，运行时不依赖 DOM、网络或浏览器时钟。原生浏览器、Vue、React 和 Web Component 接入复用同一套时间线与渲染结果。
 
@@ -55,10 +55,10 @@ FlowSVG 包含三张代表性图解：一张展示简单的请求与响应流程
 
 ## 能做什么
 
-- 未发布源码能力：`diamond` 决策节点支持标签尺寸测量、安全区裁剪和真实轮廓连接。见[决策分支示例](packages/flowsvg/examples/decision-branch.json)；此新增能力尚不属于已发布的 0.2.3。
-- 未发布源码：`parallelogram` 输入输出节点支持标签测量、安全区裁剪和真实轮廓连接。见[输入输出示例](packages/flowsvg/examples/input-output.json)。
-- 未发布源码能力：`predefinedProcess` 使用可测量的纯文本标签和两侧装饰竖线表达子流程调用。见[子流程示例](packages/flowsvg/examples/subprocess-call.json)。
-- 未发布源码新增 `document` 文档形：支持波浪带上方的居中标签、尺寸测量及真实轮廓命中。见[报告生成示例](packages/flowsvg/examples/report-generation.json)。
+- `diamond` 决策节点支持标签尺寸测量、安全区裁剪和真实轮廓连接。见[决策分支示例](packages/flowsvg/examples/decision-branch.json)。
+- `parallelogram` 输入输出节点支持标签测量、安全区裁剪和真实轮廓连接。见[输入输出示例](packages/flowsvg/examples/input-output.json)。
+- `predefinedProcess` 使用可测量的纯文本标签和两侧装饰竖线表达子流程调用。见[子流程示例](packages/flowsvg/examples/subprocess-call.json)。
+- `document` 文档形：支持波浪带上方的居中标签、尺寸测量及真实轮廓命中。见[报告生成示例](packages/flowsvg/examples/report-generation.json)。
 
 - 绘制节点、嵌套分组，以及直线、正交或曲线有向连线。
 - 在节点中组合标题、段落、列表、标签和混合样式文字，并在设定尺寸前测量内容。
@@ -70,13 +70,13 @@ FlowSVG 包含三张代表性图解：一张展示简单的请求与响应流程
 - 使用浅色/深色主题、键盘操作和减少动画模式。
 - 校验文档，报告字段级错误和文字溢出警告；按需检查几何遮挡风险。
 
-节点位置和尺寸由作者指定。FlowSVG 面向图解展示与播放；拖拽编辑和语义自动布局不在当前范围内。独立 Skill 提供创作与确定性布局计划工具。
+节点位置和尺寸由作者指定。FlowSVG 面向图解展示与播放；拖拽编辑和语义自动布局不在当前范围内。图解创作与确定性布局计划可使用 [Flow Diagram Skill](#flow-diagram-skill)。
 
-未发布源码的[混合审批流程](packages/flowsvg/examples/mixed-flow.json)将四种形状、普通节点、分组和三种路由组合在同一图解中；包含标签替换、尺寸与样式变化，以及一个有意裁剪的标签。[生成脚本](packages/flowsvg/examples/create-mixed-flow.mjs)通过公开 `measureNodeLabel` 为多个标签版本预留共同高度。
+[混合审批流程](packages/flowsvg/examples/mixed-flow.json)将四种形状、普通节点、分组和三种路由组合在同一图解中；包含标签替换、尺寸与样式变化，以及一个有意裁剪的标签。[生成脚本](packages/flowsvg/examples/create-mixed-flow.mjs)通过公开 `measureNodeLabel` 为多个标签版本预留共同高度。
 
-安装包含此能力的 SDK 后，在可写目录中放置脚本并运行 `node create-mixed-flow.mjs`，再运行 `npx flowsvg mixed-flow.json --format html --output mixed-flow.html` 生成离线播放文件。
+安装 `flowsvg` 后，在可写目录中放置脚本并运行 `node create-mixed-flow.mjs`，再运行 `npx flowsvg mixed-flow.json --format html --output mixed-flow.html` 生成离线播放文件。
 
-仓库内先执行 `pnpm --filter flowsvg build`，然后运行 `node packages/flowsvg/examples/create-mixed-flow.mjs`；以 `packages/flowsvg` 为静态服务根目录时，可打开 `/tests/browser-mixed-flow.html`。这些能力尚未发布到 npm。
+仓库内先执行 `pnpm --filter flowsvg build`，然后运行 `node packages/flowsvg/examples/create-mixed-flow.mjs`；以 `packages/flowsvg` 为静态服务根目录时，可打开 `/tests/browser-mixed-flow.html`。
 
 ## 安装
 
@@ -245,9 +245,9 @@ pnpm test
 
 项目约定见[术语表](GLOSSARY.md)、[架构决策](docs/adr/)和[实现约定](PATTERNS.md)。SDK 版本说明见[包变更记录](packages/flowsvg/CHANGELOG.md)。
 
-## 独立 Skill
+## Flow Diagram Skill
 
-[**Flow Diagram**](https://github.com/yokingma/flow-diagram-skill)：面向系统和流程解释的可执行图解 Skill。一次编写，支持播放、嵌入、检查和导出。独立的仓库提供创作、布局计划、校验流程、复核与交付报告，通过已发布的 `flowsvg` 包在它锁定的精确基线上运行。
+[**Flow Diagram**](https://github.com/yokingma/flow-diagram-skill)：面向系统和流程解释的可执行图解 Skill。一次编写，支持播放、嵌入、检查和导出。它通过已发布的 `flowsvg` 包提供创作、布局计划、校验流程、复核与交付报告。
 
 在需要创作图解的项目中安装：
 
@@ -257,7 +257,7 @@ npx skills add https://github.com/yokingma/flow-diagram-skill --skill flow-diagr
 
 Codex 中以 `$flow-diagram` 调用，Claude Code 中以 `/flow-diagram` 调用。宿主要求、支持的助手与已知限制见该仓库说明。
 
-SDK 与独立创作工具的职责见[仓库边界](docs/development/repository-split.md)。SDK 安装、开发、测试、发布验收和示例均可独立运行。
+SDK 版本选择与验证职责见[创作工具集成](docs/development/authoring-tools.md)。
 
 ## 许可证
 

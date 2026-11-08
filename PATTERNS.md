@@ -16,7 +16,7 @@
 
 - Publish formal demo text in English. Keep stable story IDs, bilingual documentation and SDK multilingual rendering coverage.
 
-- Keep each published unit self-contained. SDK build, tests and release verification use SDK-owned inputs; shared showcase and host delivery have their own checks. Repository boundaries and independent versioning are defined in [repository boundaries](docs/development/repository-split.md).
+- Keep each published unit self-contained. SDK build, tests and release verification use SDK-owned inputs; shared showcase and host delivery have their own checks. SDK integration and versioning responsibilities are defined in [authoring-tool integration](docs/development/authoring-tools.md).
 - Keep structured-content tag text centered inside its decorative background; the shared SDK owns this geometry for every host and export.
 - Keep reusable behavior regressions with the SDK and narrative assertions with the shared author package. Retire an obsolete demonstration and its dedicated checks together while retaining generic behavior coverage.
 - Preserve licenses, attribution and source identity when moving ownership. Record generated output, programmatic checks, visual inspection and live deployment as distinct evidence.

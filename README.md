@@ -14,7 +14,7 @@
 
 <p align="center">
   <a href="https://yokingma.github.io/FlowSVG/">Live demo</a> ·
-  <a href="#independent-skill">Skill</a> ·
+  <a href="#flow-diagram-skill">Skill</a> ·
   <a href="#quick-start">Quick&nbsp;start</a> ·
   <a href="#integrations-and-api">API</a> ·
   <a href="apps/native-example/README.md">Examples</a>
@@ -24,7 +24,7 @@
 
 Use one editable JSON or TypeScript document to describe nodes, relationships, scenes, and beats. Explain structures with static diagrams and show process progression or state changes with animation. Reuse that document for an interactive player, standalone offline HTML, SVG, PNG, or GIF.
 
-FlowSVG includes the SDK, a shared showcase, and native browser, React, and Vue integration examples. The independent [Flow Diagram Skill](#independent-skill) provides diagram authoring and review.
+FlowSVG includes the SDK, a shared showcase, and native browser, React, and Vue integration examples. [Flow Diagram Skill](#flow-diagram-skill) provides diagram authoring and review.
 
 The TypeScript core runs without a DOM, network access, or browser clock. Native browser, Vue, React, and Web Component integrations share the same timeline and rendering results.
 
@@ -55,10 +55,10 @@ Reuse one diagram document for static SVG/PNG, animated GIF and interactive or o
 
 ## Features
 
-- Unreleased source capability: use measured `diamond` decision labels with safe-area clipping and contour-aware connections. See the [decision example](packages/flowsvg/examples/decision-branch.json); this addition is not part of published 0.2.3.
-- Unreleased source: measured `parallelogram` input/output nodes share safe-area labels and contour-aware connections. See the [input/output example](packages/flowsvg/examples/input-output.json).
-- Unreleased source capability: use `predefinedProcess` for a subprocess call, with measured plain labels and decorative side lines. See the [subprocess example](packages/flowsvg/examples/subprocess-call.json).
-- Unreleased source adds measured `document` report labels above a bounded wave, with contour-aware hits. See the [report generation example](packages/flowsvg/examples/report-generation.json).
+- Use measured `diamond` decision labels with safe-area clipping and contour-aware connections. See the [decision example](packages/flowsvg/examples/decision-branch.json).
+- Measured `parallelogram` input/output nodes share safe-area labels and contour-aware connections. See the [input/output example](packages/flowsvg/examples/input-output.json).
+- Use `predefinedProcess` for a subprocess call, with measured plain labels and decorative side lines. See the [subprocess example](packages/flowsvg/examples/subprocess-call.json).
+- Use measured `document` report labels above a bounded wave, with contour-aware hits. See the [report generation example](packages/flowsvg/examples/report-generation.json).
 
 - Draw nodes, nested groups and directed straight, orthogonal or curved edges.
 - Compose titles, paragraphs, lists, tags and inline styled text inside nodes; measure content before choosing dimensions.
@@ -70,13 +70,13 @@ Reuse one diagram document for static SVG/PNG, animated GIF and interactive or o
 - Use light/dark themes, keyboard controls and reduced motion.
 - Validate documents with field-level errors and text-overflow warnings; query geometric overlap risks on demand.
 
-Node positions and sizes are authored explicitly. FlowSVG focuses on presentation and playback; drag-and-drop editing and semantic automatic layout are outside its scope. Authoring and deterministic layout-plan tools belong to the independent Skill.
+Node positions and sizes are authored explicitly. FlowSVG focuses on presentation and playback; drag-and-drop editing and semantic automatic layout are outside its scope. For diagram authoring and deterministic layout plans, use [Flow Diagram Skill](#flow-diagram-skill).
 
-The unreleased [mixed approval flow](packages/flowsvg/examples/mixed-flow.json) combines all four presets, an ordinary node, a group and three route families. It includes label replacement, size and style changes, and one deliberately clipped label. Its [generator](packages/flowsvg/examples/create-mixed-flow.mjs) reserves a shared height for label versions through public `measureNodeLabel`.
+The [mixed approval flow](packages/flowsvg/examples/mixed-flow.json) combines all four presets, an ordinary node, a group and three route families. It includes label replacement, size and style changes, and one deliberately clipped label. Its [generator](packages/flowsvg/examples/create-mixed-flow.mjs) reserves a shared height for label versions through public `measureNodeLabel`.
 
-After installing an SDK build with this feature, place the script in a writable directory and run `node create-mixed-flow.mjs`, then `npx flowsvg mixed-flow.json --format html --output mixed-flow.html` to generate offline playback.
+After installing `flowsvg`, place the script in a writable directory and run `node create-mixed-flow.mjs`, then `npx flowsvg mixed-flow.json --format html --output mixed-flow.html` to generate offline playback.
 
-In this repository, first run `pnpm --filter flowsvg build`, then `node packages/flowsvg/examples/create-mixed-flow.mjs`; serve `packages/flowsvg` and open `/tests/browser-mixed-flow.html`. This capability has not been published to npm.
+In this repository, first run `pnpm --filter flowsvg build`, then `node packages/flowsvg/examples/create-mixed-flow.mjs`; serve `packages/flowsvg` and open `/tests/browser-mixed-flow.html`.
 
 ## Installation
 
@@ -245,9 +245,9 @@ Browser checks require a prepared Chromium browser and fonts. Follow the [browse
 
 For project conventions, see the [glossary](GLOSSARY.md), [architecture decisions](docs/adr/) and [implementation patterns](PATTERNS.md). SDK release notes are in the [package changelog](packages/flowsvg/CHANGELOG.md).
 
-## Independent Skill
+## Flow Diagram Skill
 
-[**Flow Diagram**](https://github.com/yokingma/flow-diagram-skill) is an executable diagram Skill for explaining systems and processes: author once, then play, embed, inspect, and export. Its separate repository provides authoring, layout plans, validation workflows, reviews, and delivery reports, and consumes the published `flowsvg` package at the exact baseline it locks.
+[**Flow Diagram**](https://github.com/yokingma/flow-diagram-skill) is an executable diagram Skill for explaining systems and processes: author once, then play, embed, inspect, and export. It provides authoring, layout plans, validation workflows, reviews, and delivery reports through the published `flowsvg` package.
 
 Install it in the project where you want to author diagrams:
 
@@ -257,7 +257,7 @@ npx skills add https://github.com/yokingma/flow-diagram-skill --skill flow-diagr
 
 Ask with `$flow-diagram` in Codex or `/flow-diagram` in Claude Code. Host requirements, supported assistants, and known limits are documented in that repository.
 
-See [repository boundaries](docs/development/repository-split.md) for the SDK integration boundary. SDK installation, development, tests, release verification and examples are self-contained.
+See [authoring-tool integration](docs/development/authoring-tools.md) for SDK version selection and verification responsibilities.
 
 ## License
 

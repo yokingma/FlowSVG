@@ -35,7 +35,7 @@ Read the sections for the affected subsystem. For public-contract changes, also 
 
 - Reject points outside preset bounds before testing contour half planes; representable tiny dimensions may collapse at a large finite origin.
 
-- New semantic presets share one contour definition across serialization, cardinal/ray edge attachments and hits; preserve existing-shape behavior. Keep contour sampling separate from convex diagnostic paint decomposition.
+- Semantic presets share one contour definition across serialization, cardinal/ray edge attachments and hits; preserve existing-shape behavior. Keep contour sampling separate from convex diagnostic paint decomposition.
 
 - Keep SVG background selection separate from frame evaluation. Remove only the whole-diagram background rectangle; preserve object paint and label contrast.
 - Render group borders with the shared rounded-rectangle radius, bounded by one quarter of each dimension. Apply this in core SVG serialization so all hosts and exports share the default; retain group-relative coordinates, dashed styles and unclipped children.

@@ -33,7 +33,7 @@ The two SDK guides are parallel task paths. They keep the same section order, ex
 
 ## Repository reference
 
-- **Architecture:** [ADRs](adr/) record decisions and their boundaries. [Repository split](development/repository-split.md) explains the SDK and independent authoring-tool responsibilities.
+- **Architecture:** [ADRs](adr/) record decisions and their boundaries. [Authoring-tool integration](development/authoring-tools.md) explains SDK version selection and verification responsibilities.
 - **Conventions:** [Glossary](../GLOSSARY.md) defines public terms; [patterns](../PATTERNS.md) names the owner and verification boundary for each branch; [SDK changelog](../packages/flowsvg/CHANGELOG.md) records package behavior changes.
 - **Assets:** [Image previews](assets/image-previews.md) and [brand assets](brand/README.md) describe checked-in visual inputs and refresh steps.
 - **Agent instructions:** [Technical writing](agents/technical-writing.md), [source comments](agents/code-comments.md), [domain docs](agents/domain.md), [issue tracker](agents/issue-tracker.md), and [triage labels](agents/triage-labels.md) apply to repository maintenance.

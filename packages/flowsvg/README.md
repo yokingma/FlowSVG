@@ -424,7 +424,7 @@ Built-in downloads export the full timeline at `1×`, using the current theme. P
 | `Beat` | `durationMs`, `actions` | `transitionMs`, `caption` |
 
 - **Static documents:** use empty `scenes`.
-- **Node kinds:** `rect`, `roundedRect`, `ellipse`, `cylinder`, `group`; unreleased source also supports `diamond`, `parallelogram`, `document` and `predefinedProcess`. Groups have rounded borders by default.
+- **Node kinds:** `rect`, `roundedRect`, `ellipse`, `cylinder`, `group`, `diamond`, `parallelogram`, `document` and `predefinedProcess`. Groups have rounded borders by default.
 - **Edge routes:** `straight` (default), `orthogonal`, `curved`.
 - **Ports:** `top`, `right`, `bottom`, `left`.
 - **Beat timing:** `durationMs` must be positive. `transitionMs` must be in `[0, durationMs]`, defaults to `min(250, durationMs)`, and is capped at effective beat length.
@@ -461,23 +461,23 @@ Read effective boundaries from `compiled.beats`. Use separate no-flow beats for 
 
 ### Decision labels and measurement
 
-This is an unreleased source addition, not part of published 0.2.3. `diamond` expresses decisions with plain `label` only, rejecting structured `content` including empty block arrays. Its centered half-width/half-height inner rectangle reserves 12 diagram units per side. The complete label is centered there; words wrap normally and an overwide word or URL splits only between complete graphemes. Overflow is clipped and reported as `text-overflow`, without shrinking text or resizing the node.
+`diamond` expresses decisions with plain `label` only, rejecting structured `content` including empty block arrays. Its centered half-width/half-height inner rectangle reserves 12 diagram units per side. The complete label is centered there; words wrap normally and an overwide word or URL splits only between complete graphemes. Overflow is clipped and reported as `text-overflow`, without shrinking text or resizing the node.
 
-Call `measureNodeLabel({ kind: "diamond", width, label, typography? })` before assigning height. `label` accepts one string or a nonempty readonly version array; `typography` uses the document's existing context. The result is `{ height, diagnostics }`, with a shared finite positive height and per-version unresolved width issues. Each diagnostic contains `versionIndex`, `path`, `dimension: "width"`, and `message`; more height cannot fix insufficient width. Empty labels are valid. Invalid input or non-finite computed height throws `DiagramValidationError`. Types `NodeLabelMeasurementInput`, `NodeLabelMeasurement`, and `NodeLabelMeasurementDiagnostic` are exported from `flowsvg`.
+Call `measureNodeLabel({ kind: "diamond", width, label, typography? })` before assigning height. `label` accepts one string or a nonempty readonly version array; `typography` uses the document's typography. The result is `{ height, diagnostics }`, with a shared finite positive height and per-version unresolved width issues. Each diagnostic contains `versionIndex`, `path`, `dimension: "width"`, and `message`; more height cannot fix insufficient width. Empty labels are valid. Invalid input or non-finite computed height throws `DiagramValidationError`. Types `NodeLabelMeasurementInput`, `NodeLabelMeasurement`, and `NodeLabelMeasurementDiagnostic` are exported from `flowsvg`.
 
-Cardinal ports, straight/orthogonal/curved connections, hits and diagnostics use the real contour. Invisible clipped text does not enlarge hits or fitted height. Groups, timelines and exports reuse the core result; old kinds and `measureNodeContent` retain their behavior. The [runnable decision example](examples/decision-branch.json) demonstrates measured label updates, resizing and an intentionally clipped node.
+Cardinal ports, straight/orthogonal/curved connections, hits and diagnostics use the real contour. Invisible clipped text does not enlarge hits or fitted height. Groups, timelines and exports reuse the core result. The [runnable decision example](examples/decision-branch.json) demonstrates measured label updates, resizing and an intentionally clipped node.
 
 `parallelogram` expresses input/output with the same plain-label restrictions, wrapping, clipping and diagnostics. Its top edge slants right by S = min(width / 4, 24) diagram units. The rectangular safe area reserves S + 12 units on both horizontal sides and 12 units on both vertical sides. With complete label height L, `measureNodeLabel` returns L + 24; multiple versions share the largest height. No slant configuration is exposed. Cardinal/automatic connections, hits and diagnostics use the actual slanted outline. See the [input/output example](examples/input-output.json).
 
 ### Document report labels
 
-The unreleased `document` preset represents a report or file artifact using plain `label` only. It rejects structured `content`, including empty blocks; timeline `content: null` still clears text. The top and sides are straight. The bottom wave occupies B = min(height / 4, 24) diagram units. With 12-unit padding, the label safe area is `(12, 12, max(0, width - 24), max(0, height - B - 24))`. Labels are centered above the wave, with the same grapheme wrapping, clipping and overflow diagnostics as decision labels.
+The `document` preset represents a report or file artifact using plain `label` only. It rejects structured `content`, including empty blocks; timeline `content: null` still clears text. The top and sides are straight. The bottom wave occupies B = min(height / 4, 24) diagram units. With 12-unit padding, the label safe area is `(12, 12, max(0, width - 24), max(0, height - B - 24))`. Labels are centered above the wave, with the same grapheme wrapping, clipping and overflow diagnostics as decision labels.
 
 `measureNodeLabel({ kind: "document", width: 240, label: ["Report ready", "Revenue\nBy region\nFinal report"] })` returns height 108. For complete line-box height L and T = L + 24, the suggested height is 4T/3 when T ≤ 72, otherwise T + 24. Width diagnostics remain actionable after adopting the height. Ports, hits and diagnostics follow the actual wave; the empty space below its raised section is outside the node. See the [report generation example](examples/report-generation.json), including grouped motion, resizing, label changes and deliberate overflow.
 
 ### Predefined process labels
 
-The unreleased `predefinedProcess` kind expresses a call to a defined subprocess. It is one ordinary node with a rectangular outer contour and two decorative vertical lines; it does not execute a subprocess or contain child nodes. Each line is inset by D = min(width / 6, 12). The label safe area starts at (D + 12, 12), with width max(0, width − 2D − 24) and height max(0, height − 24), relative to the node.
+The `predefinedProcess` kind expresses a call to a defined subprocess. It is one ordinary node with a rectangular outer contour and two decorative vertical lines; it does not execute a subprocess or contain child nodes. Each line is inset by D = min(width / 6, 12). The label safe area starts at (D + 12, 12), with width max(0, width − 2D − 24) and height max(0, height − 24), relative to the node.
 
 Use plain `label`; structured `content` objects are rejected, including empty block arrays. Timeline `content: null` keeps its clearing semantics. Labels use the same centering, grapheme wrapping, clipping and overflow diagnostics as decision labels. `measureNodeLabel({ kind: "predefinedProcess", width: 200, label: ["A", "A\nB"] })` returns height 64. The suggested height is the full line-box height plus 24. Only the outer rectangle supplies connections and routing obstacles; clicks on either internal line return the parent node identity.
 
@@ -506,7 +506,7 @@ Set `typography: { nodeLabel: 32, edgeLabel: 24, flowLabel: 20 }` on the documen
 
 **Validation:** values must be positive and finite. Unrepresentable derived text metrics throw `DiagramValidationError` with a `typography.<role>` path.
 
-Existing-shape labels, edge labels and `wrapText` keep Latin words intact. Overwide words can exceed the estimated line width; fonts do not shrink automatically. Purely vertical edge labels use the narrower endpoint width for horizontal wrapping. Increase authored spacing or node width if labels overlap. GIF captions use the same word boundaries with measured font widths.
+Ordinary node labels, edge labels and `wrapText` keep Latin words intact. Overwide words can exceed the estimated line width; fonts do not shrink automatically. Purely vertical edge labels use the narrower endpoint width for horizontal wrapping. Increase authored spacing or node width if labels overlap. GIF captions use the same word boundaries with measured font widths.
 
 **Sizing and inheritance:**
 
@@ -518,11 +518,11 @@ Existing-shape labels, edge labels and `wrapText` keep Latin words intact. Overw
 
 After changing sizes, pass the same `typography` to `measureNodeContent` and inspect overflow.
 
-The unreleased [mixed approval flow](examples/mixed-flow.json) combines all four presets, an ordinary node, a group and three route families. It includes label replacement, size and style changes, and one deliberately clipped label. Its [generator](examples/create-mixed-flow.mjs) reserves a shared height for label versions through public `measureNodeLabel`.
+The [mixed approval flow](examples/mixed-flow.json) combines all four presets, an ordinary node, a group and three route families. It includes label replacement, size and style changes, and one deliberately clipped label. Its [generator](examples/create-mixed-flow.mjs) reserves a shared height for label versions through public `measureNodeLabel`.
 
-After installing an SDK build with this feature, place the script in a writable directory and run `node create-mixed-flow.mjs`, then `npx flowsvg mixed-flow.json --format html --output mixed-flow.html` to generate offline playback.
+After installing `flowsvg`, place the script in a writable directory and run `node create-mixed-flow.mjs`, then `npx flowsvg mixed-flow.json --format html --output mixed-flow.html` to generate offline playback.
 
-In this repository, first run `pnpm --filter flowsvg build`, then `node packages/flowsvg/examples/create-mixed-flow.mjs`; serve `packages/flowsvg` and open `/tests/browser-mixed-flow.html`. This capability has not been published to npm.
+In this repository, first run `pnpm --filter flowsvg build`, then `node packages/flowsvg/examples/create-mixed-flow.mjs`; serve `packages/flowsvg` and open `/tests/browser-mixed-flow.html`.
 
 ## Core API — `flowsvg`
 
@@ -539,7 +539,7 @@ All times are milliseconds; positions and dimensions use diagram units.
 | `renderSvg(document: DiagramDocument, timeMs = 0, options?): string` | Compile and render one static SVG. |
 | `validateDocument(input: unknown): ValidationIssue[]` | Check fields and references; return `{ path, message }` issues. An empty array means these checks passed; compilation can still reject non-finite derived flow timing. |
 | `measureNodeContent({ kind, width, content, typography? }): NodeContentMeasurement` | Return `{ height, diagnostics }`; see [content and measurement](#structured-content-and-measurement). |
-| `measureNodeLabel({ kind, width, label, typography? }): NodeLabelMeasurement` | Unreleased: measure shared preset-label height and unresolved width issues; see [decision labels](#decision-labels-and-measurement). |
+| `measureNodeLabel({ kind, width, label, typography? }): NodeLabelMeasurement` | Measure shared preset-label height and unresolved width issues; see [decision labels](#decision-labels-and-measurement). |
 | `wrapText(label: string, maxWidth: number, typography?): string[]` | Estimate wrapping without the DOM. Optional typography supplies all three numeric fields: `fontSize`, `lineHeight`, `charWidth`; omitted uses node typography. |
 
 | Compiled `Diagram` | Result / behavior |
@@ -566,7 +566,7 @@ Core query times clamp to `[0, totalDuration]`; non-finite values become zero.
 
 `diagnoseAt` reuses the selected camera, typography, routes and content safe areas. It reports estimated edge–node, label–node and label–label overlap risks.
 
-In unreleased source, preset labels with zero safe-area width or height contribute no painted overlaps; `text-overflow` remains available. Visible `predefinedProcess` side-line strokes participate under the parent node identity, including transparent-fill styles. The hollow interior contributes no fill paint.
+Preset labels with zero safe-area width or height contribute no painted overlaps; `text-overflow` remains available. Visible `predefinedProcess` side-line strokes participate under the parent node identity, including transparent-fill styles. The hollow interior contributes no fill paint.
 
 | Result field | Meaning |
 | --- | --- |
