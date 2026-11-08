@@ -41,7 +41,12 @@ export interface CompiledFlow {
   highlightParticipants: boolean;
 }
 
-/** Object transition result; highlight is the overlay weight, while highlighted is the target logical state. */
+/**
+ * Own object state before ancestor/endpoint masking and temporary flow highlights.
+ * opacity caps base opacity by the visibility weight; highlight is the explicit paint weight,
+ * while highlighted changes to the target logical state at beat start, including during unhighlight.
+ * Diagram evaluation applies masks, max-merges temporary highlights and paints interpolated base colors.
+ */
 export interface TimelineObject {
   visible: boolean;
   opacity: number;
@@ -177,6 +182,7 @@ export class CompiledTimeline {
         values,
         // Reveals block routing from their start; hides remain obstacles until complete. Hit tests also check opacity.
         visible: target.visible || (source.visible && progress < 1),
+        // A stored base opacity of 0.4 stays 0.4 halfway through a reveal; these layers cap, not multiply.
         opacity: Math.min(values.opacity ?? 1, visibilityOpacity),
         highlighted: target.highlighted,
         highlight: Number(source.highlighted) + (Number(target.highlighted) - Number(source.highlighted)) * progress

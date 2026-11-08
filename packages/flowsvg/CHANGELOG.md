@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Clarify own visibility and explicit-highlight contracts. Add an immutable combination fixture, exact baseline frame/SVG checks and readable regressions for base opacity, logical highlights, latest-style restoration and content timing; retain runtime behavior and public APIs.
+
 - Add the full-timeline `basic-shapes` GIF to the SDK README previews and package release allowlist.
 
 - Use a checked-in CLI launcher so workspace installation can link `flowsvg` before the SDK is built. Report a missing build with a `pnpm build` instruction.
