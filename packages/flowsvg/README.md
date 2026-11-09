@@ -4,7 +4,7 @@
 
 <p align="center">Declarative SVG diagrams with timeline playback and SVG/PNG/GIF export.</p>
 
-<p align="center">English | <a href="https://cdn.jsdelivr.net/npm/flowsvg@0.3.0/README.zh-CN.md">简体中文</a></p>
+<p align="center">English | <a href="https://cdn.jsdelivr.net/npm/flowsvg@0.3.1/README.zh-CN.md">简体中文</a></p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/flowsvg"><img src="https://img.shields.io/npm/v/flowsvg?logo=npm&label=npm" alt="npm version"></a>
@@ -32,25 +32,25 @@ These four diagrams show how FlowSVG explains a complete node-shape catalog, a s
 
 The catalog puts every public node shape into one executable flow and demonstrates measured labels, orthogonal connections, highlights and playback.
 
-<p align="center"><img src="./docs/images/basic-shapes.gif" alt="Animated catalog of FlowSVG node shapes" width="700"></p>
+<p align="center"><img src="https://yokingma.github.io/FlowSVG/previews/basic-shapes.gif" alt="Animated catalog of FlowSVG node shapes" width="700"></p>
 
 ### Request and response
 
 The client sends a request through an API gateway while authentication and inventory checks run in parallel. The order service returns the result through the gateway.
 
-<p align="center"><img src="./docs/images/request-response.gif" alt="Request and response flow" width="700"></p>
+<p align="center"><img src="https://yokingma.github.io/FlowSVG/previews/request-response.gif" alt="Request and response flow" width="700"></p>
 
 ### Web service deployment
 
 The diagram shows a public HTTPS entry, two application replicas, cache and database tiers, independent replication, health checks and later rerouting to the healthy replica.
 
-<p align="center"><img src="./docs/images/web-service-deployment.gif" alt="Two-replica web service deployment" width="700"></p>
+<p align="center"><img src="https://yokingma.github.io/FlowSVG/previews/web-service-deployment.gif" alt="Two-replica web service deployment" width="700"></p>
 
 ### LLM inference
 
 Token positions move through Transformer layers, causal prefill and KV-cache updates before next-token sampling. The diagram keeps state vectors, cache layers and model output visible in one frame.
 
-<p align="center"><img src="./docs/images/llm-inference.gif" alt="LLM inference with Transformer layers and KV cache" width="700"></p>
+<p align="center"><img src="https://yokingma.github.io/FlowSVG/previews/llm-inference.gif" alt="LLM inference with Transformer layers and KV cache" width="700"></p>
 
 ## Install
 
@@ -601,4 +601,4 @@ When recording a decision, bind source, SDK identity, time and visual options se
 
 For additional field details, use the TypeScript declarations and JSDoc included in the package.
 
-[Changelog](https://cdn.jsdelivr.net/npm/flowsvg@0.3.0/CHANGELOG.md) · [MIT](https://cdn.jsdelivr.net/npm/flowsvg@0.3.0/LICENSE)
+[Changelog](https://cdn.jsdelivr.net/npm/flowsvg@0.3.1/CHANGELOG.md) · [MIT](https://cdn.jsdelivr.net/npm/flowsvg@0.3.1/LICENSE)

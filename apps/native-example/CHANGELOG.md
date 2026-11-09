@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Include the four README gallery GIFs under `previews/` in the Pages deployment artifact, independently of the npm SDK tarball.
+
 - Verify `basic-shapes` as the formal default in shared browser and copied-artifact acceptance, including category navigation and standalone JSON.
 
 - Share eight formal teaching examples, complete defaults and category navigation through the common author catalog.

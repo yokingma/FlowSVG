@@ -36,13 +36,13 @@ FlowSVG includes a complete public shape catalog, a simple request and response 
 
 The shape catalog puts every public node shape into one executable flow and demonstrates measured labels, orthogonal connections, highlights, and playback.
 
-<p align="center"><img src="packages/flowsvg/docs/images/basic-shapes.gif" alt="Animated catalog of FlowSVG node shapes" width="700"></p>
+<p align="center"><img src="https://yokingma.github.io/FlowSVG/previews/basic-shapes.gif" alt="Animated catalog of FlowSVG node shapes" width="700"></p>
 
-<p align="center"><img src="packages/flowsvg/docs/images/request-response.gif" alt="Request and response flow" width="700"></p>
+<p align="center"><img src="https://yokingma.github.io/FlowSVG/previews/request-response.gif" alt="Request and response flow" width="700"></p>
 
-<p align="center"><img src="packages/flowsvg/docs/images/web-service-deployment.gif" alt="Two-replica web service deployment" width="700"></p>
+<p align="center"><img src="https://yokingma.github.io/FlowSVG/previews/web-service-deployment.gif" alt="Two-replica web service deployment" width="700"></p>
 
-<p align="center"><img src="packages/flowsvg/docs/images/llm-inference.gif" alt="LLM inference with Transformer layers and KV cache" width="700"></p>
+<p align="center"><img src="https://yokingma.github.io/FlowSVG/previews/llm-inference.gif" alt="LLM inference with Transformer layers and KV cache" width="700"></p>
 
 ## Use cases
 

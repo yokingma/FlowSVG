@@ -34,6 +34,8 @@
 
 ## Build and verification boundaries
 
+- Serve README showcase animations from the Pages `previews/` directory. Copy the checked-in GIFs into the Pages artifact and watch those inputs in the workflow; keep npm image allowlists limited to small documentation assets.
+
 - Keep workspace CLI bin targets in checked-in launchers so a first install can link commands without generated SDK output. Verify cold installation without lifecycle scripts.
 
 - Build selected shared author output and its consumers sequentially: source selection replaces shared generated data. Use the maintained commands in the [showcase verification guide](docs/verification/showcase-verification.md).

@@ -1,12 +1,14 @@
 # Changelog
 
-## 0.3.0 - 2026-11-09
+## 0.3.1 - 2026-11-09
+
+- Load the four README showcase GIFs from public GitHub Pages URLs instead of shipping them in the npm tarball. Keep the logo, lifecycle teaching animation and PNG documentation previews packaged.
 
 - Add public-seam regression coverage for inherited group visibility, descendant masking, edge endpoint opacity, cross-scene state, focus, flows, hit testing and diagnostics through an SDK-owned composition fixture.
 
 - Clarify own visibility and explicit-highlight contracts. Add an immutable combination fixture, exact baseline frame/SVG checks and readable regressions for base opacity, logical highlights, latest-style restoration and content timing; retain runtime behavior and public APIs.
 
-- Add the full-timeline `basic-shapes` GIF to the SDK README previews and package release allowlist.
+- Add the full-timeline `basic-shapes` GIF to the SDK README previews.
 
 - Use a checked-in CLI launcher so workspace installation can link `flowsvg` before the SDK is built. Report a missing build with a `pnpm build` instruction.
 

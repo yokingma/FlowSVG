@@ -8,9 +8,10 @@
 
 ```sh
 npm view flowsvg versions --json --registry=https://registry.npmjs.org/
+npm view flowsvg time --json --registry=https://registry.npmjs.org/
 ```
 
-待发布版本必须尚未使用。源码版本号相同不代表代码与已发布产物一致；同一版本不能重复发布。版本说明和迁移要求以 [SDK CHANGELOG](../../packages/flowsvg/CHANGELOG.md) 为准。
+待发布版本必须在当前版本列表和历史发布时间记录中均未使用。包名转移或重新开放不清除历史版本占用；前任维护者发布过的版本号也不能复用。源码版本号相同不代表代码与已发布产物一致；同一版本不能重复发布。版本说明和迁移要求以 [SDK CHANGELOG](../../packages/flowsvg/CHANGELOG.md) 为准。
 
 发布脚本读取包版本，将验证后的产物保存在 `dist/releases/flowsvg-<version>.tgz`。先运行发布预演，再显式执行上传。
 
@@ -90,7 +91,7 @@ pnpm release
 
 任一步失败，脚本立即停止。SDK 发布门禁不读取或构建示例 app、共享展示 package。SDK 类型、行为、浏览器与 tarball 消费验收只使用 SDK 自有输入。示例交付通过 `pnpm build:examples` 和 `pnpm test:examples` 单独运行；`pnpm test:all` 显式组合 SDK 与示例验收，但不进入发布门禁。根路径/子路径独立交付检查见[展示验收说明](../verification/showcase-verification.md)。依赖检查与输入归属见 [SDK 验收说明](../verification/sdk-verification.md)。可运行 `pnpm release --help` 查看参数；`pnpm release --dry-run` 与默认行为相同。
 
-tarball 验证先删除 SDK 的 `dist`，再通过 `npm pack` 触发 `prepack` 构建，并检查所有导出文件、类型声明、样式、图片和文件白名单。脚本将构建后的包解压到临时目录，如临时 README 包含相对图片地址，则将其转换为当前包版本的 npm CDN 地址，再以 `--ignore-scripts` 重新打包，确认文件集合未变。源码 README 保留相对图片地址，本地预览不依赖版本发布。随后脚本在临时项目中验证无框架安装、无 DOM 导入、严格类型检查、最低 React 18.0.0 / Vue 3.5.0 的类型与服务端渲染，以及原生、Web Component、React 和 Vue 的挂载、更新与清理。临时安装默认自动删除。
+tarball 验证先删除 SDK 的 `dist`，再通过 `npm pack` 触发 `prepack` 构建，并检查所有导出文件、类型声明、样式、图片和文件白名单。脚本将构建后的包解压到临时目录，如临时 README 包含相对图片地址，则将其转换为当前包版本的 npm CDN 地址，再以 `--ignore-scripts` 重新打包，确认文件集合未变。源码 README 对包内图片保留相对地址，本地预览不依赖版本发布；展示 GIF 使用公共 Pages 绝对地址。随后脚本在临时项目中验证无框架安装、无 DOM 导入、严格类型检查、最低 React 18.0.0 / Vue 3.5.0 的类型与服务端渲染，以及原生、Web Component、React 和 Vue 的挂载、更新与清理。临时安装默认自动删除。
 
 核心消费验收还通过已安装包的公开入口验证无 DOM 的 `measureNodeContent` 调用、只读内容版本集合、已知推荐高度及写回尺寸后的求值结果；严格类型检查覆盖三项公开测量类型。
 
@@ -98,9 +99,9 @@ tarball 验证先删除 SDK 的 `dist`，再通过 `npm pack` 触发 `prepack` �
 
 ## 登录与上传
 
-确认工作区干净，待发布源码已提交，且版本尚未使用。同步更新包内中英文 README、SDK CHANGELOG 和受影响的使用文档。检查 `package.json` 中的仓库、主页和问题反馈地址是否正确。面向 npm 使用者的文档须能在无私有仓库访问权限时使用。
+确认工作区干净，待发布源码已提交，且版本尚未使用。同步更新包内中英文 README、SDK CHANGELOG 和受影响的使用文档。检查 `package.json` 中的仓库、主页和问题反馈地址是否正确。面向 npm 使用者的文档须能在无私有仓库访问权限时使用。四个 README 展示 GIF 由公共 GitHub Pages 的 `/FlowSVG/previews/` 提供，不进入 npm 包。上传 npm 前先按 [Pages 验收步骤](github-pages.md#verify-a-deployment)确认四个 URL 返回 HTTP 200 且字节与源码文件一致；部署失败时先修复站点。
 
-包内中英文 README 面向前端开发者，保持自足：按安装、首次播放、框架接入、播放控制、导出和编写规则组织，保留常用模型、选项、事件与错误契约。更细的字段说明可查包内 TypeScript 声明与 JSDoc，或公开源码仓库中的 [SDK 手册](../guides/sdk-guide.zh-CN.md)。该手册提供完整接入与 API 参考，不加入 npm 文件白名单。示例 JSON 和图片仍分别位于 `packages/flowsvg/examples/` 与 `packages/flowsvg/docs/images/` 并随包分发。README 在最前面居中展示动态 Logo，首次播放步骤之后再展示生命周期示例。发布脚本将 Markdown 图片和 HTML `<img>` 中的 `./docs/images/` 地址转换为按包版本固定的 npm CDN 地址，且只修改临时 README 副本。语言切换、更新日志与许可证链接继续指向 npm CDN。上传时使用重新生成并验证的最终 tarball。图片生成来源与刷新方式见[图片说明](../assets/image-previews.md)。
+包内中英文 README 面向前端开发者，保持自足：按安装、首次播放、框架接入、播放控制、导出和编写规则组织，保留常用模型、选项、事件与错误契约。更细的字段说明可查包内 TypeScript 声明与 JSDoc，或公开源码仓库中的 [SDK 手册](../guides/sdk-guide.zh-CN.md)。该手册提供完整接入与 API 参考，不加入 npm 文件白名单。示例 JSON 和图片仍分别位于 `packages/flowsvg/examples/` 与 `packages/flowsvg/docs/images/` 并随包分发。README 在最前面居中展示动态 Logo，首次播放步骤之后再展示生命周期示例。发布脚本将 Markdown 图片和 HTML `<img>` 中的 `./docs/images/` 地址转换为按包版本固定的 npm CDN 地址，且只修改临时 README 副本。四个展示 GIF 使用公共 Pages 绝对地址，发布脚本保留这些地址。PNG、Logo 和后台任务教学动画仍随包分发；语言切换、更新日志与许可证链接继续指向 npm CDN。上传时使用重新生成并验证的最终 tarball。图片生成来源与刷新方式见[图片说明](../assets/image-previews.md)。
 
 登录 npm 官方 registry：
 

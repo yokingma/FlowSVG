@@ -17,7 +17,7 @@ The [Pages workflow](../../.github/workflows/pages.yml) builds the Native showca
 
 Later pushes to `main` deploy automatically. Use a manual run to redeploy an existing commit. Repository visibility changes do not trigger the workflow.
 
-The workflow builds the SDK and shared examples, then uploads only `apps/native-example/dist/`. React/Vue sites are built separately. SDK npm publication is independent of site deployment.
+The workflow builds the SDK and shared examples, then uploads only `apps/native-example/dist/`. React/Vue sites are built separately. SDK npm publication is independent of site deployment. The workflow also copies `basic-shapes.gif`, `request-response.gif`, `web-service-deployment.gif` and `llm-inference.gif` from `packages/flowsvg/docs/images/` into `dist/previews/`. The root and SDK READMEs load these files from `https://yokingma.github.io/FlowSVG/previews/`. These animations are excluded from npm. Updates to these four input GIFs trigger deployment.
 
 `SHOWCASE_BASE` follows the repository name: `/FlowSVG/` for this repository. For a fork, use its repository name; for a custom domain served at the origin root, use `/` and rebuild. Navigation uses query parameters, so shared example links need no server route fallback.
 
@@ -32,7 +32,14 @@ SHOWCASE_SOURCE=dist/formal.js SHOWCASE_BASE=/FlowSVG/ pnpm --filter flowsvg-nat
 pnpm --filter flowsvg-native-example preview --host 127.0.0.1
 ```
 
-Open the preview URL with `/FlowSVG/` appended. The preview command serves existing output; it does not rebuild. Deploy only the resulting `apps/native-example/dist/` directory through HTTP or HTTPS.
+Open the preview URL with `/FlowSVG/` appended. The preview command serves existing output; it does not rebuild. To include the public README gallery, run the same copy step as the workflow after building:
+
+```sh
+mkdir -p apps/native-example/dist/previews
+cp packages/flowsvg/docs/images/{basic-shapes,request-response,web-service-deployment,llm-inference}.gif apps/native-example/dist/previews/
+```
+
+Deploy only the resulting `apps/native-example/dist/` directory through HTTP or HTTPS. Forks and custom domains must update the absolute gallery URLs in both root and SDK READMEs.
 
 ## Verify a deployment
 
@@ -41,6 +48,7 @@ Open the preview URL with `/FlowSVG/` appended. The preview command serves exist
 3. Open a shared example/time link in a new tab, then refresh it. Confirm paused restoration.
 4. Download diagram JSON and confirm that its URL remains under `/FlowSVG/json/`.
 5. Export a GIF. Check that lazy modules load from the site and the export completes.
-6. Check browser errors and failed resource requests. Check a narrow viewport for horizontal overflow.
+6. Before publishing an npm release, request all four `/FlowSVG/previews/*.gif` URLs referenced by the README. Confirm HTTP 200, GIF content and matching bytes against the checked-in images. Deployment must finish before an npm README points readers to new gallery URLs.
+7. Check browser errors and failed resource requests. Check a narrow viewport for horizontal overflow.
 
 If deployment fails, inspect the failed Actions job and repository Pages settings. Verify the deployed URL separately from the local build.

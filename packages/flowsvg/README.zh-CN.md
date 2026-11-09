@@ -4,7 +4,7 @@
 
 <p align="center">声明式 SVG 图解，支持时间线播放与 SVG/PNG/GIF 导出。</p>
 
-<p align="center"><a href="https://cdn.jsdelivr.net/npm/flowsvg@0.3.0/README.md">English</a> | 简体中文</p>
+<p align="center"><a href="https://cdn.jsdelivr.net/npm/flowsvg@0.3.1/README.md">English</a> | 简体中文</p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/flowsvg"><img src="https://img.shields.io/npm/v/flowsvg?logo=npm&label=npm" alt="npm 版本"></a>
@@ -32,25 +32,25 @@
 
 图形目录把所有公开节点图形放进同一条可执行流程，并展示测量标签、正交连线、高亮和播放控制。
 
-<p align="center"><img src="./docs/images/basic-shapes.gif" alt="FlowSVG 节点图形动画目录" width="700"></p>
+<p align="center"><img src="https://yokingma.github.io/FlowSVG/previews/basic-shapes.gif" alt="FlowSVG 节点图形动画目录" width="700"></p>
 
 ### 请求与响应
 
 客户端通过 API 网关发送请求，同时执行身份验证和库存检查；订单服务随后通过网关返回结果。
 
-<p align="center"><img src="./docs/images/request-response.gif" alt="请求与响应流程" width="700"></p>
+<p align="center"><img src="https://yokingma.github.io/FlowSVG/previews/request-response.gif" alt="请求与响应流程" width="700"></p>
 
 ### Web 服务部署
 
 图中展示公共 HTTPS 入口、两个应用副本、缓存与数据库层、独立复制、健康检查，以及后续请求切换到健康副本。
 
-<p align="center"><img src="./docs/images/web-service-deployment.gif" alt="双副本 Web 服务部署" width="700"></p>
+<p align="center"><img src="https://yokingma.github.io/FlowSVG/previews/web-service-deployment.gif" alt="双副本 Web 服务部署" width="700"></p>
 
 ### LLM 推理
 
 图中展示 token 位置经过 Transformer 层、因果预填充和 KV Cache 更新，最后进行下一个 token 采样；状态向量、缓存层和模型输出保持在同一画面中。
 
-<p align="center"><img src="./docs/images/llm-inference.gif" alt="包含 Transformer 层和 KV Cache 的 LLM 推理" width="700"></p>
+<p align="center"><img src="https://yokingma.github.io/FlowSVG/previews/llm-inference.gif" alt="包含 Transformer 层和 KV Cache 的 LLM 推理" width="700"></p>
 
 ## 安装
 
@@ -601,4 +601,4 @@ SDK 自有的[子流程调用示例](examples/subprocess-call.json)包含测量�
 
 更多字段说明可在编辑器中查看包内 TypeScript 声明与 JSDoc。
 
-[更新日志](https://cdn.jsdelivr.net/npm/flowsvg@0.3.0/CHANGELOG.md) · [MIT](https://cdn.jsdelivr.net/npm/flowsvg@0.3.0/LICENSE)
+[更新日志](https://cdn.jsdelivr.net/npm/flowsvg@0.3.1/CHANGELOG.md) · [MIT](https://cdn.jsdelivr.net/npm/flowsvg@0.3.1/LICENSE)

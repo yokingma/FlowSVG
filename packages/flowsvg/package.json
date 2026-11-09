@@ -1,6 +1,6 @@
 {
   "name": "flowsvg",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Declarative SVG player for logic and architecture diagrams, with scenes, beats, static export and browser framework adapters.",
   "type": "module",
   "license": "MIT",
@@ -67,7 +67,8 @@
     "bin/flowsvg.mjs",
     "dist",
     "docs/images/*.png",
-    "docs/images/*.gif",
+    "docs/images/flowsvg-wordmark.gif",
+    "docs/images/job-lifecycle.gif",
     "examples/job-lifecycle.json",
     "examples/decision-branch.json",
     "examples/report-generation.json",

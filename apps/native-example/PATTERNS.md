@@ -11,3 +11,5 @@ For host changes, read [shared host maintenance](../../docs/development/showcase
 ## Deployment
 
 For Pages changes, follow [deployment setup and verification](../../docs/development/github-pages.md). Only this host's built artifact is deployed; verify the repository subpath for scripts, JSON downloads and lazy exports separately from a successful build.
+
+- The Pages workflow adds the four checked-in README gallery GIFs under `dist/previews/` after the Native build. Preserve these public URLs when changing deployment; ordinary host builds do not add the gallery assets.

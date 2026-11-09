@@ -10,6 +10,10 @@ on:
       - apps/native-example/src/**
       - apps/native-example/tsconfig.json
       - apps/native-example/vite.config.js
+      - packages/flowsvg/docs/images/basic-shapes.gif
+      - packages/flowsvg/docs/images/request-response.gif
+      - packages/flowsvg/docs/images/web-service-deployment.gif
+      - packages/flowsvg/docs/images/llm-inference.gif
       - packages/flowsvg/package.json
       - packages/flowsvg/scripts/**
       - packages/flowsvg/src/**
@@ -49,6 +53,10 @@ jobs:
         env:
           SHOWCASE_SOURCE: dist/formal.js
           SHOWCASE_BASE: /${{ github.event.repository.name }}/
+      - name: Copy public README animations
+        run: |
+          mkdir -p apps/native-example/dist/previews
+          cp packages/flowsvg/docs/images/{basic-shapes,request-response,web-service-deployment,llm-inference}.gif apps/native-example/dist/previews/
       - uses: actions/upload-pages-artifact@v5
         with:
           path: apps/native-example/dist

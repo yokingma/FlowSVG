@@ -18,6 +18,8 @@ pnpm release:verify
 
 `pnpm release:verify` builds and installs an actual tarball. It checks the file allowlist, public exports, strict consumer types, Native/Web Component/React/Vue lifecycles and offline HTML/GIF tools. The verifier also checks label and content measurement, browser and Node PNG export, and the mixed-shape example through installed public entries. `pnpm release` adds type and behavior checks and an npm publication preview; uploading requires `pnpm release:publish`.
 
+The tarball contains the small PNG previews, logo and lifecycle teaching GIF. Release tests reject the four gallery GIFs, which the Pages workflow serves separately. README rewriting preserves their absolute public URLs. Verify deployed gallery bytes through the [Pages checks](../development/github-pages.md#verify-a-deployment) before npm publication; SDK verification does not deploy or fetch the site.
+
 ## Coverage ownership
 
 | Contract | SDK-owned coverage |

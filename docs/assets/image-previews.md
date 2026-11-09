@@ -6,7 +6,7 @@ The PNG files in `packages/flowsvg/docs/images/` show output from the code examp
 
 - Capture PNGs in Chrome at one CSS pixel per diagram unit using the settings below.
 - Generate showcase GIFs with `scripts/generate-readme-previews.mjs`.
-- Package preview assets follow the release allowlist. This maintenance note and the guide-only shape catalog are not packaged.
+- Small packaged preview assets follow the release allowlist. The four README gallery GIFs are hosted on GitHub Pages and excluded from npm. This maintenance note and the guide-only shape catalog are not packaged.
 
 The previews use the default neutral borders and blue emphasis. The quick-start shows pale blue active nodes and blue message capsules. Facts shows the corresponding light and dark palettes. Refresh all previews when the default theme or line metrics change.
 
@@ -29,7 +29,7 @@ Generate the GIF with the current SDK's Node exporter: light theme, width 868, 2
 | `web-service-deployment.gif` | `packages/showcase/src/examples/web-service-deployment.ts`, full compiled timeline, dark theme, 1.5x speed, 700 px wide, 24 fps, no captions |
 | `llm-inference.gif` | `packages/showcase/src/examples/llm-inference.ts`, full compiled timeline, dark theme, 1.5x speed, 640 px wide, 24 fps, no captions |
 
-The GIFs cover the complete authored timelines and play at 1.5x so README readers can see every stage without the slower default pacing. They retain the authored document and SDK renderer, use 24 fps, and are regenerated only after rebuilding the SDK and showcase. The release verifier rewrites the package README's relative image paths to version-pinned jsDelivr URLs in the published tarball; the repository README keeps relative paths for GitHub.
+The GIFs cover the complete authored timelines and play at 1.5x so README readers can see every stage without the slower default pacing. They retain the authored document and SDK renderer, use 24 fps, and are regenerated only after rebuilding the SDK and showcase. The root and SDK READMEs use `https://yokingma.github.io/FlowSVG/previews/<filename>` for these four gallery GIFs. The Pages workflow copies the checked-in files from `packages/flowsvg/docs/images/` into the Native site artifact after building. These URLs show the currently deployed previews and are not pinned to an SDK version. Deploy and verify all four public GIF URLs before npm publication. See [Pages deployment](../development/github-pages.md).
 
 ## SDK guide PNGs
 
@@ -64,6 +64,6 @@ Both guides embed [basic-shapes.png](basic-shapes.png) from this directory. Its 
 
 ## Package paths and publication
 
-The repository guides use relative image paths into `packages/flowsvg/docs/images/` for local previews. The PNG files remain included in the npm artifact. The package also includes `docs/images/flowsvg-wordmark.gif`, which is used by the root and SDK READMEs as the animated brand mark and is generated from `docs/brand/flowsvg-wordmark.html`. The package READMEs link to the SDK guides for detailed content previews. The root and SDK READMEs place the animated logo first in a centered HTML header. The release verifier converts relative Markdown image paths and HTML `<img src="./docs/images/…">` paths to versioned npm CDN URLs only in staged package README copies. Source READMEs retain relative paths. Run `pnpm release` or `pnpm release:verify` after README changes to regenerate the verified tarball.
+The repository guides use relative image paths into `packages/flowsvg/docs/images/` for local previews. The PNG files remain included in the npm artifact. The four showcase gallery GIFs are excluded from the npm file allowlist and served through Pages. The package also includes `docs/images/flowsvg-wordmark.gif`, which is used by the root and SDK READMEs as the animated brand mark and is generated from `docs/brand/flowsvg-wordmark.html`. The package READMEs link to the SDK guides for detailed content previews. The root and SDK READMEs place the animated logo first in a centered HTML header. The release verifier converts relative Markdown image paths and HTML `<img src="./docs/images/…">` paths to versioned npm CDN URLs only in staged package README copies. Source READMEs retain relative paths for packaged images. Gallery GIFs use absolute Pages URLs, which release verification preserves. Run `pnpm release` or `pnpm release:verify` after README changes to regenerate the verified tarball.
 
-jsDelivr serves the images from the public npm tarball, independently of GitHub repository visibility. These URLs become available after that version is published. Before publication, verify relative image paths in the source and image files in the tarball; after publication, check any CDN image links in the npm README. When example code changes, refresh its image and keep the caption's time, theme and wrapper dimensions accurate.
+jsDelivr serves the packaged PNGs, logo and lifecycle animation from the public npm tarball, independently of GitHub repository visibility. These URLs become available after that version is published. Before publication, verify relative image paths in the source and image files in the tarball; after publication, check any CDN image links in the npm README. When example code changes, refresh its image and keep the caption's time, theme and wrapper dimensions accurate.

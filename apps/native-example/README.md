@@ -26,7 +26,7 @@ pnpm --filter flowsvg-native-example dev
 
 ## Static build and acceptance input
 
-The root [GitHub Pages workflow](../../.github/workflows/pages.yml) publishes this host with formal input and the repository deployment base. Enable Pages and satisfy the workflow's visibility condition before deploying. See [Pages setup and verification](../../docs/development/github-pages.md).
+The root [GitHub Pages workflow](../../.github/workflows/pages.yml) publishes this host with formal input and the repository deployment base. Enable Pages and satisfy the workflow's visibility condition before deploying. See [Pages setup and verification](../../docs/development/github-pages.md). After the build, the workflow copies four checked-in README gallery GIFs to `dist/previews/` for public hosting. Ordinary host builds omit this deployment step.
 
 ```sh
 pnpm --filter flowsvg-native-example build

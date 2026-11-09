@@ -11,8 +11,10 @@ const PREVIEW_IMAGES = [
   "docs/images/numbered-list.png", "docs/images/numbered-list.zh-CN.png",
   "docs/images/record-tags.png", "docs/images/entity-graph.png",
   "docs/images/facts-timeline.png", "docs/images/facts-timeline.zh-CN.png", "docs/images/flowsvg-wordmark.gif",
-  "docs/images/job-lifecycle.gif", "docs/images/basic-shapes.gif", "docs/images/request-response.gif", "docs/images/web-service-deployment.gif", "docs/images/llm-inference.gif"
+  "docs/images/job-lifecycle.gif"
 ];
+const GALLERY_GIFS = ["basic-shapes.gif", "request-response.gif", "web-service-deployment.gif", "llm-inference.gif"];
+const GALLERY_URL = "https://yokingma.github.io/FlowSVG/previews/";
 const EXAMPLE_FILES = ["examples/job-lifecycle.json", "examples/decision-branch.json", "examples/report-generation.json", "examples/subprocess-call.json", "examples/input-output.json", "examples/mixed-flow.json", "examples/create-mixed-flow.mjs"];
 const fixtures: string[] = [];
 
@@ -163,7 +165,7 @@ function verifyPackedFiles(extraFiles: string[], omittedFiles: string[] = []) {
         const packageDir = path.join(source, "package");
         fs.mkdirSync(packageDir, { recursive: true });
         for (const name of ["README.md", "README.zh-CN.md"]) {
-          fs.writeFileSync(path.join(packageDir, name), '![Preview](./docs/images/quick-start.png)\\n<p align="center"><img src="./docs/images/flowsvg-wordmark.gif" alt="FlowSVG" width="360"></p>');
+          fs.writeFileSync(path.join(packageDir, name), '![Preview](./docs/images/quick-start.png)\\n<p align="center"><img src="./docs/images/flowsvg-wordmark.gif" alt="FlowSVG" width="360"></p><img src="${GALLERY_URL}basic-shapes.gif" alt="Shapes">');
         }
         execFileSync("tar", ["-czf", path.join(destination, "fixture.tgz"), "-C", source, "package"]);
       }
@@ -180,13 +182,31 @@ function verifyPackedFiles(extraFiles: string[], omittedFiles: string[] = []) {
 }
 
 describe("packed release files", () => {
+  it("excludes showcase GIFs from the actual npm package", () => {
+    const result = spawnSync("npm", ["pack", "--dry-run", "--ignore-scripts", "--json"], {
+      cwd: new URL("../packages/flowsvg", import.meta.url), encoding: "utf8"
+    });
+    expect(result.status, result.stderr).toBe(0);
+    const [packed] = JSON.parse(result.stdout) as { files: { path: string }[] }[];
+    const files = packed!.files.map(({ path }) => path);
+    for (const name of GALLERY_GIFS) expect(files).not.toContain(`docs/images/${name}`);
+    expect(files).toContain("docs/images/job-lifecycle.gif");
+    expect(files).toContain("docs/images/flowsvg-wordmark.gif");
+  });
+
+  it("accepts a package without externally hosted showcase GIFs", () => {
+    const result = verifyPackedFiles([]);
+    expect(result.stderr).toContain("TEST_CONSUMER_INSTALL_REACHED");
+    expect(result.stderr).not.toContain("tarball missing");
+  });
+
   it("accepts the runnable lifecycle example and its preview before installing the consumer", () => {
     const result = verifyPackedFiles([]);
     expect(result.stderr).toContain("TEST_CONSUMER_INSTALL_REACHED");
     expect(result.stderr).not.toContain("unexpected tarball file");
   });
 
-  it.each([...EXAMPLE_FILES, "docs/images/job-lifecycle.gif", "docs/images/basic-shapes.gif"])(
+  it.each([...EXAMPLE_FILES, "docs/images/job-lifecycle.gif"])(
     "rejects a missing required example artifact %s before installing the consumer", (file) => {
       const result = verifyPackedFiles([], [file]);
       expect(result.stderr).toContain(`tarball missing ${file}`);
@@ -223,6 +243,12 @@ describe("packed release files", () => {
     expect(result.stderr).toContain("TEST_CONSUMER_INSTALL_REACHED");
   });
 
+  it("preserves external showcase URLs in both published README languages", () => {
+    const result = verifyPackedFiles([]);
+    expect(result.stderr.split(`<img src="${GALLERY_URL}basic-shapes.gif" alt="Shapes">`)).toHaveLength(3);
+    expect(result.stderr).toContain("TEST_CONSUMER_INSTALL_REACHED");
+  });
+
   it("accepts all README preview images before installing the consumer", () => {
     const result = verifyPackedFiles([]);
     expect(result.stderr).toContain("TEST_CONSUMER_INSTALL_REACHED");
@@ -241,7 +267,7 @@ describe("packed release files", () => {
     "dist/unrelated.js", "dist/unrelated.d.ts", "dist/fixture.css",
     "dist/core/diagram.ts", "dist/core/diagram.test.js", "dist/core/diagram.test.d.ts",
     "dist/core/fixture.json", "dist/core/unrelated.js", "dist/adapters/react.test.js", "dist/other/diagram.js", "src/index.ts",
-    "docs/images/unrelated.png", "docs/images/README.md"
+    "docs/images/unrelated.png", "docs/images/README.md", ...GALLERY_GIFS.map((name) => `docs/images/${name}`)
   ])("rejects unexpected packed file %s before installing a consumer", (file) => {
     const result = verifyPackedFiles([file]);
     expect(result.status).not.toBe(0);
