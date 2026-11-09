@@ -1,6 +1,6 @@
 {
   "name": "flowsvg",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Declarative SVG player for logic and architecture diagrams, with scenes, beats, static export and browser framework adapters.",
   "type": "module",
   "license": "MIT",

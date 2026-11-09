@@ -4,7 +4,7 @@
 
 <p align="center">声明式 SVG 图解，支持时间线播放与 SVG/PNG/GIF 导出。</p>
 
-<p align="center"><a href="https://cdn.jsdelivr.net/npm/flowsvg@0.2.3/README.md">English</a> | 简体中文</p>
+<p align="center"><a href="https://cdn.jsdelivr.net/npm/flowsvg@0.3.0/README.md">English</a> | 简体中文</p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/flowsvg"><img src="https://img.shields.io/npm/v/flowsvg?logo=npm&label=npm" alt="npm 版本"></a>
@@ -601,4 +601,4 @@ SDK 自有的[子流程调用示例](examples/subprocess-call.json)包含测量�
 
 更多字段说明可在编辑器中查看包内 TypeScript 声明与 JSDoc。
 
-[更新日志](https://cdn.jsdelivr.net/npm/flowsvg@0.2.3/CHANGELOG.md) · [MIT](https://cdn.jsdelivr.net/npm/flowsvg@0.2.3/LICENSE)
+[更新日志](https://cdn.jsdelivr.net/npm/flowsvg@0.3.0/CHANGELOG.md) · [MIT](https://cdn.jsdelivr.net/npm/flowsvg@0.3.0/LICENSE)

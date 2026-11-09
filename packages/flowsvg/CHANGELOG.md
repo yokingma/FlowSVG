@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 - 2026-11-09
 
 - Add public-seam regression coverage for inherited group visibility, descendant masking, edge endpoint opacity, cross-scene state, focus, flows, hit testing and diagnostics through an SDK-owned composition fixture.
 

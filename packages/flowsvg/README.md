@@ -4,7 +4,7 @@
 
 <p align="center">Declarative SVG diagrams with timeline playback and SVG/PNG/GIF export.</p>
 
-<p align="center">English | <a href="https://cdn.jsdelivr.net/npm/flowsvg@0.2.3/README.zh-CN.md">简体中文</a></p>
+<p align="center">English | <a href="https://cdn.jsdelivr.net/npm/flowsvg@0.3.0/README.zh-CN.md">简体中文</a></p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/flowsvg"><img src="https://img.shields.io/npm/v/flowsvg?logo=npm&label=npm" alt="npm version"></a>
@@ -601,4 +601,4 @@ When recording a decision, bind source, SDK identity, time and visual options se
 
 For additional field details, use the TypeScript declarations and JSDoc included in the package.
 
-[Changelog](https://cdn.jsdelivr.net/npm/flowsvg@0.2.3/CHANGELOG.md) · [MIT](https://cdn.jsdelivr.net/npm/flowsvg@0.2.3/LICENSE)
+[Changelog](https://cdn.jsdelivr.net/npm/flowsvg@0.3.0/CHANGELOG.md) · [MIT](https://cdn.jsdelivr.net/npm/flowsvg@0.3.0/LICENSE)
