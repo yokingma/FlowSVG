@@ -456,6 +456,8 @@ Each action has `{ type, target }`, with additional fields by action type:
 
 `show`, `hide`, `highlight`, `unhighlight`, `updateNode`, `updateEdge`, and `focus` persist across beats. `flow` lasts for its beat only.
 
+Visibility caps ordinary opacity: a stored opacity of `0.4` remains `0.4` halfway through a reveal. Ancestor groups and edge endpoints also combine opacity by minimum. Explicit `highlighted` changes at beat start while its paint transitions; removing a highlight reveals the latest ordinary colors, including same-beat updates. See the [timeline contract](../../docs/guides/sdk-guide.md#beats-and-actions).
+
 | Beat contents | Effective duration |
 | --- | --- |
 | One `flow` | Reference movement at 180 diagram units/second, at least 400 ms, plus a 500 ms arrival interval including highlight fades; replaces `durationMs` |

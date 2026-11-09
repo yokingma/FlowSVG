@@ -347,6 +347,12 @@ Each beat has a positive authored `durationMs` and an `actions` array, with opti
 
 Scenes share a millisecond timeline and inherit the previous scene’s final state. Text changes at beat start; interpolated values change during the transition. Beats include their start and exclude their end; the final time returns the completed frame. Hidden nodes/groups mask connected edges; showing them restores each edge’s saved visibility.
 
+An object's own visibility and explicit highlight are separate layers over its ordinary visual values. Ordinary colors interpolate first; the explicit highlight paint overlays those colors. The logical `highlighted` flag takes the target value at beat start, so it can be `false` while highlight paint is still fading out. An `unhighlight` restores the latest ordinary colors, including colors updated in that same beat. Repeating an action that already matches stored state is valid; assigning the same state or visual field twice within one beat is rejected.
+
+Own opacity is the minimum of interpolated ordinary opacity and the visibility weight. For example, with stored opacity `0.4`, a reveal at half progress yields `0.4`. Ancestor masking and edge endpoint masking also use minimum opacity, including nested groups and their descendants. Reveals participate in routing at beat start even at zero opacity; hides stop participating when their transition completes. Hit testing excludes zero-opacity objects. Zero transition duration completes immediately; reduced motion completes opening transitions while retaining beat boundaries and total duration.
+
+Ancestor and endpoint masking, temporary flow highlights, and final SVG paint consume the own transition result separately. Temporary and explicit highlight paint combine by maximum weight. Content replacement and labels retain their beat-start timing and fixed content clipping during these paint transitions.
+
 #### Flow markers
 
 Example: `{ type: "flow", target: "request", direction: "forward", text: "Request" }`.

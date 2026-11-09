@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add an SDK-owned inherited-transition composition fixture and public seam regressions for nested groups, descendant masking, internal/external edges, cross-scene inheritance, flows, focus, hit testing and diagnostics; retain runtime behavior and public APIs.
+
+- Document own visibility and explicit-highlight layers and add SDK-owned fixed-baseline regression checks for simultaneous style updates, content replacement and highlight removal. Preserve runtime behavior and public APIs.
+
 - Add the full-timeline `basic-shapes` GIF to the root and SDK README previews and package release allowlist.
 
 - Verify `basic-shapes` as the default formal story across Native, React, Vue and copied root/subpath artifacts, including category navigation and its standalone JSON.

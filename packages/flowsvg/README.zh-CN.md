@@ -456,6 +456,8 @@ SDK CLI 支持 HTML 和 GIF 输出。PNG 使用 SDK API 导出。
 
 `show`、`hide`、`highlight`、`unhighlight`、`updateNode`、`updateEdge`、`focus` 跨节拍继承；`flow` 仅在当前节拍生效。
 
+显隐权重与基础透明度取最小值：已存储的透明度为 `0.4` 时，显示过渡中点仍为 `0.4`。祖先分组与连线端点也按最小值组合透明度。显式 `highlighted` 在拍初改变，着色权重继续过渡；取消高亮后显示最新基础颜色，包括同拍更新。详见[节拍与动作契约](../../docs/guides/sdk-guide.zh-CN.md#节拍与动作)。
+
 | 节拍内容 | 有效时长 |
 | --- | --- |
 | 单条 `flow` | 按 180 图解单位／秒移动，最短 400 ms，再执行含高亮渐变的 500 ms 到达区间；替换 `durationMs` |

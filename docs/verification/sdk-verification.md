@@ -22,6 +22,7 @@ pnpm release:verify
 
 | Contract | SDK-owned coverage |
 | --- | --- |
+| Own visibility, explicit highlights, simultaneous base updates and exact frame/SVG output | `src/core/own-transitions.test.ts` and immutable `tests/fixtures/own-transitions.ts` |
 | Parallel transfers, reverse directions and beat cleanup | Core parallel-flow tests and `tests/fixtures/parallel-transfers.ts` |
 | Content replacement, clearing and inherited state | Core node-content timeline tests and `tests/fixtures/content-timeline.ts` |
 | Structured text, lists, tags, clipping and SVG parity | Core/browser tests and SDK-owned node-content/list fixtures |
@@ -31,6 +32,14 @@ pnpm release:verify
 | Package completeness and installed usage | Release-script tests and installed-tarball verification |
 
 Keep feature-specific boundary and invalid-input cases with the corresponding SDK implementation. Preserve deterministic core tests alongside real browser and installed-package checks; each verifies a different boundary.
+
+## Own-transition baseline
+
+`tests/fixtures/own-transitions-baseline.json` records public `Diagram.beats`, total duration, validation results and SHA-256 digests of complete frames and SVG strings. The source is the unchanged runtime at commit `5d0715be203a505a8ff9fc7ff930a2cbb6f05757`, evaluated with the SDK-owned combination fixture before contract comments changed. Frame digests hash `JSON.stringify(frame)`; SVG digests hash the exact string. No numeric tolerance or SVG normalization is applied. Readable assertions in the test explain opacity caps, logical versus painted highlights, latest base colors, and beat-start content replacement.
+
+Samples cover both themes and motion options. Times use this document's compiled beat starts and ends, plus opening transition midpoint, completion minus 1 ms, completion, and completion plus 1 ms. Its opening transition lengths are `0, 400, 250, 0, 400, 400` ms. The test queries the recorded samples backward and forward.
+
+To independently verify the record, create a detached worktree at that commit. Copy only the combination fixture, baseline JSON and `own-transitions.test.ts` from the current checkout into their matching SDK paths. Install with `pnpm install --frozen-lockfile --ignore-scripts`, then run `pnpm --filter flowsvg exec vitest run src/core/own-transitions.test.ts` there. Keep its dependencies and build output separate from other worktrees. These checks must pass against the fixed baseline before runtime changes. Do not regenerate expected digests from a candidate implementation. Before changing assertions, prove sensitivity with an isolated reversible mutation, restore the runtime and confirm the test passes again. Preserve full sampled frames, SVG strings, mutation patches and run logs in local task evidence outside version control.
 
 ## Example verification
 
