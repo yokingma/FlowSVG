@@ -17,6 +17,7 @@ import {
   type Diagram,
   type DiagramFrameEvaluation
 } from "../core/diagram.js";
+import { snapshotRuntimeEmphasis } from "../core/validation.js";
 import type {
   DiagramDocument,
   DiagramFrameState,
@@ -105,10 +106,16 @@ export type PlayerEventMap = {
  * Mount a player using the host document and observe browser motion preferences unless explicitly overridden.
  * Replaces host children; destroy an existing player before replacing it on the same host.
  * @throws {DiagramValidationError} For an invalid initial document, before an instance exists to emit error.
+ * @throws {TypeError} For invalid runtime emphasis options, before browser resources or host content are changed.
  */
 export function createPlayer(host: HTMLElement, document: DiagramDocument, options: PlayerOptions = {}): FlowPlayer {
   const initial = createDiagram(document);
-  return new BrowserPlayer(host, initial, document, options);
+  const runtimeEmphasis = snapshotRuntimeEmphasis(options.emphasis);
+  const snapshotOptions: PlayerOptions = {
+    ...options,
+    ...(runtimeEmphasis === undefined ? {} : { emphasis: runtimeEmphasis })
+  };
+  return new BrowserPlayer(host, initial, document, snapshotOptions);
 }
 
 /**

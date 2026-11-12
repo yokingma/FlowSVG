@@ -1,7 +1,7 @@
 /** Validate document fields, references and action conflicts without mutating input; content rules stay shared. */
 import { validateTypography } from "./typography.js";
 import { supportsNodeContent, validateNodeContent } from "./node-content.js";
-import type { NodeKind, PortDirection, ValidationIssue } from "./model.js";
+import type { EmphasisColors, NodeKind, PortDirection, ValidationIssue } from "./model.js";
 
 /** Validation error for invalid documents or author-time measurement inputs; issues retains all affected field paths. */
 export class DiagramValidationError extends Error {
@@ -185,6 +185,17 @@ export function validateEmphasisColors(value: unknown, path: string, issues: Val
   for (const key of ["fill", "stroke", "markerText"] as const) {
     if (value[key] !== undefined) validateColor(value[key], `${path}.${key}`, issues);
   }
+}
+
+/** Validate a runtime emphasis override and report option paths outside document validation. */
+export function snapshotRuntimeEmphasis(value: unknown): EmphasisColors | undefined {
+  const issues: ValidationIssue[] = [];
+  validateEmphasisColors(value, "options.emphasis", issues);
+  if (issues.length > 0) {
+    const details = issues.map(({ path, message }) => `${path} ${message}`).join("; ");
+    throw new TypeError(`Invalid visual options: ${details}`);
+  }
+  return value === undefined ? undefined : { ...value as EmphasisColors };
 }
 function validateNodeStyle(style: unknown, path: string, issues: ValidationIssue[]): void {
   if (style === undefined) return;

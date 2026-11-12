@@ -815,9 +815,18 @@ const styledDocument = {
 const svg = createDiagram(styledDocument).renderSvg(500);
 ```
 
-`EmphasisColors.fill` 控制节点高亮填充；`stroke` 控制节点与连线高亮描边及传递标记底色；`markerText` 仅控制标记文字。各字段可省略，分别回退到当前主题；空对象全部使用主题默认值。普通对象颜色、节点和连线文字以及内容对比度规则沿用现有行为。悬停默认只改描边，`hoverFill: true` 才改填充；悬停不进入导出。
+`EmphasisColors.fill` 控制节点高亮填充；`stroke` 控制节点与连线高亮描边及传递标记底色；`markerText` 仅控制标记文字。各字段可省略。核心视觉查询和 `createPlayer` 接受 `emphasis` 运行时覆盖，各字段依次取运行时覆盖、文档配置、当前主题；空对象和显式 `undefined` 保留后续层的值。普通对象颜色、节点和连线文字以及内容对比度规则沿用现有行为。悬停默认只改描边，`hoverFill: true` 才改填充；悬停不进入导出。
 
-颜色接受大小写十六进制 `#RGB`、`#RGBA`、`#RRGGBB`、`#RRGGBBAA`，保留现有 alpha 插值。`undefined` 视为缺省；`null`、其他类型、非法颜色和未知字段通过 `DiagramValidationError` 报告 `emphasis.stroke` 等路径，即使当前没有对象使用该颜色。编译固定文档快照。加载新文档时重新解析配色，缺省字段回退到新主题；非法加载保留旧播放器状态。
+颜色接受大小写十六进制 `#RGB`、`#RGBA`、`#RRGGBB`、`#RRGGBBAA`，保留现有 alpha 插值。`undefined` 视为缺省。文档中的 `null`、其他类型、非法颜色和未知字段通过 `DiagramValidationError` 报告 `emphasis.stroke` 等路径，即使当前没有对象使用该颜色。编译固定文档快照。浏览器播放器在注册监听器或替换宿主内容前复制运行时配色，之后修改原选项对象不会改变既有实例。加载新文档时保留运行时覆盖，重新读取新文档配色；缺省值回退到新主题，不残留旧文档配色。非法加载保留旧播放器状态。非法运行时配色抛出带 `options.emphasis` 字段路径的 `TypeError`；合法覆盖不能掩盖非法文档配色。
+
+```ts
+const options = { emphasis: { stroke: "#0f766e" } };
+const frame = diagram.evaluateAt(500, options);
+const svg = diagram.renderSvg(500, options);
+const player = createPlayer(host, document, options);
+```
+
+`evaluateAt`、`renderSvg`、`diagnoseAt` 和 `hitTest` 使用相同的核心视觉选项。运行时配色不改变几何、时间位置或命中目标。
 
 SVG、浏览器和框架播放器、PNG/GIF、离线 HTML 及 CLI 输出都消费文档配色，无需 CLI 配色覆盖参数。同一 JSON 在离线交付后保留配色。
 

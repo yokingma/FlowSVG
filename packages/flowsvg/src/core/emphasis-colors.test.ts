@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { createDiagram, validateDocument, DiagramValidationError, type DiagramDocument, type EmphasisColors } from "../index.js";
+import { createDiagram, validateDocument, DiagramValidationError, type DiagramDocument, type EmphasisColors, type EvaluateOptions } from "../index.js";
 
 const document: DiagramDocument = {
   version: 1, viewport: { width: 500, height: 240 },
@@ -76,5 +76,66 @@ describe("document emphasis colors", () => {
     expect(svg.querySelector('[data-flow-id="request"]')?.getAttribute("fill")).toBe("#b45309");
     expect(svg.querySelector('[data-flow-id="request"] text')?.getAttribute("fill")).toBe("#112233");
     expect(flow.nodes[0]!.style.textColor).toBe(theme === "dark" ? "#f2f4f7" : "#1d2939");
+  });
+});
+
+describe("runtime emphasis color options", () => {
+  const authored = { ...document, emphasis: { fill: "#fff4db", stroke: "#b45309", markerText: "#112233" } };
+
+  it("overrides document colors field by field across core query seams", () => {
+    const diagram = createDiagram(authored);
+    const options = { theme: "dark" as const, emphasis: { fill: "#00aa44", markerText: "#202020" } };
+    const time = diagram.beats[1]!.endMs - 300;
+    const frame = diagram.evaluateAt(time, options);
+    expect(frame.nodes[0]!.style).toMatchObject({ fill: "#00aa44", stroke: "#b45309" });
+    expect(frame.edges[0]!.style.stroke).toBe("#b45309");
+    const svg = new DOMParser().parseFromString(diagram.renderSvg(time, options), "image/svg+xml");
+    expect(svg.querySelector('[data-flow-id="request"]')?.getAttribute("fill")).toBe("#b45309");
+    expect(svg.querySelector('[data-flow-id="request"] text')?.getAttribute("fill")).toBe("#202020");
+    expect(diagram.evaluateAt(time, { theme: "dark", emphasis: { fill: "#00aa44" } }).nodes[0]!.style.stroke).toBe("#b45309");
+    expect(diagram.hitTest(time, { x: 50, y: 100 }, options)).toEqual(diagram.hitTest(time, { x: 50, y: 100 }, { theme: "dark" }));
+    expect(diagram.diagnoseAt(time, options)).toEqual(diagram.diagnoseAt(time, { theme: "dark" }));
+  });
+
+  it.each(["light", "dark"] as const)("falls back through runtime, document and %s theme fields", (theme) => {
+    const diagram = createDiagram({ ...document, emphasis: { markerText: "#112233" } });
+    const time = diagram.beats[1]!.endMs - 300;
+    const baseSvg = diagram.renderSvg(time, { theme });
+    for (const emphasis of [undefined, {}, { fill: undefined, stroke: undefined, markerText: undefined }]) {
+      expect(diagram.renderSvg(time, { theme, emphasis })).toBe(baseSvg);
+    }
+    const options = { theme, emphasis: { stroke: "#aBcD" } };
+    expect(diagram.evaluateAt(time, options).nodes[0]!.style).toMatchObject({
+      fill: theme === "dark" ? "#233b60" : "#eaf1ff", stroke: "#aBcD"
+    });
+    const svg = new DOMParser().parseFromString(diagram.renderSvg(time, options), "image/svg+xml");
+    expect(svg.querySelector('[data-flow-id="request"]')?.getAttribute("fill")).toBe("#aBcD");
+    expect(svg.querySelector('[data-flow-id="request"] text')?.getAttribute("fill")).toBe("#112233");
+  });
+
+  it.each([
+    [{ emphasis: null }, "options.emphasis"],
+    [{ emphasis: [] }, "options.emphasis"],
+    [{ emphasis: { fill: null } }, "options.emphasis.fill"],
+    [{ emphasis: { stroke: "red" } }, "options.emphasis.stroke"],
+    [{ emphasis: { markerText: "#123456", unknown: "#000" } }, "options.emphasis.unknown"]
+  ])("reports invalid runtime emphasis at %s", (options, path) => {
+    const diagram = createDiagram(authored);
+    const invalidOptions = options as unknown as EvaluateOptions;
+    expect(() => diagram.evaluateAt(0, invalidOptions)).toThrow(path);
+    expect(() => diagram.renderSvg(0, invalidOptions)).toThrow(path);
+    expect(() => diagram.diagnoseAt(0, invalidOptions)).toThrow(path);
+    expect(() => diagram.hitTest(0, { x: 50, y: 100 }, invalidOptions)).toThrow(path);
+  });
+
+  it("does not let a runtime override hide invalid document emphasis", () => {
+    try {
+      createDiagram({ ...authored, emphasis: { stroke: "red" } } as unknown as DiagramDocument)
+        .evaluateAt(0, { emphasis: { stroke: "#b45309" } });
+      throw new Error("Expected invalid document emphasis to fail compilation");
+    } catch (error) {
+      expect(error).toBeInstanceOf(DiagramValidationError);
+      expect((error as DiagramValidationError).issues).toContainEqual(expect.objectContaining({ path: "emphasis.stroke" }));
+    }
   });
 });

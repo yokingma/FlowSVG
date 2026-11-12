@@ -4,7 +4,7 @@
 
 ## Ownership
 
-- Resolve authored emphasis colors in the SDK core and reuse the evaluated palette for browser hover and exported frames; keep ordinary theme colors independent.
+- Resolve emphasis colors in the SDK core per field: runtime override, document, then theme. Validate each supplied layer independently, snapshot player overrides before resources, and reuse the evaluated palette for browser hover and exported frames; keep ordinary theme colors independent.
 
 - Keep per-flow edge paint independent of logical flow membership, endpoint paint and markers. Compile `highlightEdge` with default true; false suppresses only automatic edge/label coloring, including reduced motion, while explicit highlights and ordinary updates retain their layers.
 

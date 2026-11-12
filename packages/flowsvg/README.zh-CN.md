@@ -429,7 +429,7 @@ SDK CLI 支持 HTML 和 GIF 输出。PNG 使用 SDK API 导出。
 | `Scene` | `id`、`label`、`beats` | — |
 | `Beat` | `durationMs`、`actions` | `transitionMs`、`caption` |
 
-文档 `emphasis?: EmphasisColors` 接受可选字段 `fill`（节点高亮填充）、`stroke`（节点与连线高亮描边及标记底色）、`markerText`（标记文字）。每个缺省字段回退到当前主题。浏览器悬停和全部导出共用这些配色；悬停本身不进入导出。颜色支持 `#RGB`、`#RGBA`、`#RRGGBB`、`#RRGGBBAA`；`undefined` 视为缺省，`null`、非法颜色和未知字段报告校验路径。
+文档 `emphasis?: EmphasisColors` 接受可选字段 `fill`（节点高亮填充）、`stroke`（节点与连线高亮描边及标记底色）、`markerText`（标记文字）。核心视觉选项和浏览器 `PlayerOptions` 同样接受 `emphasis`；各字段依次取运行时覆盖、文档配置、当前主题。文档配色供浏览器悬停和全部导出共用；悬停本身不进入导出。浏览器播放器在创建时复制运行时配色，`load` 保留覆盖并从新文档重新读取缺省字段。非法运行时字段在分配浏览器资源前抛出带 `options.emphasis` 路径的 `TypeError`。颜色支持 `#RGB`、`#RGBA`、`#RRGGBB`、`#RRGGBBAA`；`undefined` 视为缺省，`null`、非法颜色和未知字段报告校验路径。
 
 - **静态文档：**使用空 `scenes`。
 - **节点类型：**`rect`、`roundedRect`、`ellipse`、`cylinder`、`group`、`diamond`、`parallelogram`、`document` 和 `predefinedProcess`。分组边框默认为圆角。

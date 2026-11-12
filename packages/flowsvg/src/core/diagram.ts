@@ -10,7 +10,7 @@ import { paintContentHighlight } from "./node-content-paint.js";
 import { CompiledTimeline, type TimelineObject, type CompiledFlow } from "./timeline.js";
 import { mixColor } from "./color.js";
 import { CYLINDER_CAP_RADIUS, DEFAULT_NODE_STROKE_WIDTH, DIAGRAM_FONT_FAMILY, NODE_CORNER_RADIUS, resolveThemePalette, type ThemePalette } from "./theme.js";
-import { DiagramValidationError, validateDocument } from "./validation.js";
+import { DiagramValidationError, snapshotRuntimeEmphasis, validateDocument } from "./validation.js";
 import type { Viewport, DiagramNode, DiagramEdge, DiagramDocument, DiagramBeat, Beat, EvaluateOptions, SvgRenderOptions, TextLine, EvaluatedNode, EvaluatedEdge, EdgeFlowMarker, LayoutWarning, GeometryWarning, CameraState, HitObject, DiagramPoint, DiagramFrameState } from "./model.js";
 import { ARROW_MARKER_SIZE, emptyPathGeometry, isPointNearPath, routedTargetOffsets, pathLabelAnchor, routeEdge, type PathGeometry } from "./edge-geometry.js";
 import { DEFAULT_NODE_TYPOGRAPHY, EDGE_LABEL_HALO_RADIUS, textLineBounds, estimateTextWidth, findTextBreak, flowCapsuleHeight, resolveTypography, type ResolvedTypography, type TextMetrics } from "./typography.js";
@@ -76,7 +76,10 @@ export function renderSvg(document: DiagramDocument, timeMs = 0, options?: SvgRe
   return createDiagram(document).renderSvg(timeMs, options);
 }
 
-/** Compiled diagram independent of the DOM, network and clock; each query evaluates from its time and options. */
+/**
+ * Compiled diagram independent of the DOM, network and clock; each query evaluates from its time and options.
+ * Invalid runtime emphasis throws TypeError with options.emphasis field paths from every visual query.
+ */
 export interface Diagram {
   /** Global timeline duration in milliseconds; zero for static diagrams. */
   readonly totalDuration: number;
@@ -158,7 +161,8 @@ class CompiledDiagram implements Diagram {
     };
   }
   private evaluateFrame(timeMs: number, options: EvaluateOptions = {}, compiledTimeline = this.timeline): DiagramFrameEvaluation {
-    const palette = resolvePalette(this.document, options);
+    const runtimeEmphasis = snapshotRuntimeEmphasis(options.emphasis);
+    const palette = resolvePalette(this.document, options, runtimeEmphasis);
     const { nodeLabel: nodeTypography, edgeLabel: edgeTypography } = this.typography;
     const timeline = compiledTimeline.evaluateAt(timeMs, options, palette);
     const currentNodes = new Map(this.document.nodes.map((node) => {
@@ -637,6 +641,6 @@ function deepFreeze<T>(value: T): T {
   return value;
 }
 
-function resolvePalette(document: DiagramDocument, options: EvaluateOptions): ThemePalette {
-  return resolveThemePalette(options.theme ?? document.theme, document.emphasis);
+function resolvePalette(document: DiagramDocument, options: EvaluateOptions, runtimeEmphasis: EvaluateOptions["emphasis"]): ThemePalette {
+  return resolveThemePalette(options.theme ?? document.theme, document.emphasis, runtimeEmphasis);
 }

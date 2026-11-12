@@ -86,7 +86,7 @@ export interface DiagramTypography {
   flowLabel?: number;
 }
 
-/** Serializable emphasis colors; omitted fields use the selected theme defaults. */
+/** Serializable emphasis colors; omitted fields fall back to the next configuration layer or selected theme. */
 export interface EmphasisColors {
   /** Node highlight fill; ordinary fills are unchanged. */
   fill?: string;
@@ -225,11 +225,14 @@ export interface ValidationIssue {
 /**
  * Reproducible visual options: theme overrides the document theme, with light as the final default.
  * reducedMotion completes transitions immediately and hides flow markers while retaining the flow's configured highlights.
+ * emphasis overrides document colors field by field; omitted fields fall back to document emphasis and then the selected theme.
  * Beat durations and timeline positions do not change.
  */
 export interface EvaluateOptions {
   /** Override the document theme; the final fallback is light. */
   theme?: ThemeName;
+  /** Override document emphasis colors field by field; invalid and unknown values throw with options.emphasis paths. */
+  emphasis?: EmphasisColors;
   /** Apply target values immediately and hide flow markers; retain configured flow highlights, beat durations and selection. */
   reducedMotion?: boolean;
 }
