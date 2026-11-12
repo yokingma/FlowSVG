@@ -103,3 +103,39 @@ it("fits mixed clipped labels and the actual PNG camera to visible node paint", 
     expect(size).toEqual({ width: 1000, height: 109 });
   } finally { await context.close(); }
 });
+
+it("shares snapshotted document emphasis across browser and Node images", async () => {
+  const { exportPng, exportGif } = await import(new URL("../dist/node.js", import.meta.url).href);
+  const input: DiagramDocument = { version: 1, viewport: { width: 120, height: 80 },
+    emphasis: { fill: "#fff4db", stroke: "#b45309", markerText: "#112233" },
+    nodes: [{ id: "a", kind: "rect", x: 10, y: 10, width: 100, height: 60 }], edges: [],
+    scenes: [{ id: "s", label: "Highlight", beats: [{ durationMs: 1000, transitionMs: 0, actions: [{ type: "highlight", target: "a" }] }] }] };
+  const expected = [255, 244, 219, 255];
+  const file = join(directory, "emphasis-export.html");
+  await writeFile(file, `<script>${await readFile(join(PACKAGE_DIR, "dist/portable/export.js"), "utf8")}</script>`);
+  const context = await browser.newContext({ offline: true });
+  const page = await context.newPage();
+  try {
+    await page.goto(pathToFileURL(file).href);
+    const browserGif = await page.evaluate(async (document) => {
+      const api: typeof import("../src/export.js") = Reflect.get(globalThis, "FlowSVGExport");
+      return Array.from(await api.exportGif(document, { fps: 1, finalHoldMs: 0, includeCaptions: false }));
+    }, input);
+    const nodeGifTask = exportGif(input, { browser, fps: 1, finalHoldMs: 0, includeCaptions: false });
+    const nodePngTask = exportPng(input, { browser });
+    input.emphasis!.fill = "#000000";
+    const nodeGif = await nodeGifTask;
+    const nodePng = await nodePngTask;
+    for (const bytes of [Uint8Array.from(browserGif), nodeGif]) {
+      const frame = decompressFrames(parseGIF(new Uint8Array(bytes).buffer), true)[0]!;
+      expect(Array.from(frame.patch.slice((30 * 120 + 30) * 4, (30 * 120 + 30) * 4 + 4))).toEqual(expected);
+    }
+    const pixel = await page.evaluate(async (bytes) => {
+      const bitmap = await createImageBitmap(new Blob([Uint8Array.from(bytes)], { type: "image/png" }));
+      const canvas = document.createElement("canvas"); canvas.width = bitmap.width; canvas.height = bitmap.height;
+      const context = canvas.getContext("2d")!; context.drawImage(bitmap, 0, 0); bitmap.close();
+      return Array.from(context.getImageData(30, 30, 1, 1).data);
+    }, Array.from(nodePng));
+    expect(pixel).toEqual(expected);
+  } finally { await context.close(); }
+}, 30_000);

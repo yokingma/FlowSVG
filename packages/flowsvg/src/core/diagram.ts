@@ -638,5 +638,5 @@ function deepFreeze<T>(value: T): T {
 }
 
 function resolvePalette(document: DiagramDocument, options: EvaluateOptions): ThemePalette {
-  return resolveThemePalette(options.theme ?? document.theme);
+  return resolveThemePalette(options.theme ?? document.theme, document.emphasis);
 }

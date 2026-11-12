@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add document-level `emphasis` colors for node highlights, edge highlights, flow-marker backgrounds and text, and browser hover. Omitted fields retain theme defaults across playback and exports.
+
 - Add per-flow `highlightEdge` to preserve ordinary edge and label colors independently of markers, endpoint highlights and explicit highlights.
 
 ## 0.3.1 - 2026-11-09

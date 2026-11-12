@@ -86,6 +86,16 @@ export interface DiagramTypography {
   flowLabel?: number;
 }
 
+/** Serializable emphasis colors; omitted fields use the selected theme defaults. */
+export interface EmphasisColors {
+  /** Node highlight fill; ordinary fills are unchanged. */
+  fill?: string;
+  /** Node/edge highlight stroke and flow-marker background. */
+  stroke?: string;
+  /** Flow-marker text only; other text keeps its existing color rules. */
+  markerText?: string;
+}
+
 /**
  * Serializable version-1 document. Node and edge IDs are globally unique; an empty scenes array defines a static diagram.
  * Nodes and edges define the initial state; each scene inherits the preceding scene's final persistent state.
@@ -96,6 +106,8 @@ export interface DiagramDocument {
   title?: string;
   viewport: Viewport;
   theme?: ThemeName;
+  /** Authored emphasis colors, shared by highlights, flow markers and browser node hover. */
+  emphasis?: EmphasisColors;
   /** Shared text metrics; structured-content role defaults follow nodeLabel / 16, while explicit sizes remain unchanged. */
   typography?: DiagramTypography;
   nodes: DiagramNode[];

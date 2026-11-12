@@ -7,6 +7,7 @@ export type {
   PortDirection,
   FlowDirection,
   ThemeName,
+  EmphasisColors,
   Viewport,
   NodeStyle,
   EdgeStyle,

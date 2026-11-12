@@ -330,3 +330,32 @@ it("offline HTML uses live loop playback and preserves the elapsed remainder", a
     expect(await page.getByRole("button", { name: "Play", exact: true }).isDisabled()).toBe(true);
   } finally { await browser.close(); }
 }, 30_000);
+
+
+it("CLI carries document emphasis into offline highlights and browser hover", async () => {
+  const input = { ...document, emphasis: { fill: "#fff4db", stroke: "#b45309", markerText: "#112233" },
+    scenes: [{ id: "emphasis", label: "Emphasis", beats: [
+      { durationMs: 1000, transitionMs: 0, actions: [{ type: "highlight", target: "client" }] },
+      { durationMs: 1000, transitionMs: 0, actions: [{ type: "unhighlight", target: "client" }] }
+    ] }] };
+  const source = join(temporaryDirectory, "emphasis.json");
+  const output = join(temporaryDirectory, "emphasis.html");
+  await writeFile(source, JSON.stringify(input));
+  execFileSync(process.execPath, [join(PACKAGE_DIR, "dist/node/cli.js"), source, "--output", output, "--format", "html"]);
+  const browser = await chromium.launch({ executablePath: process.env.FLOWSVG_CHROMIUM_PATH });
+  try {
+    const context = await browser.newContext({ offline: true });
+    const page = await context.newPage();
+    await page.goto(pathToFileURL(output).href);
+    const shape = page.locator('[data-id="client"]');
+    expect(await shape.getAttribute("fill")).toBe("#fff4db");
+    expect(await shape.getAttribute("stroke")).toBe("#b45309");
+    await page.getByRole("button", { name: "Next step" }).click();
+    expect(await shape.getAttribute("fill")).toBe("#ffffff");
+    await shape.hover({ position: { x: 10, y: 10 } });
+    expect(await shape.getAttribute("stroke")).toBe("#b45309");
+    expect(await shape.getAttribute("fill")).toBe("#ffffff");
+    await page.mouse.move(0, 0);
+    expect(await shape.getAttribute("stroke")).toBe("#cfd8e3");
+  } finally { await browser.close(); }
+}, 30_000);

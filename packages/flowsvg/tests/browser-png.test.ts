@@ -40,6 +40,13 @@ async function sample(document: DiagramDocument, options: Omit<PngExportOptions,
     return { width: canvas.width, height: canvas.height, pixels, header: Array.from(bytes.slice(0, 8)), byteLength: bytes.length };
   }, { document, options, points });
 }
+it.each(["light", "dark"] as const)("renders authored emphasis into %s PNG pixels", async (theme) => {
+  const document: DiagramDocument = { ...input, emphasis: { fill: "#fff4db", stroke: "#b45309", markerText: "#112233" },
+    scenes: [{ id: "highlight", label: "Highlight", beats: [{ durationMs: 1000, transitionMs: 0,
+      actions: [{ type: "highlight", target: "a" }] }] }] };
+  const result = await sample(document, { theme }, [[20, 40]]);
+  expect(result.pixels).toEqual([[255, 244, 219, 255]]);
+});
 it("decodes complete offline PNGs at 0, middle, beat boundary and completed end without downloads", async () => {
   const downloads: string[] = []; page.on("download", (download) => downloads.push(download.suggestedFilename()));
   for (const [timeMs, x] of [[0, 20], [500, 90], [1000, 160], [2000, 160]]) {

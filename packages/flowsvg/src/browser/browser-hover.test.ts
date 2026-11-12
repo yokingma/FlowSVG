@@ -44,6 +44,39 @@ function fill(host: HTMLElement, id: string): string | null {
 }
 
 describe("browser node hover highlights", () => {
+  it("snapshots document colors, reloads partial colors and retains paint after invalid load", () => {
+    const input: DiagramDocument = { ...document, emphasis: { fill: "#fff4db", stroke: "#b45309" } };
+    const { host, canvas, player } = mountPlayer(input);
+    input.emphasis!.fill = "#000000";
+    movePointer(canvas, 50, 80);
+    expect(fill(host, "source")).toBe("#fff4db");
+    player.load({ ...document, theme: "dark", emphasis: { stroke: "#dd9900" } });
+    movePointer(canvas, 50, 80);
+    expect(fill(host, "source")).toBe("#233b60");
+    expect(host.querySelector('[data-id="source"]')?.getAttribute("stroke")).toBe("#dd9900");
+    const before = player.getState();
+    player.load({ ...document, emphasis: { fill: "red" } });
+    expect(player.getState()).toEqual(before);
+    expect(fill(host, "source")).toBe("#233b60");
+    player.load(document);
+    movePointer(canvas, 50, 80);
+    expect(fill(host, "source")).toBe("#eaf1ff");
+    expect(host.querySelector('[data-id="source"]')?.getAttribute("stroke")).toBe("#2a63c8");
+  });
+
+  it.each([false, true])("uses document emphasis on hover with hoverFill=%s and restores current paint", (hoverFill) => {
+    const input: DiagramDocument = { ...document, emphasis: { fill: "#fff4db", stroke: "#b45309", markerText: "#112233" } };
+    const { host, canvas, player } = mountPlayer(input, hoverFill);
+    movePointer(canvas, 50, 80);
+    expect(host.querySelector('[data-id="source"]')?.getAttribute("stroke")).toBe("#b45309");
+    expect(fill(host, "source")).toBe(hoverFill ? "#fff4db" : "#ffffff");
+    expect(player.getState().frame).toEqual(createDiagram(input).evaluateAt(0));
+    player.seek(createDiagram(input).beats[2]!.startMs);
+    expect(fill(host, "source")).toBe(hoverFill ? "#fff4db" : "#123456");
+    canvas.dispatchEvent(new MouseEvent("pointerleave"));
+    expect(fill(host, "source")).toBe("#123456");
+  });
+
   it.each(["light", "dark"] as const)("highlights only nested group borders on hover in %s while retaining current timeline fill", (theme) => {
     const input: DiagramDocument = { ...document, theme,
       nodes: [
