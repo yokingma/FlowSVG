@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add core and browser-player runtime `emphasis` overrides with per-field document/theme fallback. Validate before browser resources, snapshot player options, and retain overrides across document loads.
+
 - Add document-level `emphasis` colors for node highlights, edge highlights, flow-marker backgrounds and text, and browser hover. Omitted fields retain theme defaults across playback and exports.
 
 - Add per-flow `highlightEdge` to preserve ordinary edge and label colors independently of markers, endpoint highlights and explicit highlights.

@@ -754,9 +754,18 @@ const styledDocument = {
 const svg = createDiagram(styledDocument).renderSvg(500);
 ```
 
-`EmphasisColors.fill` controls node highlight fill. `stroke` controls node/edge highlight strokes and flow-marker backgrounds. `markerText` controls only flow-marker text. Every field is optional and falls back independently to the selected theme; an empty object uses all theme defaults. Ordinary object paint, node/edge text and content contrast rules retain their existing behavior. Hover changes only borders unless `hoverFill: true`, and never enters exports.
+`EmphasisColors.fill` controls node highlight fill. `stroke` controls node/edge highlight strokes and flow-marker backgrounds. `markerText` controls only flow-marker text. Every field is optional. Core visual queries and `createPlayer` accept an `emphasis` runtime override. Each field resolves from the runtime override, document, then selected theme; empty objects and explicit `undefined` leave fallback values intact. Ordinary object paint, node/edge text and content contrast rules retain their existing behavior. Hover changes only borders unless `hoverFill: true`, and never enters exports.
 
-Colors accept case-insensitive `#RGB`, `#RGBA`, `#RRGGBB` and `#RRGGBBAA`, including existing alpha interpolation. `undefined` means absent; `null`, other value types, invalid colors and unknown fields raise `DiagramValidationError` with paths such as `emphasis.stroke`, even when no object currently uses that color. Compilation snapshots the document. Loading a new document replaces its colors; missing fields fall back to the new theme. Invalid loads keep the old player state.
+Colors accept case-insensitive `#RGB`, `#RGBA`, `#RRGGBB` and `#RRGGBBAA`, including existing alpha interpolation. `undefined` means absent. In documents, `null`, other value types, invalid colors and unknown fields raise `DiagramValidationError` with paths such as `emphasis.stroke`, even when no object currently uses that color. Compilation snapshots the document. Browser creation copies runtime emphasis before registering listeners or replacing host content. Mutating the original option object does not change an existing player. Loading a new document retains runtime overrides and reads the new document colors; missing values fall back to its theme without retaining the prior document colors. Invalid loads keep the old player state. Invalid runtime emphasis throws `TypeError` with `options.emphasis` field paths; a valid override never hides invalid document colors.
+
+```ts
+const options = { emphasis: { stroke: "#0f766e" } };
+const frame = diagram.evaluateAt(500, options);
+const svg = diagram.renderSvg(500, options);
+const player = createPlayer(host, document, options);
+```
+
+`evaluateAt`, `renderSvg`, `diagnoseAt` and `hitTest` use the same core visual options. Runtime colors do not change geometry, timeline positions or hit targets.
 
 SVG, browser and framework players, PNG/GIF, offline HTML and CLI output consume the document colors. No CLI color override is required. The same JSON retains its colors when shared offline.
 

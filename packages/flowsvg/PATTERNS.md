@@ -6,7 +6,7 @@ Read the sections for the affected subsystem. For public-contract changes, also 
 
 ## Core and timeline
 
-- Validate document `emphasis` fields before compilation. Resolve each supplied color over the selected theme without changing ordinary paint or content contrast rules; browser hover consumes the current frame palette so document loads cannot retain old colors.
+- Validate document `emphasis` fields before compilation and runtime overrides before visual queries or browser resource acquisition. Resolve each field from runtime, document, then theme without changing ordinary paint or content contrast rules. Snapshot player overrides before mount, retain them through `load`, and read fresh document fallbacks; browser hover consumes the current evaluated palette.
 
 - Keep per-flow edge paint independent of logical flow membership, endpoint paint and markers. Compile `highlightEdge` with default true; false suppresses only automatic edge/label coloring, including reduced motion, while explicit highlights and ordinary updates retain their layers.
 

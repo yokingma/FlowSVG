@@ -34,14 +34,21 @@ export const NODE_CORNER_RADIUS = 8;
 export const CYLINDER_CAP_RADIUS = 14;
 export const DIAGRAM_FONT_FAMILY = 'system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif';
 
-/** Resolve authored emphasis fields over theme defaults without consulting browser preferences. */
-export function resolveThemePalette(theme: "light" | "dark" | undefined, emphasis?: EmphasisColors): ThemePalette {
+/** Resolve runtime emphasis over document colors and the selected theme without browser preferences. */
+export function resolveThemePalette(
+  theme: "light" | "dark" | undefined,
+  documentEmphasis?: EmphasisColors,
+  runtimeEmphasis?: EmphasisColors
+): ThemePalette {
   const palette = theme === "dark" ? DARK_PALETTE : LIGHT_PALETTE;
-  if (!emphasis) return palette;
+  const fill = runtimeEmphasis?.fill ?? documentEmphasis?.fill;
+  const stroke = runtimeEmphasis?.stroke ?? documentEmphasis?.stroke;
+  const markerText = runtimeEmphasis?.markerText ?? documentEmphasis?.markerText;
+  if (fill === undefined && stroke === undefined && markerText === undefined) return palette;
   return {
     ...palette,
-    highlightFill: emphasis.fill ?? palette.highlightFill,
-    highlight: emphasis.stroke ?? palette.highlight,
-    highlightText: emphasis.markerText ?? palette.highlightText
+    highlightFill: fill ?? palette.highlightFill,
+    highlight: stroke ?? palette.highlight,
+    highlightText: markerText ?? palette.highlightText
   };
 }
