@@ -9,7 +9,6 @@ import { updateSvgDom } from "./svg-dom.js";
 import { attachPlayerLifecycle } from "./lifecycle.js";
 import { observeKeyboard, observeReducedMotion } from "./accessibility.js";
 import { PlayerControls, type SceneChoice } from "./controls.js";
-import { resolveThemePalette } from "../core/theme.js";
 import {
   createDiagram,
   evaluateDiagramFrame,
@@ -375,7 +374,7 @@ class BrowserPlayer implements FlowPlayer {
     const hit = point ? hitTestDiagramFrame(this.evaluation, point) : null;
     if (hit?.type === "node") {
       const shape = Array.from(this.canvas.querySelectorAll("[data-id]")).find((element) => element.getAttribute("data-id") === hit.id);
-      const palette = resolveThemePalette(this.options.theme);
+      const palette = this.evaluation.palette;
       const node = this.frame.nodes.find((candidate) => candidate.id === hit.id);
       // Border-only hover preserves all current timeline and content paint unless fill feedback is explicitly enabled.
       if (this.options.hoverFill) shape?.setAttribute("fill", palette.highlightFill);

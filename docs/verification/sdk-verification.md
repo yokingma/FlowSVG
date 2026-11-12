@@ -29,6 +29,7 @@ The tarball contains the small PNG previews, logo and lifecycle teaching GIF. Re
 | Content replacement, clearing and inherited state | Core node-content timeline tests and `tests/fixtures/content-timeline.ts` |
 | Structured text, lists, tags, clipping and SVG parity | Core/browser tests and SDK-owned node-content/list fixtures |
 | Mixed preset flow, simultaneous clip isolation, decoded PNG/GIF and disconnected HTML | `examples/mixed-flow.json`, `tests/browser-mixed-flow.html`, `tests/mixed-shape-exports.test.ts` and installed mixed-flow smoke |
+| Document emphasis validation, theme fallback, snapshots, hover and offline output | `src/core/emphasis-colors.test.ts`, `src/browser/browser-hover.test.ts`, PNG and offline HTML regressions |
 | Host lifecycle, reload, options and disposal | Browser tests and `tests/integration/` |
 | Real pointer, keyboard and browser behavior | SDK browser regression pages and `tests/sdk-browser.test.ts` |
 | Package completeness and installed usage | Release-script tests and installed-tarball verification |

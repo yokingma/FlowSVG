@@ -285,6 +285,7 @@ Register in a DOM environment. DOM-free imports are safe, but that module instan
 | `edges` | Edge array; `id`, `from`, and `to` are required; endpoints reference nodes or group boundaries |
 | `scenes` | `[]` creates a static diagram; each scene has a unique `id`, a `label`, and nonempty `beats` |
 | `title` / `theme` | Optional title and `light` / `dark` document theme |
+| `emphasis` | Optional `EmphasisColors`; highlight and flow-marker colors |
 | `typography` | Optional node, edge and flow-label sizes; see [document typography](#document-typography) |
 
 ### Nodes and styles
@@ -738,7 +739,23 @@ Positive finite source sizes can still overflow derived line heights, whole-text
 
 Theme: explicit option → document theme → light. The core ignores system preferences. Browser motion follows `prefers-reduced-motion` unless overridden; the core defaults to full motion. Reduced motion completes transitions immediately and hides transfer markers, preserving duration.
 
-Both themes use neutral borders and blue highlights. Document styles override ordinary colors; timeline and hover highlights overlay those styles. Explicit content colors and tag fills remain unchanged. Diagram text uses system fonts with Chinese fallbacks.
+Both themes default to neutral borders and blue highlights. Document styles override ordinary colors; timeline and hover highlights overlay those styles. Explicit content colors and tag fills remain unchanged. Diagram text uses system fonts with Chinese fallbacks.
+
+Document `emphasis` saves the emphasis colors used by explicit highlights, automatic flow highlights and browser node hover:
+
+```ts
+const styledDocument = {
+  ...diagramDocument,
+  emphasis: { fill: "#fff4db", stroke: "#b45309", markerText: "#ffffff" }
+};
+const svg = createDiagram(styledDocument).renderSvg(500);
+```
+
+`EmphasisColors.fill` controls node highlight fill. `stroke` controls node/edge highlight strokes and flow-marker backgrounds. `markerText` controls only flow-marker text. Every field is optional and falls back independently to the selected theme; an empty object uses all theme defaults. Ordinary object paint, node/edge text and content contrast rules retain their existing behavior. Hover changes only borders unless `hoverFill: true`, and never enters exports.
+
+Colors accept case-insensitive `#RGB`, `#RGBA`, `#RRGGBB` and `#RRGGBBAA`, including existing alpha interpolation. `undefined` means absent; `null`, other value types, invalid colors and unknown fields raise `DiagramValidationError` with paths such as `emphasis.stroke`, even when no object currently uses that color. Compilation snapshots the document. Loading a new document replaces its colors; missing fields fall back to the new theme. Invalid loads keep the old player state.
+
+SVG, browser and framework players, PNG/GIF, offline HTML and CLI output consume the document colors. No CLI color override is required. The same JSON retains its colors when shared offline.
 
 With canvas focus, Space toggles playback and arrow keys step through beats. The progress slider keeps native keys. Scene and speed use custom select-only comboboxes: arrows open and navigate; Home/End move to the first/last option; Enter/Space commit; Escape cancels; Tab closes without trapping focus. Typing a character highlights a matching option. Outside presses dismiss the menu.
 

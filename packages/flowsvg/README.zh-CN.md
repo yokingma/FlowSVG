@@ -423,11 +423,13 @@ SDK CLI 支持 HTML 和 GIF 输出。PNG 使用 SDK API 导出。
 | 类型 | 必填字段 | 可选字段 |
 | --- | --- | --- |
 | `Viewport` | 有限正数 `width`、`height` | `fitHeight: { padding }`；底部留白 `padding` 为有限非负数 |
-| `DiagramDocument` | `version: 1`、`viewport`、`nodes`、`edges`、`scenes` | `title`、`theme`、`typography` |
+| `DiagramDocument` | `version: 1`、`viewport`、`nodes`、`edges`、`scenes` | `title`、`theme`、`emphasis`、`typography` |
 | `DiagramNode` | `id`、`kind`、`x`、`y`、`width`、`height` | 互斥的 `label`／`content`，以及 `parentId`、`visible`、`style` |
 | `DiagramEdge` | `id`、`from`、`to` | `route`、`fromPort`、`toPort`、`label`、`visible`、`style` |
 | `Scene` | `id`、`label`、`beats` | — |
 | `Beat` | `durationMs`、`actions` | `transitionMs`、`caption` |
+
+文档 `emphasis?: EmphasisColors` 接受可选字段 `fill`（节点高亮填充）、`stroke`（节点与连线高亮描边及标记底色）、`markerText`（标记文字）。每个缺省字段回退到当前主题。浏览器悬停和全部导出共用这些配色；悬停本身不进入导出。颜色支持 `#RGB`、`#RGBA`、`#RRGGBB`、`#RRGGBBAA`；`undefined` 视为缺省，`null`、非法颜色和未知字段报告校验路径。
 
 - **静态文档：**使用空 `scenes`。
 - **节点类型：**`rect`、`roundedRect`、`ellipse`、`cylinder`、`group`、`diamond`、`parallelogram`、`document` 和 `predefinedProcess`。分组边框默认为圆角。
