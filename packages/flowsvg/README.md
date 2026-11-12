@@ -216,6 +216,8 @@ element.document = diagram;
 | Read state | `getState()` can return `undefined` before mounting or after destruction. |
 | Handle events | Listen on the element. Events bubble and cross Shadow DOM boundaries; details are listed under [Events](#events). |
 
+Web Component runtime colors use the `element.emphasis` object property, for example `element.emphasis = { stroke: "#0f766e" }`. Assign before connection or replace it later; `undefined` clears the override. Assignments copy fields, reconnection retains them, and option rebuilds restore time/playback. The getter returns a copy. Invalid values emit the existing bubbling/composed `error` event and retain the valid configuration. There is no `emphasis` HTML attribute.
+
 ## Control playback
 
 `createPlayer(host: HTMLElement, document: DiagramDocument, options?: PlayerOptions): FlowPlayer` mounts into the host, replacing its children. Invalid initial documents throw `DiagramValidationError`.
@@ -237,13 +239,14 @@ Vue/React refs expose the eight playback/state methods above. Component updates 
 | Change | Result |
 | --- | --- |
 | Replace the `document` object | Reload the document and pause at zero on success |
-| Change `theme`, `controls`, `gifExport`, `reducedMotion` or `hoverFill` | Recreate the player, paused at zero |
+| Change `theme`, `controls`, `gifExport`, `reducedMotion` or `hoverFill`, or replace/clear `emphasis` | Recreate the player, paused at zero |
 
 ### Options and component props
 
 | `PlayerOptions` | Default / meaning |
 | --- | --- |
 | `theme?: "light" \| "dark"` | Document theme, then `"light"`. |
+| `emphasis?: EmphasisColors` | Per-field overrides over document colors and theme defaults. Replace the object to update framework players. |
 | `controls?: boolean` | `true`; show playback controls. |
 | `loop?: boolean` | `false`; loop the entire timeline. |
 | `gifExport?: boolean` | `false`; show GIF download controls when `controls` is enabled. |
@@ -258,6 +261,8 @@ Vue/React components also accept these `FlowPlayerProps`:
 | `speed?: number` | Playback multiplier; default `1` |
 | `initialTimeMs?: number` | Initial position; applied once |
 | `className`, `style` | Host container styles |
+
+Replace `emphasis` with a new object to update colors; clearing it restores document/theme fallback. The player copies supplied fields, so later mutation does not change its paint. Framework option rebuilds do not reapply `initialTimeMs`.
 
 Both framework entries export `FlowPlayerHandle` and `FlowPlayerProps`. Native players start through `play()` and change speed through `setSpeed()`.
 

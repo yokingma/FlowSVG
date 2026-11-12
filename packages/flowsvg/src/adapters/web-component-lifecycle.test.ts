@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { FLOW_PLAYER_TAG, defineFlowPlayer, type FlowPlayerElement } from "../web-component.js";
-import type { DiagramDocument } from "../index.js";
+import type { DiagramDocument, EmphasisColors } from "../index.js";
 
 const document: DiagramDocument = {
   version: 1,
@@ -15,6 +15,7 @@ defineFlowPlayer();
 afterEach(() => vi.unstubAllGlobals());
 
 describe.each([
+  { option: "emphasis", change: (element: FlowPlayerElement) => { element.emphasis = { stroke: "#123456" }; } },
   { option: "hoverFill", change: (element: FlowPlayerElement) => { element.hoverFill = true; } },
   { option: "theme", change: (element: FlowPlayerElement) => { element.theme = "dark"; } },
   { option: "controls", change: (element: FlowPlayerElement) => { element.controls = false; } },
@@ -106,5 +107,70 @@ describe("Web Component interaction events", () => {
     } finally {
       element.remove();
     }
+  });
+});
+
+
+describe("Web Component emphasis property", () => {
+  it("reports invalid assignments once and retains the valid snapshot without leaking its getter", () => {
+    const element = window.document.createElement(FLOW_PLAYER_TAG) as FlowPlayerElement;
+    const errors: CustomEvent[] = [];
+    element.addEventListener("error", (event) => errors.push(event as CustomEvent));
+    element.emphasis = { stroke: "#123456" };
+    element.emphasis!.stroke = "#abcdef";
+    element.emphasis = { fill: null } as unknown as EmphasisColors;
+    expect(errors).toHaveLength(1);
+    expect(errors[0]!.detail.error.message).toContain("options.emphasis.fill");
+    expect(errors[0]).toMatchObject({ bubbles: true, composed: true });
+    expect(element.emphasis).toEqual({ stroke: "#123456" });
+    element.reducedMotion = false;
+    element.document = document;
+    try {
+      window.document.body.append(element);
+      const before = element.getState();
+      const oldSvg = element.querySelector("svg");
+      element.emphasis = { unknown: "#abc" } as unknown as EmphasisColors;
+      expect(errors).toHaveLength(2);
+      expect(element.getState()).toEqual(before);
+      expect(element.querySelector("svg")).toBe(oldSvg);
+      expect(element.querySelectorAll(".flowsvg-element-host")).toHaveLength(1);
+      element.remove();
+      window.document.body.append(element);
+      expect(element.emphasis).toEqual({ stroke: "#123456" });
+    } finally { element.remove(); }
+    expect(element.querySelectorAll(".flowsvg-element-host")).toHaveLength(0);
+  });
+
+  it("snapshots before connection, replaces and clears colors, and retains overrides on reconnect", () => {
+    const input: DiagramDocument = { version: 1, viewport: { width: 320, height: 180 },
+      emphasis: { fill: "#fff4db", stroke: "#b45309" },
+      nodes: [{ id: "node", kind: "rect", x: 20, y: 20, width: 100, height: 60 }], edges: [],
+      scenes: [{ id: "s", label: "Scene", beats: [{ durationMs: 1000, transitionMs: 0, actions: [{ type: "highlight", target: "node" }] }] }] };
+    const element = window.document.createElement(FLOW_PLAYER_TAG) as FlowPlayerElement;
+    element.controls = false;
+    element.reducedMotion = false;
+    element.document = input;
+    const first: EmphasisColors = { stroke: "#123456" };
+    element.emphasis = first;
+    first.stroke = "#abcdef";
+    const paint = () => element.getState()!.frame.nodes[0]!.style;
+    try {
+      window.document.body.append(element);
+      expect(paint()).toMatchObject({ fill: "#fff4db", stroke: "#123456" });
+      expect(element.hasAttribute("emphasis")).toBe(false);
+      element.seek(250);
+      element.emphasis = { fill: "#aabbcc" };
+      expect(element.getState()).toMatchObject({ timeMs: 250, playing: false });
+      expect(paint()).toMatchObject({ fill: "#aabbcc", stroke: "#b45309" });
+      element.remove();
+      window.document.body.append(element);
+      expect(paint()).toMatchObject({ fill: "#aabbcc", stroke: "#b45309" });
+      element.emphasis = undefined;
+      expect(paint()).toMatchObject({ fill: "#fff4db", stroke: "#b45309" });
+      element.theme = "dark";
+      element.document = { ...input, emphasis: undefined };
+      expect(paint()).toMatchObject({ fill: "#233b60", stroke: "#8ab4f8" });
+    } finally { element.remove(); }
+    expect(element.getState()).toBeUndefined();
   });
 });
