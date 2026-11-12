@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Add per-flow `highlightEdge` to preserve ordinary edge and label colors independently of markers, endpoint highlights and explicit highlights.
+
 ## 0.3.1 - 2026-11-09
 
 - Load the four README showcase GIFs from public GitHub Pages URLs instead of shipping them in the npm tarball. Keep the logo, lifecycle teaching animation and PNG documentation previews packaged.
