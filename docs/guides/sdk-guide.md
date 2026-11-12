@@ -363,7 +363,8 @@ Example: `{ type: "flow", target: "request", direction: "forward", text: "Reques
 | `target` | Edge ID; one transfer per edge per beat |
 | `direction` | `forward` or `reverse`; leaves the static edge arrow unchanged |
 | `text` | Optional horizontal text capsule; omit for a solid dot; an empty string still produces a capsule |
-| `highlightParticipants` | Default `true`; `false` keeps the marker and edge highlight while disabling automatic endpoint highlights |
+| `highlightParticipants` | Default `true`; `false` disables automatic endpoint highlights independently of edge paint and markers |
+| `highlightEdge` | Default `true`; `false` disables automatic edge and label coloring while retaining markers, logical flow state and independent explicit highlights |
 
 Transfer text is escaped and uses estimated capsule widths without font measurement. It does not replace the edge label or create an interaction target.
 
@@ -380,7 +381,9 @@ Single-flow timing uses the routed path at the beat's target visual state, inclu
 
 Use separate no-flow beats for longer reading time. All intervals above are at speed 1; player speed scales movement, destination hold, and reading beats together.
 
-Markers and temporary endpoint highlights expire at beat end. Explicit highlights and ordinary styles persist. `highlightParticipants: false` leaves node highlighting to explicit actions while retaining the marker and temporary edge highlight.
+Markers and temporary edge/endpoint highlights expire at beat end. Explicit highlights and ordinary styles persist. `highlightParticipants: false` leaves node highlighting to explicit actions. `highlightEdge: false` preserves the current ordinary edge and label colors, including interpolated `updateEdge` changes; it does not cancel explicit edge highlights. Both switches apply per flow, including reverse and synchronized transfers, without changing timing.
+
+For example, `{ type: "flow", target: "request", direction: "forward", highlightEdge: false, highlightParticipants: false }` moves the marker while leaving automatic edge and endpoint paint disabled. During the flow, the edge's logical `highlighted` flag remains `true`. Reduced motion hides the marker and respects both switches; no static cue is added when automatic paint is disabled.
 
 #### Arrival highlights
 

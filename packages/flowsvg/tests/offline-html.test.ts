@@ -48,10 +48,10 @@ it("uses effective flow timing in a disconnected portable player without changin
       { id: "a", kind: "rect", x: 20, y: 20, width: 40, height: 40 },
       { id: "b", kind: "rect", x: 420, y: 20, width: 40, height: 40 }
     ],
-    edges: [{ id: "transfer", from: "a", to: "b", route: "straight" }],
+    edges: [{ id: "transfer", from: "a", to: "b", route: "straight", label: "Relationship", style: { stroke: "#c2410a", dashed: true } }],
     scenes: [
       { id: "send", label: "Send", beats: [
-        { durationMs: 100, caption: "Moving", actions: [{ type: "flow", target: "transfer", direction: "forward" }] },
+        { durationMs: 100, caption: "Moving", actions: [{ type: "flow", target: "transfer", direction: "forward", highlightEdge: false }] },
         { durationMs: 300, caption: "Received", actions: [] }
       ] },
       { id: "done", label: "Done", beats: [{ durationMs: 200, caption: "Done", actions: [] }] }
@@ -68,6 +68,10 @@ it("uses effective flow timing in a disconnected portable player without changin
     await page.goto(pathToFileURL(file).href);
     const progress = page.getByRole("slider", { name: "Progress" });
     expect(await progress.getAttribute("max")).toBe("3000");
+    expect(await page.locator('[data-id="transfer"]').getAttribute("stroke")).toBe("#c2410a");
+    expect(await page.locator('[data-id="transfer"]').getAttribute("stroke-dasharray")).toBe("6 4");
+    expect(await page.locator("svg text", { hasText: "Relationship" }).getAttribute("fill")).toBe("#c2410a");
+    expect(await page.locator('[data-flow-id="transfer"]').count()).toBe(1);
     await page.getByRole("button", { name: "Next step" }).click();
     expect(await progress.inputValue()).toBe("2500");
     expect(await page.locator(".flowsvg-caption").textContent()).toBe("Received");

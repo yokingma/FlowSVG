@@ -6,6 +6,8 @@
 
 - Resolve authored emphasis colors in the SDK core and reuse the evaluated palette for browser hover and exported frames; keep ordinary theme colors independent.
 
+- Keep per-flow edge paint independent of logical flow membership, endpoint paint and markers. Compile `highlightEdge` with default true; false suppresses only automatic edge/label coloring, including reduced motion, while explicit highlights and ordinary updates retain their layers.
+
 - Keep own visibility and explicit-highlight contracts covered by SDK-owned immutable inputs at public frame/SVG seams. Preserve fixed-baseline expectations and prove new characterization assertions with isolated, reversible mutations.
 - Keep inherited group/descendant, internal/external edge and cross-scene composition coverage in an SDK-owned immutable fixture at the public diagram seams; record reversible mutation evidence when proving the opacity-layer contract.
 

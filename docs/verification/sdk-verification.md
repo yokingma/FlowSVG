@@ -25,6 +25,7 @@ The tarball contains the small PNG previews, logo and lifecycle teaching GIF. Re
 | Contract | SDK-owned coverage |
 | --- | --- |
 | Own visibility, explicit highlights, simultaneous base updates and exact frame/SVG output | `src/core/own-transitions.test.ts` and immutable `tests/fixtures/own-transitions.ts` |
+| Per-flow edge paint, explicit/base style layers and reduced motion | `src/core/flow-edge-highlight.test.ts`, browser parallel-flow playback and disconnected offline HTML timing checks |
 | Parallel transfers, reverse directions and beat cleanup | Core parallel-flow tests and `tests/fixtures/parallel-transfers.ts` |
 | Content replacement, clearing and inherited state | Core node-content timeline tests and `tests/fixtures/content-timeline.ts` |
 | Structured text, lists, tags, clipping and SVG parity | Core/browser tests and SDK-owned node-content/list fixtures |

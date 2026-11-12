@@ -16,7 +16,7 @@ describe("parallel transfer playback", () => {
         { id: "bottom", kind: "rect", x: 220, y: 220, width: 80, height: 60 }
       ],
       edges: [
-        { id: "first", from: "source", to: "target" },
+        { id: "first", from: "source", to: "target", label: "Relationship", style: { stroke: "#c2410a", dashed: true } },
         { id: "second", from: "source", to: "bottom" },
         { id: "third", from: "bottom", to: "target" },
         { id: "fourth", from: "target", to: "source" },
@@ -24,7 +24,7 @@ describe("parallel transfer playback", () => {
       ],
       scenes: [{ id: "transfer", label: "Transfer", beats: [
         { durationMs: 1000, actions: [
-          { type: "flow", target: "first", direction: "forward" },
+          { type: "flow", target: "first", direction: "forward", highlightEdge: false },
           { type: "flow", target: "second", direction: "reverse" },
           { type: "flow", target: "third", direction: "forward" }
         ] },
@@ -56,6 +56,8 @@ describe("parallel transfer playback", () => {
       expected.innerHTML = diagram.renderSvg(timeMs);
       expect(host.querySelector("svg")?.outerHTML).toBe(expected.querySelector("svg")?.outerHTML);
       expect(host.querySelectorAll("[data-flow-id]")).toHaveLength(count);
+      expect(host.querySelector('[data-id="first"]')?.getAttribute("stroke")).toBe("#c2410a");
+      expect(host.querySelector('[data-id="first"]')?.getAttribute("stroke-dasharray")).toBe("6 4");
     };
     try {
       player.seek(250);

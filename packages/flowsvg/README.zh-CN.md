@@ -442,7 +442,7 @@ SDK CLI 支持 HTML 和 GIF 输出。PNG 使用 SDK API 导出。
 | 动作类型 | 附加字段／目标 |
 | --- | --- |
 | `updateNode`、`updateEdge` | 必填 `value`，字段见下表 |
-| `flow` | 必填 `direction: "forward" \| "reverse"`；可选 `text` 和 `highlightParticipants`（默认 `true`） |
+| `flow` | 必填 `direction: "forward" \| "reverse"`；可选 `text`、`highlightParticipants` 和 `highlightEdge`（两个布尔值均默认 `true`） |
 | `focus` | 目标为节点／分组 ID，或用 `null` 恢复完整视图 |
 
 | 更新动作 | `value` 支持的字段 |
@@ -456,7 +456,7 @@ SDK CLI 支持 HTML 和 GIF 输出。PNG 使用 SDK API 导出。
 
 ### 时间线规则
 
-`show`、`hide`、`highlight`、`unhighlight`、`updateNode`、`updateEdge`、`focus` 跨节拍继承；`flow` 仅在当前节拍生效。
+`show`、`hide`、`highlight`、`unhighlight`、`updateNode`、`updateEdge`、`focus` 跨节拍继承；`flow` 仅在当前节拍生效。设置 `highlightEdge: false` 关闭该次传递的连线与标签自动着色，显式高亮和普通样式插值更新仍生效；`highlightParticipants` 独立控制端点。减少动画隐藏标记并尊重两个开关，即使关闭后没有自动可见提示也不补充提示。
 
 显隐权重与基础透明度取最小值：已存储的透明度为 `0.4` 时，显示过渡中点仍为 `0.4`。祖先分组与连线端点也按最小值组合透明度。显式 `highlighted` 在拍初改变，着色权重继续过渡；取消高亮后显示最新基础颜色，包括同拍更新。详见[节拍与动作契约](../../docs/guides/sdk-guide.zh-CN.md#节拍与动作)。
 

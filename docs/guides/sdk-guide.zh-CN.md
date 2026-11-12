@@ -374,7 +374,8 @@ if (element) element.document = diagramDocument;
 | `target` | 连线 ID；每拍每条连线最多传递一次 |
 | `direction` | `forward` 或 `reverse`；不改变静态箭头方向 |
 | `text` | 可选水平文字胶囊；省略时显示实心圆点，空字符串仍显示胶囊 |
-| `highlightParticipants` | 默认 `true`；`false` 保留标记和连线高亮，关闭自动端点高亮 |
+| `highlightParticipants` | 默认 `true`；`false` 关闭自动端点高亮，与连线着色和标记独立 |
+| `highlightEdge` | 默认 `true`；`false` 关闭连线和标签自动着色，保留标记、逻辑传递状态及独立显式高亮 |
 
 传递文字按纯文本转义，胶囊宽度按固定规则估算，不读取字体实测值。文字不替换连线标签，也不产生独立交互目标。
 
@@ -391,7 +392,9 @@ if (element) element.document = diagramDocument;
 
 较长的阅读时间使用独立的无传递节拍。上述区间以 1 倍速计；全局播放倍率同时影响移动、到达停留和独立阅读节拍。
 
-标记和端点临时高亮在拍末消失。显式高亮和普通样式继续继承。`highlightParticipants: false` 让显式动作决定节点高亮，同时保留标记和连线临时高亮。
+标记及连线、端点临时高亮在拍末消失。显式高亮和普通样式继续继承。`highlightParticipants: false` 让显式动作决定节点高亮。`highlightEdge: false` 保留连线与标签当前的普通颜色，包括 `updateEdge` 的插值更新；它不取消显式连线高亮。两个开关逐次生效，覆盖反向和同步传递，不改变时序。
+
+例如，`{ type: "flow", target: "request", direction: "forward", highlightEdge: false, highlightParticipants: false }` 让标记运动，同时关闭连线与端点自动着色。flow 活跃期间，连线逻辑 `highlighted` 仍为 `true`。减少动画隐藏标记并尊重两个开关；自动着色关闭后不补充静态提示。
 
 #### 到达高亮
 

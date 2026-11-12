@@ -222,7 +222,7 @@ class CompiledDiagram implements Diagram {
         ...edge.style,
         strokeWidth: own.values.strokeWidth ?? edge.style?.strokeWidth ?? 2,
         dashed: edge.style?.dashed ?? false,
-        stroke: mixColor(own.values.stroke ?? palette.edge, palette.highlight, Math.max(own.highlight, Number(activeFlow !== undefined) * (1 - timeline.flowDepartureProgress)))
+        stroke: mixColor(own.values.stroke ?? palette.edge, palette.highlight, Math.max(own.highlight, Number(activeFlow?.highlightEdge ?? false) * (1 - timeline.flowDepartureProgress)))
       };
       const hasReverseCurve = edge.route === "curved" && this.document.edges.some((candidate) => candidate.id !== edge.id && candidate.route === "curved" && candidate.from === edge.to && candidate.to === edge.from);
       // Both directions use the same lane magnitude; the perpendicular vector reverses with the edge,

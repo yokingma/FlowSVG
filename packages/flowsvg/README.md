@@ -442,7 +442,7 @@ Each action has `{ type, target }`, with additional fields by action type:
 | Action type | Additional fields / target |
 | --- | --- |
 | `updateNode`, `updateEdge` | Require `value`; fields are listed below |
-| `flow` | Require `direction: "forward" \| "reverse"`; optional `text` and `highlightParticipants` (default `true`) |
+| `flow` | Require `direction: "forward" \| "reverse"`; optional `text`, `highlightParticipants` and `highlightEdge` (both booleans default to `true`) |
 | `focus` | Target a node/group ID, or `null` for full view |
 
 | Update | Supported `value` fields |
@@ -456,7 +456,7 @@ Each action has `{ type, target }`, with additional fields by action type:
 
 ### Timeline rules
 
-`show`, `hide`, `highlight`, `unhighlight`, `updateNode`, `updateEdge`, and `focus` persist across beats. `flow` lasts for its beat only.
+`show`, `hide`, `highlight`, `unhighlight`, `updateNode`, `updateEdge`, and `focus` persist across beats. `flow` lasts for its beat only. Set `highlightEdge: false` on a flow to disable its automatic edge and label coloring. Explicit highlights and interpolated ordinary style updates still apply; `highlightParticipants` independently controls endpoints. Reduced motion hides markers and respects both policies, even when no automatic visible cue remains.
 
 Visibility caps ordinary opacity: a stored opacity of `0.4` remains `0.4` halfway through a reveal. Ancestor groups and edge endpoints also combine opacity by minimum. Explicit `highlighted` changes at beat start while its paint transitions; removing a highlight reveals the latest ordinary colors, including same-beat updates. See the [timeline contract](../../docs/guides/sdk-guide.md#beats-and-actions).
 
