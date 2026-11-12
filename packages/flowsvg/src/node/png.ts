@@ -31,7 +31,7 @@ export async function exportPng(document: DiagramDocument, options: NodePngExpor
   if (browser !== undefined && (browser === null || typeof browser.newContext !== "function")) throw new PngExportError("options", "browser must be a Playwright browser.");
   throwIfCancelled(signal);
   const plan = planPng(document, settings);
-  const fixedOptions: BrowserPngOptions = { timeMs: plan.timeMs, width: plan.width, theme: plan.theme, reducedMotion: plan.reducedMotion, background: plan.background };
+  const fixedOptions: BrowserPngOptions = { timeMs: plan.timeMs, width: plan.width, theme: plan.theme, emphasis: plan.emphasis, reducedMotion: plan.reducedMotion, background: plan.background };
   const runtime = createNodePngRuntime({ browser, executablePath, signal });
   try {
     const bytes = await runtime.run(plan.document, fixedOptions);

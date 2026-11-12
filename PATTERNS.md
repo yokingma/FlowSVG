@@ -4,6 +4,8 @@
 
 ## Ownership
 
+- Snapshot nested runtime emphasis at export preflight and carry it through image plans, Node bridges and offline payloads. Player GIF tasks capture overrides with their document at click time; browser hover remains outside exports.
+
 - Resolve emphasis colors in the SDK core per field: runtime override, document, then theme. Validate each supplied layer independently, snapshot player overrides before resources, and reuse the evaluated palette for browser hover and exported frames; keep ordinary theme colors independent.
 
 - Keep per-flow edge paint independent of logical flow membership, endpoint paint and markers. Compile `highlightEdge` with default true; false suppresses only automatic edge/label coloring, including reduced motion, while explicit highlights and ordinary updates retain their layers.

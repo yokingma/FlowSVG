@@ -12,6 +12,11 @@ it("rejects malformed PNG options, documents, times and dimensions before alloca
   await expect(exportPng({ ...input, version: 99 } as unknown as DiagramDocument)).rejects.toMatchObject({ code: "document" });
   expect(createElement).not.toHaveBeenCalled();
 });
+it.each([null, [], "#fff", { fill: null }, { fill: "red" }, { stroke: "var(--color)" }, { markerText: "#12" }, { unknown: "#fff" }])("reports malformed PNG emphasis as options before allocating canvas: %j", async (emphasis) => {
+  const createElement = vi.fn(); vi.stubGlobal("document", { createElement });
+  await expect(exportPng(input, { emphasis } as unknown as PngExportOptions)).rejects.toMatchObject({ code: "options", message: expect.stringContaining("options.emphasis") });
+  expect(createElement).not.toHaveBeenCalled();
+});
 
 function installBrowser() {
   const painted: { width: number; height: number; svg: string }[] = [];
@@ -41,6 +46,18 @@ it("returns single-frame bytes at rounded camera dimensions and preserves its in
   expect(services.blobs.size).toBe(0);
   expect(services.images.every((image) => image.src === "")).toBe(true);
   expect(services.canvases.every((canvas) => canvas.width === 0 && canvas.height === 0)).toBe(true);
+});
+it("captures a partial runtime emphasis override before asynchronous PNG work", async () => {
+  const services = installBrowser();
+  const document: DiagramDocument = { ...input, emphasis: { fill: "#fff4db", stroke: "#b45309" },
+    nodes: [{ id: "a", kind: "rect", x: 10, y: 10, width: 40, height: 20 }],
+    scenes: [{ id: "s", label: "Highlight", beats: [{ durationMs: 1000, transitionMs: 0, actions: [{ type: "highlight", target: "a" }] }] }] };
+  const options: PngExportOptions = { emphasis: { fill: "#12345678" }, background: "transparent" };
+  const pending = exportPng(document, options);
+  options.emphasis!.fill = "#ff0000";
+  document.emphasis!.stroke = "#000000";
+  await pending;
+  expect(services.painted[0]!.svg).toContain('fill="#12345678" stroke="#b45309"');
 });
 it("classifies unavailable canvas context services and releases the allocated canvas", async () => {
   const services = installBrowser();

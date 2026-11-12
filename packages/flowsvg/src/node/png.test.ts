@@ -6,6 +6,14 @@ vi.mock("node:fs/promises", async (loadOriginal) => {
   return { ...original, readFile: vi.fn(async () => "") };
 });
 const input = { version: 1, viewport: { width: 80, height: 40 }, nodes: [], edges: [], scenes: [] };
+it("rejects malformed runtime emphasis as options before acquiring a Node PNG browser", async () => {
+  const newContext = vi.fn();
+  const browser = { newContext } as unknown as Browser;
+  for (const emphasis of [null, [], { fill: "red" }, { markerText: null }, { unknown: "#fff" }]) {
+    await expect(exportPng(input, { browser, emphasis } as unknown as Parameters<typeof exportPng>[1])).rejects.toMatchObject({ code: "options", message: expect.stringContaining("options.emphasis") });
+  }
+  expect(newContext).not.toHaveBeenCalled();
+});
 it("rejects invalid PNG requests before acquiring caller browser resources", async () => {
   const newContext = vi.fn();
   const browser = { newContext } as unknown as Browser;

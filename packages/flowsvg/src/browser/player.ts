@@ -187,7 +187,8 @@ class BrowserPlayer implements FlowPlayer {
     }
     if (options.gifExport && this.controls) {
       this.gifControls = new GifExportControls(owner, () => ({
-        document: structuredClone(this.sourceDocument), theme: this.options.theme ?? "light"
+        document: structuredClone(this.sourceDocument), theme: this.options.theme ?? "light",
+        emphasis: snapshotRuntimeEmphasis(this.options.emphasis)
       }));
       this.controls.element.append(this.gifControls.element);
     }

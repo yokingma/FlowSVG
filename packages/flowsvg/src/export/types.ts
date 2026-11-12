@@ -1,4 +1,4 @@
-import type { ThemeName } from "../core/model.js";
+import type { EmphasisColors, ThemeName } from "../core/model.js";
 
 /** Stages belong to one independent export; counts represent acknowledged sampling frames. */
 export interface GifExportProgress {
@@ -16,6 +16,8 @@ export interface GifExportProgress {
 export interface GifExportOptions {
   /** Explicit theme; otherwise use the document theme, then light. Never reads system preferences. */
   theme?: ThemeName;
+  /** Per-field overrides of document emphasis and theme defaults, copied before asynchronous work. */
+  emphasis?: EmphasisColors;
   /** Inclusive source start, default 0. Evaluates the full document to retain earlier scene state. */
   startMs?: number;
   /**

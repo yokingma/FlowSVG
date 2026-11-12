@@ -193,6 +193,42 @@ it("validates and snapshots the HTML GIF option before reading assets", async ()
   expect((await renderHtml(document, { gifExport: false })).includes("GIF89a")).toBe(false);
 });
 
+it("rejects malformed HTML emphasis before reading assets", async () => {
+  const { renderHtml } = await import(NODE_ENTRY);
+  for (const emphasis of [null, [], "#fff", { fill: null }, { fill: "red" }, { stroke: "var(--color)" }, { unknown: "#fff" }, { markerText: () => "#fff" }]) {
+    await expect(renderHtml(document, { emphasis })).rejects.toThrow(/options.emphasis/);
+  }
+});
+
+it("keeps nested runtime emphasis in disconnected playback and its GIF download", async () => {
+  const { renderHtml } = await import(NODE_ENTRY);
+  const source = { version: 1, viewport: { width: 120, height: 80 }, emphasis: { fill: "#fff4db", stroke: "#b45309" },
+    nodes: [{ id: "a", kind: "rect", x: 10, y: 10, width: 100, height: 60 }], edges: [],
+    scenes: [{ id: "s", label: "Highlight", beats: [{ durationMs: 1000, transitionMs: 0, actions: [{ type: "highlight", target: "a" }] }] }] };
+  const options = { emphasis: { fill: "#123456" }, gifExport: true };
+  const pending = renderHtml(source, options);
+  options.emphasis.fill = "#ff0000";
+  source.emphasis.stroke = "#000000";
+  const path = join(temporaryDirectory, "runtime-emphasis.html");
+  await writeFile(path, await pending);
+  const browser = await chromium.launch({ executablePath: process.env.FLOWSVG_CHROMIUM_PATH });
+  try {
+    const context = await browser.newContext({ offline: true, acceptDownloads: true });
+    const requests: string[] = [];
+    context.on("request", (request) => { if (/^https?:/.test(request.url())) requests.push(request.url()); });
+    const page = await context.newPage();
+    await page.goto(pathToFileURL(path).href);
+    expect(await page.locator('[data-id="a"]').getAttribute("fill")).toBe("#123456");
+    expect(await page.locator('[data-id="a"]').getAttribute("stroke")).toBe("#b45309");
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Export GIF", exact: true }).click();
+    const download = await downloadPromise;
+    const frames = decompressFrames(parseGIF(Uint8Array.from(await readFile((await download.path())!)).buffer), true);
+    expect(Array.from(frames[0]!.patch.slice((30 * 120 + 30) * 4, (30 * 120 + 30) * 4 + 4))).toEqual([18, 52, 86, 255]);
+    expect(requests).toEqual([]);
+  } finally { await browser.close(); }
+}, 30_000);
+
 it("CLI generates optional GIF HTML without Chromium or installed runtime dependencies", async () => {
   const copiedRoot = join(temporaryDirectory, "gif-tool");
   await mkdir(copiedRoot);

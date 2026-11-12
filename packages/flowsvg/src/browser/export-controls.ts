@@ -2,7 +2,7 @@
  * Optional player GIF UI. One task owns its input, abort signal and download resources independently of playback.
  * The browser exporter stays behind a dynamic import; portable builds replace only that import with an inline bridge.
  */
-import type { DiagramDocument, ThemeName } from "../core/model.js";
+import type { DiagramDocument, EmphasisColors, ThemeName } from "../core/model.js";
 import type { GifExportProgress } from "../export/types.js";
 
 const MAX_FILENAME_LENGTH = 120;
@@ -10,6 +10,8 @@ const MAX_FILENAME_LENGTH = 120;
 interface ExportInput {
   document: DiagramDocument;
   theme: ThemeName;
+  /** Runtime overrides captured on click; browser hover is never sampled. */
+  emphasis?: EmphasisColors;
 }
 
 /** Own the visible export state and one cancellable task; destroy silences asynchronous results and releases downloads. */
@@ -81,6 +83,7 @@ export class GifExportControls {
       if (!this.isActive(controller)) return;
       const bytes = await exportGif(input.document, {
         theme: input.theme,
+        emphasis: input.emphasis,
         signal: controller.signal,
         onProgress: (progress) => {
           if (this.isActive(controller)) this.renderProgress(progress);

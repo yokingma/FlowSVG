@@ -767,6 +767,19 @@ const player = createPlayer(host, document, options);
 
 `evaluateAt`, `renderSvg`, `diagnoseAt` and `hitTest` use the same core visual options. Runtime colors do not change geometry, timeline positions or hit targets.
 
+Browser and Node PNG/GIF options and `renderHtml` also accept `emphasis`. They copy nested overrides before asynchronous work and use the same per-field fallback. Invalid image overrides return `PngExportError` or `GifExportError` with code `options` and `options.emphasis` field paths before resource allocation; HTML validates them before reading assets. Valid overrides never hide invalid document colors.
+
+```ts
+// Browser: import from "flowsvg/export". Node: import from "flowsvg/node".
+const bytes = await exportPng(styledDocument, {
+  timeMs: 500, emphasis: { stroke: "#0f766e" }
+});
+// From "flowsvg/node"; includes the same override in offline playback and optional GIF downloads.
+const html = await renderHtml(styledDocument, {
+  emphasis: { stroke: "#0f766e" }, gifExport: true
+});
+```
+
 SVG, browser and framework players, PNG/GIF, offline HTML and CLI output consume the document colors. No CLI color override is required. The same JSON retains its colors when shared offline.
 
 With canvas focus, Space toggles playback and arrow keys step through beats. The progress slider keeps native keys. Scene and speed use custom select-only comboboxes: arrows open and navigate; Home/End move to the first/last option; Enter/Space commit; Escape cancels; Tab closes without trapping focus. Typing a character highlights a matching option. Outside presses dismiss the menu.
@@ -785,7 +798,7 @@ All four hosts accept `gifExport: true`; Web Component markup uses `gif-export` 
 
 The browser exporter loads on the first export click, while normal import and playback do not load it.
 
-Click **Export GIF** to download the complete timeline at 1× with the task's resolved theme and default export settings. The controls show progress, **Cancel export**, completion and a readable failure message. Downloads use a sanitized document title or `FlowSVG.gif`. Playback, speed and seeking remain independent; hover and controls never enter the GIF.
+Click **Export GIF** to download the complete timeline at 1× with the task's resolved theme, runtime emphasis overrides and default export settings. The controls show progress, **Cancel export**, completion and a readable failure message. Downloads use a sanitized document title or `FlowSVG.gif`. Playback, speed and seeking remain independent; hover and controls never enter the GIF.
 
 Each player owns at most one task. A successful document load retains the old task's captured document/theme. Later input-object mutations cannot change that snapshot. Destroying the player, unmounting a component, or rebuilding an adapter for option changes cancels its task and prevents late downloads. Cancellation or failure permits retry.
 
@@ -861,6 +874,7 @@ Limits: 120 effective animation seconds, 1800 samples, 1801 encoded frames inclu
 | `loopCount` | `0` (forever) | Integers 1–65,536 specify total plays; 1 plays once; larger values fail |
 | `finalHoldMs` | `1000` ms | Finite nonnegative extra delay; zero adds no delay |
 | `theme` | Document theme, then light | Explicit `light` / `dark` overrides the fallback |
+| `emphasis` | Document colors, then theme | Optional `EmphasisColors`; each supplied field overrides its document value |
 | `reducedMotion` | `false` | Full animation regardless of system preference; `true` completes transitions and hides markers, retaining duration |
 | `signal` | None | `AbortSignal` cancels task-owned work and releases resources |
 | `onProgress` | None | Receives phase, completed, and total counts; cancelled tasks never report complete |

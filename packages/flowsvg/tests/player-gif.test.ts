@@ -125,6 +125,36 @@ it("keeps the base portable player free of browser exporter and worker implement
   expect(portable.includes("caption-overflow")).toBe(false);
 });
 
+it("captures runtime emphasis on click without exporting hover or later document changes", async () => {
+  await mount();
+  await page.evaluate(async () => {
+    const api = globalThis as unknown as { player: import("./fixtures/player-hosts.js").MountedPlayer; runtimeEmphasis: { fill: string } };
+    await api.player.load({ version: 1, viewport: { width: 240, height: 120 }, emphasis: { fill: "#fff4db", stroke: "#b45309" },
+      nodes: [{ id: "a", kind: "rect", x: 10, y: 10, width: 80, height: 60 }, { id: "b", kind: "rect", x: 140, y: 10, width: 80, height: 60 }], edges: [],
+      scenes: [{ id: "s", label: "Highlight", beats: [{ durationMs: 1000, transitionMs: 0, actions: [{ type: "highlight", target: "a" }] }] }] });
+    api.runtimeEmphasis = { fill: "#123456" };
+    await api.player.options({ gifExport: true, hoverFill: true, reducedMotion: false, emphasis: api.runtimeEmphasis });
+  });
+  await page.getByRole("button", { name: "Export GIF", exact: true }).click();
+  await expect.poll(() => page.evaluate(() => (globalThis as unknown as { fontsPending(): number }).fontsPending())).toBeGreaterThan(0);
+  await page.locator('[data-id="b"]').hover({ position: { x: 15, y: 15 } });
+  expect(await page.locator('[data-id="b"]').getAttribute("fill")).toBe("#123456");
+  await page.evaluate(async () => {
+    const api = globalThis as unknown as { player: import("./fixtures/player-hosts.js").MountedPlayer; runtimeEmphasis: { fill: string } };
+    api.runtimeEmphasis.fill = "#ff0000";
+    await api.player.load({ version: 1, viewport: { width: 100, height: 50 }, nodes: [], edges: [], scenes: [] });
+  });
+  const downloadPromise = page.waitForEvent("download");
+  await page.evaluate(() => (globalThis as unknown as { releaseFonts(): void }).releaseFonts());
+  const download = await downloadPromise;
+  const frames = decompressFrames(parseGIF(Uint8Array.from(await readFile((await download.path())!)).buffer), true);
+  for (const frame of frames) {
+    const pixel = (x: number) => Array.from(frame.patch.slice((30 * 240 + x) * 4, (30 * 240 + x) * 4 + 4));
+    expect(pixel(30)).toEqual([18, 52, 86, 255]);
+    expect(pixel(160)).toEqual([255, 255, 255, 255]);
+  }
+});
+
 it("cancels a pending module load immediately and permits one fresh export", async () => {
   let releaseModule: (() => void) | undefined;
   const held = new Promise<void>((resolve) => { releaseModule = resolve; });
