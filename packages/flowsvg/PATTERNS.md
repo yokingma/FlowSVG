@@ -142,6 +142,8 @@ Read the sections for the affected subsystem. For public-contract changes, also 
 
 ## Package and verification
 
+- Keep joint emphasis acceptance beside the real tarball install. Combine authored literal colors with public frame/SVG parity, independently decoded image pixels and offline host/CLI behavior; retain screenshots outside version control and distinguish generation from visual inspection.
+
 - Point the package bin at the checked-in `bin/flowsvg.mjs` launcher. It loads the CLI in the same process to preserve arguments, signals and exit status, and reports a missing build without masking errors inside built modules. Ship and verify both the launcher and compiled CLI; copied `dist` tools retain their direct compiled entry.
 
 - Keep README showcase GIFs as generated full-timeline exports from the formal showcase. Record the source, speed, theme, time range, width and frame rate in the image maintenance guide, and serve the four gallery animations from the public Pages `previews/` directory. Exclude them from npm; enumerate only packaged documentation assets in the release allowlist.
