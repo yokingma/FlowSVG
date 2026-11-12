@@ -17,6 +17,8 @@ When a session transition requires replacement:
 3. Pause and destroy or unmount the old player before mounting its replacement.
 4. Apply the target time and speed to the replacement while paused.
 
+SDK adapters treat `emphasis` object replacement as a visual-option rebuild. Framework hosts supply a new object to change colors; field mutation does not change the current player snapshot. Web Component hosts use the object property and retain the existing time/playback restoration.
+
 Completion means one active player, no callbacks from an obsolete version, and a mounted state matching the transition target. Framework-specific unmount scheduling belongs in the app patterns.
 
 Execute history effects in their returned order. Capture a share URL before awaiting clipboard work, and accept completion only for the current request and presentation version. Display a manual-copy URL on clipboard failure. Use page lifecycle events to release listeners and players; a persisted page-cache return restores one listener set and a fresh paused presentation.

@@ -216,6 +216,8 @@ element.document = diagram;
 | 读取状态 | 挂载前或销毁后，`getState()` 可返回 `undefined`。 |
 | 处理事件 | 在元素上监听事件。事件支持冒泡并可穿过 Shadow DOM 边界；事件数据见[事件](#事件)。 |
 
+Web Component 运行时配色使用 `element.emphasis` 对象属性，例如 `element.emphasis = { stroke: "#0f766e" }`。可在连接前赋值或稍后替换；`undefined` 清除覆盖。赋值时复制字段，重连后保留配置，选项重建恢复时间和播放状态。getter 返回副本。非法值通过现有可冒泡、可穿越 Shadow DOM 的 `error` 事件报告，并保留有效配置。不提供 `emphasis` HTML 属性。
+
 ## 控制播放
 
 `createPlayer(host: HTMLElement, document: DiagramDocument, options?: PlayerOptions): FlowPlayer` 挂载播放器并替换宿主子元素。初始文档非法时抛出 `DiagramValidationError`。
@@ -237,13 +239,14 @@ Vue／React ref 提供上表八个播放与状态方法。组件更新行为如�
 | 变更 | 结果 |
 | --- | --- |
 | 替换 `document` 对象 | 重新加载文档，成功后暂停在零时刻 |
-| 修改 `theme`、`controls`、`gifExport`、`reducedMotion` 或 `hoverFill` | 重建播放器并暂停在零时刻 |
+| 修改 `theme`、`controls`、`gifExport`、`reducedMotion` 或 `hoverFill`，或替换／清除 `emphasis` | 重建播放器并暂停在零时刻 |
 
 ### 选项与组件属性
 
 | `PlayerOptions` | 默认值／含义 |
 | --- | --- |
 | `theme?: "light" \| "dark"` | 使用文档主题，未设置时为 `"light"`。 |
+| `emphasis?: EmphasisColors` | 逐字段覆盖文档配色和主题默认值；框架播放器通过替换对象更新。 |
 | `controls?: boolean` | `true`；显示播放控件。 |
 | `loop?: boolean` | `false`；循环整条时间线。 |
 | `gifExport?: boolean` | `false`；在 `controls` 开启时显示 GIF 下载控件。 |
@@ -258,6 +261,8 @@ Vue／React 组件另提供以下 `FlowPlayerProps`：
 | `speed?: number` | 播放倍率，默认 `1` |
 | `initialTimeMs?: number` | 初始位置，仅首次应用 |
 | `className`、`style` | 宿主容器样式 |
+
+替换 `emphasis` 对象可更新配色，清除后回退到文档和主题。播放器复制已提供字段，之后修改原对象不会改变画面。框架选项重建不再次应用 `initialTimeMs`。
 
 两个框架入口均导出 `FlowPlayerHandle` 与 `FlowPlayerProps` 类型。原生播放器通过 `play()` 启动，通过 `setSpeed()` 修改倍率。
 

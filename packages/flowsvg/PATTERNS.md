@@ -94,6 +94,8 @@ Read the sections for the affected subsystem. For public-contract changes, also 
 
 ## Browser player and adapters
 
+- Compare framework `emphasis` objects by reference for recreation; browser players snapshot their fields. Snapshot the Web Component object property on assignment, retain it across reconnects and return copies from its getter. Keep its existing time/playback restoration and error events, without an emphasis attribute.
+
 - Keep React and Vue host adapters as thin framework schedulers around one internal player lifecycle coordinator. The coordinator owns option snapshots, replacement order, event cleanup, initial-time application and idempotent teardown; each adapter retains its own prop mapping, reactive scheduling and public event semantics. Web Component lifecycle remains independent.
 - Reuse `SelectControl` for select-only choices. The caller owns the committed value; keyboard navigation only previews until Enter/Space commits. Keep listbox selection separate from active focus, close on blur/outside press/disable, and destroy menus before removing their host. Render options as text and preserve hidden menus.
 - Keep control presentation in `styles.css`; use `flowsvg-play-toggle` as the Play/Pause styling hook instead of matching translated labels or DOM position. Preserve CSS variable customization, 44-pixel default targets, opt-in `flowsvg-compact` sizing, visible keyboard focus, native range semantics and hidden export states. Put progress on its own row at narrow widths and disable decorative transitions for reduced-motion users.
