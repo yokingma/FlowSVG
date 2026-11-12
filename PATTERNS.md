@@ -42,6 +42,8 @@
 
 ## Build and verification boundaries
 
+- Keep joint emphasis acceptance beside the real tarball install. Combine authored literal colors with public frame/SVG parity, independently decoded image pixels and offline host/CLI behavior; retain screenshots outside version control and distinguish generation from visual inspection.
+
 - Serve README showcase animations from the Pages `previews/` directory. Copy the checked-in GIFs into the Pages artifact and watch those inputs in the workflow; keep npm image allowlists limited to small documentation assets.
 
 - Keep workspace CLI bin targets in checked-in launchers so a first install can link commands without generated SDK output. Verify cold installation without lifecycle scripts.

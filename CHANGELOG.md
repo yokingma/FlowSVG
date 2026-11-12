@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Verify emphasis colors and per-flow paint through installed package types, Native/React/Vue/Web Component hosts, offline HTML, browser/Node images, player GIF downloads and CLI JSON input.
+
 - Carry runtime `emphasis` overrides through browser/Node PNG and GIF, offline HTML and player GIF downloads. Capture nested colors before asynchronous work and classify invalid image overrides as options errors.
 
 - Forward runtime `emphasis` through React, Vue and the Web Component object property; snapshot colors and rebuild on replacement while preserving each host's lifecycle and errors.
