@@ -6,6 +6,8 @@ Read the sections for the affected subsystem. For public-contract changes, also 
 
 ## Core and timeline
 
+- Keep per-flow edge paint independent of logical flow membership, endpoint paint and markers. Compile `highlightEdge` with default true; false suppresses only automatic edge/label coloring, including reduced motion, while explicit highlights and ordinary updates retain their layers.
+
 - Keep own visibility, explicit logical highlights and highlight paint weights distinct in timeline evaluation. Cap base opacity by visibility weight; leave ancestor/endpoint masks and temporary-flow paint with diagram evaluation. Retain the adjacent formulas when extraction would only add forwarding.
 - Keep nested group/descendant masking and internal/external edge composition in `tests/fixtures/inherited-transition-composition.ts`; verify inherited snapshots, flow/focus combinations, hit testing and diagnostics through `createDiagram`, `evaluateAt`, `renderSvg`, `hitTest` and `diagnoseAt`.
 - Reuse the frozen `tests/fixtures/own-transitions.ts` combination input through immutable derivations. Its exact frame/SVG baseline comes from commit `5d0715be203a505a8ff9fc7ff930a2cbb6f05757`; pair digest checks with readable contract assertions and isolated mutation evidence. Follow the [verification guide](../../docs/verification/sdk-verification.md) before changing expectations.

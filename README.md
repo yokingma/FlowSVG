@@ -68,6 +68,7 @@ Reuse one diagram document for static SVG/PNG, animated GIF and interactive or o
 - Compose titles, paragraphs, lists, tags and inline styled text inside nodes; measure content before choosing dimensions.
 - Configure document-level node, edge and flow-marker font sizes across players and exports.
 - Animate visibility, emphasis, geometry, content and camera focus through scenes and beats.
+- Set `flow.highlightEdge: false` to retain ordinary edge and label colors while the transfer marker moves.
 - Play, pause, seek, step, change speed and loop with built-in controls.
 - Evaluate frames, hit-test objects and export SVG/PNG at a specified time.
 - Generate standalone offline HTML and export GIFs with progress and cancellation.

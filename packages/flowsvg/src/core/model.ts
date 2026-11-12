@@ -167,7 +167,7 @@ export interface EdgeVisualState {
 /**
  * Declarative beat action. Visibility, explicit highlighting, base updates and focus persist into later beats.
  * Flow markers and their temporary highlights expire at the beat end without changing persistent layers.
- * Flows highlight their edge and, by default, both endpoints; highlightParticipants: false excludes the endpoints.
+ * Flows highlight their edge and both endpoints by default; highlightEdge and highlightParticipants independently disable their automatic paint.
  * Single-flow receiver paint fades in for 200 ms after arrival, holds for 100 ms, then automatic node/edge paint fades out for 200 ms.
  * Logical participant flags and markers last for the whole beat; explicit highlights retain authored timing.
  * Reduced motion skips paint interpolation. Multiple flows retain synchronized endpoint paint.
@@ -201,6 +201,8 @@ export type Action =
     text?: string;
     /** Defaults to true. False disables temporary endpoint highlights; explicit highlights and the flow edge are unchanged. */
     highlightParticipants?: boolean;
+    /** Defaults to true. False disables automatic edge/label paint, without changing explicit highlights or logical flow state. */
+    highlightEdge?: boolean;
   };
 /** Validation path and reason, for example scenes[0].beats[1].actions[0].target. */
 export interface ValidationIssue {

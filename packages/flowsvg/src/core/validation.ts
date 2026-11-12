@@ -263,7 +263,7 @@ function validateAction(action: unknown, path: string, allIds: Set<string>, node
   const allowedByType: Record<string, readonly string[]> = {
     show: ["type", "target"], hide: ["type", "target"], highlight: ["type", "target"], unhighlight: ["type", "target"],
     updateNode: ["type", "target", "value"], updateEdge: ["type", "target", "value"], focus: ["type", "target"],
-    flow: ["type", "target", "direction", "text", "highlightParticipants"]
+    flow: ["type", "target", "direction", "text", "highlightParticipants", "highlightEdge"]
   };
   const allowed = Object.hasOwn(allowedByType, type) ? allowedByType[type] : undefined;
   if (!allowed) {
@@ -291,6 +291,7 @@ function validateAction(action: unknown, path: string, allIds: Set<string>, node
     if (action.direction !== "forward" && action.direction !== "reverse") issues.push({ path: `${path}.direction`, message: "must be forward or reverse" });
     if (action.text !== undefined && typeof action.text !== "string") issues.push({ path: `${path}.text`, message: "must be a string" });
     if (action.highlightParticipants !== undefined && typeof action.highlightParticipants !== "boolean") issues.push({ path: `${path}.highlightParticipants`, message: "must be a boolean" });
+    if (action.highlightEdge !== undefined && typeof action.highlightEdge !== "boolean") issues.push({ path: `${path}.highlightEdge`, message: "must be a boolean" });
     // Reserve the edge independently of other field errors so invalid directions cannot hide duplicate transfers.
     if (isNonEmptyString(action.target) && edgeById.has(action.target)) addAssignment(`flow:${action.target}`, `${path}.target`, assignments, issues);
     return;
