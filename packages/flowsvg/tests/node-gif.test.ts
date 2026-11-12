@@ -93,6 +93,9 @@ it("reports distinct invalid inputs, unavailable Chromium and already cancelled 
   await expect(exportGif(input, { theme: () => {} })).rejects.toMatchObject({ code: "options" });
   await expect(exportGif(input, null)).rejects.toMatchObject({ code: "options" });
   await expect(exportGif(input, [])).rejects.toMatchObject({ code: "options" });
+  for (const emphasis of [null, [], { fill: "red" }, { markerText: null }, { unknown: "#fff" }]) {
+    await expect(exportGif(input, { emphasis, executablePath: "/not-installed/Chromium" })).rejects.toMatchObject({ code: "options", message: expect.stringContaining("options.emphasis") });
+  }
   await expect(exportGif(input, { executablePath: "/not-installed/Chromium" })).rejects.toMatchObject({ code: "environment", message: expect.stringMatching(/install|executablePath/i) });
   const controller = new AbortController(); controller.abort();
   await expect(exportGif(input, { signal: controller.signal })).rejects.toMatchObject({ code: "cancelled" });

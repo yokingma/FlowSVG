@@ -436,6 +436,8 @@ Built-in downloads export the full timeline at `1×`, using the current theme. P
 
 Document `emphasis?: EmphasisColors` accepts optional `fill` (node highlight fill), `stroke` (node/edge highlight and marker background), and `markerText` (marker text). Core visual options and browser `PlayerOptions` also accept `emphasis`; each field resolves from the runtime override, document, then selected theme. The document colors apply to browser hover and every export; hover itself stays out of exports. Browser players copy runtime colors at creation and retain them through `load`, reading missing fields from the new document. Invalid runtime fields throw `TypeError` with `options.emphasis` paths before browser resources are allocated. Use hexadecimal `#RGB`, `#RGBA`, `#RRGGBB`, or `#RRGGBBAA`. `undefined` is omitted; `null`, invalid colors and unknown fields report validation paths.
 
+Browser and Node PNG/GIF and `renderHtml` also accept `emphasis` with the same per-field fallback. Export calls copy nested colors before asynchronous work; player GIF downloads capture their document and overrides on click, without hover. Invalid image overrides report an `options` error with field paths; offline HTML validates colors before asset reads. CLI reads document colors from JSON and adds no override flags.
+
 - **Static documents:** use empty `scenes`.
 - **Node kinds:** `rect`, `roundedRect`, `ellipse`, `cylinder`, `group`, `diamond`, `parallelogram`, `document` and `predefinedProcess`. Groups have rounded borders by default.
 - **Edge routes:** `straight` (default), `orthogonal`, `curved`.

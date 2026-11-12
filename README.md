@@ -73,7 +73,7 @@ Reuse one diagram document for static SVG/PNG, animated GIF and interactive or o
 - Evaluate frames, hit-test objects and export SVG/PNG at a specified time.
 - Generate standalone offline HTML and export GIFs with progress and cancellation.
 - Use light/dark themes, keyboard controls and reduced motion.
-- Save highlight and flow-marker colors in document `emphasis`; playback, hover and exports share those colors. Core visual queries and browser, React, Vue and Web Component players accept per-field runtime overrides.
+- Save highlight and flow-marker colors in document `emphasis`; playback, hover and exports share those colors. Core visual queries, browser, React, Vue and Web Component players, PNG/GIF and offline HTML accept per-field runtime overrides. Export calls snapshot nested colors; player GIF downloads capture them at click time.
 - Validate documents with field-level errors and text-overflow warnings; query geometric overlap risks on demand.
 
 Node positions and sizes are authored explicitly. FlowSVG focuses on presentation and playback; drag-and-drop editing and semantic automatic layout are outside its scope. For diagram authoring and deterministic layout plans, use [Flow Diagram Skill](#flow-diagram-skill).

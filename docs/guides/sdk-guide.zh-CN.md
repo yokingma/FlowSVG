@@ -831,6 +831,19 @@ const player = createPlayer(host, document, options);
 
 `evaluateAt`、`renderSvg`、`diagnoseAt` 和 `hitTest` 使用相同的核心视觉选项。运行时配色不改变几何、时间位置或命中目标。
 
+浏览器及 Node PNG/GIF 选项和 `renderHtml` 同样接受 `emphasis`，使用相同的逐项回退，并在异步操作前复制嵌套覆盖。非法图像覆盖在分配资源前以 `PngExportError` 或 `GifExportError` 的 `options` 分类报告 `options.emphasis` 字段路径；HTML 在读取资源前校验配色。合法覆盖不能掩盖非法文档配色。
+
+```ts
+// 浏览器：从 "flowsvg/export" 导入。Node：从 "flowsvg/node" 导入。
+const bytes = await exportPng(styledDocument, {
+  timeMs: 500, emphasis: { stroke: "#0f766e" }
+});
+// 从 "flowsvg/node" 导入；离线播放及可选 GIF 下载使用同一覆盖。
+const html = await renderHtml(styledDocument, {
+  emphasis: { stroke: "#0f766e" }, gifExport: true
+});
+```
+
 SVG、浏览器和框架播放器、PNG/GIF、离线 HTML 及 CLI 输出都消费文档配色，无需 CLI 配色覆盖参数。同一 JSON 在离线交付后保留配色。
 
 画布聚焦后，Space 播放/暂停，方向键逐拍移动；进度条保留原生按键。
@@ -853,11 +866,11 @@ SVG、浏览器和框架播放器、PNG/GIF、离线 HTML 及 CLI 输出都消�
 
 前面的宿主集成示例开启 GIF 下载，默认接入示例保持关闭。该选项默认 `false`；`controls: false` 同时隐藏 GIF 控件。首次点击导出才加载浏览器导出模块，普通导入与播放不加载该模块。
 
-点击 **Export GIF**，按完整时间线、1×、任务开始时已解析的主题及默认设置导出。
+点击 **Export GIF**，按完整时间线、1×、任务开始时已解析的主题、运行时配色覆盖及默认设置导出。
 
 控件显示进度、**Cancel export**、完成和可读错误；成功时下载安全处理后的文档标题文件名，无标题时用 `FlowSVG.gif`。播放、调速与跳转独立运行；GIF 不包含控件或悬停效果。
 
-每个播放器最多一个任务。成功加载新文档时，旧任务继续使用固定的文档和主题；后续修改输入对象不改变快照。销毁播放器、卸载组件或因选项变化重建宿主时取消其任务，并阻止后续下载。取消或失败后可重试。
+每个播放器最多一个任务。成功加载新文档时，旧任务继续使用点击时固定的文档、主题和配色覆盖；后续修改输入对象不改变快照。销毁播放器、卸载组件或因选项变化重建宿主时取消其任务，并阻止后续下载。取消或失败后可重试。
 
 需要自定义设置或程序化错误处理时，使用下面独立的 `exportGif` 函数。
 
@@ -941,6 +954,7 @@ const bytes = await exportGif(diagramDocument, {
 | `loopCount` | `0`（无限循环） | 1–65,536 的整数表示总播放次数；1 只播放一次，超过上限时报错 |
 | `finalHoldMs` | `1000` ms | 有限非负额外延迟；零不增加延迟 |
 | `theme` | 文档主题，最终为浅色 | 显式 `light` / `dark` 覆盖默认选择 |
+| `emphasis` | 文档配色，最终为主题配色 | 可选 `EmphasisColors`；每个已提供字段覆盖对应文档值 |
 | `reducedMotion` | `false` | 默认完整动画，不继承系统偏好；`true` 立即完成过渡并隐藏标记，保留时长 |
 | `signal` | 无 | `AbortSignal` 取消任务并释放任务资源 |
 | `onProgress` | 无 | 接收阶段、完成数及总数；取消的任务不报告完成 |

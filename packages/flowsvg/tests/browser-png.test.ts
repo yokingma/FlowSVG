@@ -71,6 +71,15 @@ it("preserves transparent alpha, node paint and edge-label halos in both themes"
     expect(opaque.pixels[0]).toEqual(theme === "light" ? [255, 255, 255, 255] : [16, 24, 40, 255]);
   }
 });
+it("renders empty and alpha runtime emphasis overrides in transparent PNGs", async () => {
+  const source: DiagramDocument = { ...input, emphasis: { fill: "#fff4db", stroke: "#b45309" },
+    nodes: [{ id: "a", kind: "rect", x: 10, y: 20, width: 80, height: 60 }], edges: [],
+    scenes: [{ id: "s", label: "Highlight", beats: [{ durationMs: 1000, transitionMs: 0, actions: [{ type: "highlight", target: "a" }] }] }] };
+  for (const theme of ["light", "dark"] as const) {
+    expect((await sample(source, { theme, background: "transparent", emphasis: {} }, [[30, 40]])).pixels).toEqual([[255, 244, 219, 255]]);
+    expect((await sample(source, { theme, background: "transparent", emphasis: { fill: "#ff000080", stroke: undefined } }, [[30, 40]])).pixels).toEqual([[255, 0, 0, 128]]);
+  }
+});
 it("uses fitted selected cameras and rounded explicit width without changing the authored document", async () => {
   const fitted: DiagramDocument = { ...input, viewport: { width: 240, height: 120, fitHeight: { padding: 8 } }, scenes: [] };
   const before = JSON.stringify(fitted);

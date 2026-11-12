@@ -1,5 +1,6 @@
 /** Pure export planning: reject computable limits before any browser resource is allocated. */
-import type { DiagramDocument } from "../core/model.js";
+import type { DiagramDocument, EmphasisColors } from "../core/model.js";
+import { snapshotRuntimeEmphasis } from "../core/validation.js";
 import { GifExportError, type GifExportOptions } from "./types.js";
 
 const MAX_DURATION_MS = 120_000;
@@ -23,12 +24,16 @@ export interface GifPlan {
   width: number; diagramHeight: number; height: number; captionHeight: number;
   theme: "light" | "dark"; frames: GifFrame[]; startMs: number; endMs: number;
   reducedMotion: boolean; loopCount: number;
+  /** Copied runtime layer shared by every sampled evaluation. */
+  emphasis?: EmphasisColors;
 }
 /** Validate supplied fields before defaults or cancellation checks can hide malformed input. */
 export function validateGifOptions(options: GifExportOptions): void {
   if (options === null || typeof options !== "object" || Array.isArray(options)) {
     throw new GifExportError("options", "Provide GIF options as an object.");
   }
+  try { snapshotRuntimeEmphasis(options.emphasis); }
+  catch (cause) { throw new GifExportError("options", cause instanceof Error ? cause.message : "Invalid options.emphasis.", { cause }); }
   for (const name of ["width", "fps", "captionHeight", "startMs", "endMs", "speed", "finalHoldMs", "loopCount"] as const) {
     const value = options[name];
     if (value !== undefined && !Number.isFinite(value)) throw new GifExportError("options", `${name} must be a finite number.`);
@@ -81,7 +86,7 @@ export function planGif(document: DiagramDocument, duration: number, options: Gi
   const finalTime = endMs === duration ? endMs : endLeftTime;
   // Preserve the global completed state even when it has no additional hold delay.
   if (hasFinalFrame) frames.push({ timeMs: finalTime, delayMs: holdTicks * GIF_TIME_UNIT_MS });
-  return { width: outputWidth, diagramHeight, height, captionHeight: Math.round(captionHeight), theme: options.theme ?? document.theme ?? "light", frames, startMs, endMs, reducedMotion: options.reducedMotion ?? false, loopCount };
+  return { width: outputWidth, diagramHeight, height, captionHeight: Math.round(captionHeight), theme: options.theme ?? document.theme ?? "light", emphasis: snapshotRuntimeEmphasis(options.emphasis), frames, startMs, endMs, reducedMotion: options.reducedMotion ?? false, loopCount };
 }
 
 /** Return the immediate predecessor of a positive finite time; epsilon subtraction can skip short beats. */
