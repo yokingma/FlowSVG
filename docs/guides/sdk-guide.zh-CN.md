@@ -205,6 +205,7 @@ export default function DiagramExample() {
 | `speed` | 正数倍率，默认 `1`；变化时更新速度 |
 | `loop` | 默认 `false`；变化时更新循环模式，不重建或改变时间与播放状态 |
 | `theme` | `light` / `dark`；未指定时使用文档主题，最终默认为浅色 |
+| `emphasis` | 可选 `EmphasisColors`；每个字段覆盖文档配色，最终回退到主题 |
 | `controls` | 默认 `true`，设为 `false` 隐藏内置控件 |
 | `gifExport` | 默认 `false`；开启 GIF 进度、取消与下载控件；要求显示播放控件 |
 | `reducedMotion` | 未指定时跟随浏览器减少动画偏好 |
@@ -212,9 +213,9 @@ export default function DiagramExample() {
 | `initialTimeMs` | 仅初次挂载时应用；后续跳转用 `seek` |
 | `className` / `style` | 宿主容器样式 |
 
-修改 `theme`、`controls`、`gifExport`、`reducedMotion` 或 `hoverFill` 会重建播放器，暂停在零时刻，不再应用 `initialTimeMs`。
+修改 `theme`、`controls`、`gifExport`、`reducedMotion` 或 `hoverFill`，或替换／清除 `emphasis` 对象会重建播放器，暂停在零时刻，不再应用 `initialTimeMs`。
 
-更新文档需提供新对象引用。实例暴露[播放器 API](#播放器-api)中的八个方法；挂载前或卸载后调用会抛出错误。
+播放器固定已提供的配色字段，之后修改原对象不会更新画面。更新文档需提供新对象引用。实例暴露[播放器 API](#播放器-api)中的八个方法；挂载前或卸载后调用会抛出错误。
 
 两种入口均支持服务端导入。SSR 输出容器，客户端挂载后创建播放器。服务端图解预览使用 `renderSvg`。
 
@@ -267,6 +268,8 @@ if (element) element.document = diagramDocument;
 | JavaScript 对象 | `element.document` |
 | JSON 字符串 | HTML `document` 属性 |
 | JSON URL | `src`；相对页面解析，遵循浏览器 CORS 规则 |
+
+通过 `element.emphasis = { stroke: "#0f766e" }` 设置运行时配色，可在连接前或挂载后赋值。属性复制字段，getter 返回副本；替换对象更新配色，赋值 `undefined` 回退到文档与主题。重连保留该快照，挂载后的变化沿用选项重建并恢复时间与播放状态。非法赋值通过现有可冒泡、可穿越 Shadow DOM 的 `error` 事件报告，并保留有效配置。不提供 `emphasis` HTML 属性。
 
 **HTML 属性与默认值**
 

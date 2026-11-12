@@ -4,6 +4,8 @@
 
 - Carry runtime `emphasis` overrides through browser/Node PNG and GIF, offline HTML and player GIF downloads. Capture nested colors before asynchronous work and classify invalid image overrides as options errors.
 
+- Forward runtime `emphasis` through React, Vue and the Web Component object property; snapshot colors and rebuild on replacement while preserving each host's lifecycle and errors.
+
 - Add core and browser-player runtime `emphasis` overrides with per-field document/theme fallback. Validate before browser resources, snapshot player options, and retain overrides across document loads.
 
 - Add document-level `emphasis` colors for node highlights, edge highlights, flow-marker backgrounds and text, and browser hover. Omitted fields retain theme defaults across playback and exports.

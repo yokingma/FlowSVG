@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { FlowPlayer, type FlowPlayerHandle } from "../react.js";
+import type { DiagramDocument, EmphasisColors } from "../index.js";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -26,9 +27,55 @@ const narrativeDocument = {
 } as const;
 
 describe("React entry", () => {
+  it("propagates invalid emphasis through React effect errors and releases the host", () => {
+    const host = window.document.createElement("div");
+    const root = createRoot(host);
+    try {
+      expect(() => act(() => root.render(createElement(FlowPlayer, {
+        document: narrativeDocument, emphasis: { fill: null } as unknown as EmphasisColors
+      })))).toThrow(/options.emphasis.fill/);
+      expect(host.querySelector("svg")).toBeNull();
+    } finally { act(() => root.unmount()); }
+  });
+
+  it("snapshots emphasis and rebuilds on replacement or clearing without reapplying initial time", () => {
+    const document: DiagramDocument = { version: 1, viewport: { width: 320, height: 180 },
+      emphasis: { fill: "#fff4db", stroke: "#b45309" },
+      nodes: [{ id: "node", kind: "rect", x: 20, y: 20, width: 100, height: 60 }], edges: [],
+      scenes: [{ id: "s", label: "Scene", beats: [{ durationMs: 1000, transitionMs: 0, actions: [{ type: "highlight", target: "node" }] }] }] };
+    const host = window.document.createElement("div");
+    const root = createRoot(host);
+    const ref = { current: null as FlowPlayerHandle | null };
+    const first: EmphasisColors = { stroke: "#123456" };
+    const props = { ref, document, emphasis: first, initialTimeMs: 250, reducedMotion: false, controls: false, loop: true, speed: 2 };
+    const paint = () => ref.current!.getState().frame.nodes[0]!.style;
+    try {
+      act(() => root.render(createElement(FlowPlayer, props)));
+      expect(paint()).toMatchObject({ fill: "#fff4db", stroke: "#123456" });
+      expect(ref.current?.getState().timeMs).toBe(250);
+      first.stroke = "#abcdef";
+      act(() => ref.current?.seek(500));
+      expect(paint().stroke).toBe("#123456");
+      const oldSvg = host.querySelector("svg");
+      act(() => root.render(createElement(FlowPlayer, { ...props, emphasis: { fill: "#aabbcc" } })));
+      expect(host.querySelector("svg")).not.toBe(oldSvg);
+      expect(ref.current?.getState()).toMatchObject({ timeMs: 0, playing: false, speed: 2, loop: true });
+      expect(paint()).toMatchObject({ fill: "#aabbcc", stroke: "#b45309" });
+      act(() => root.render(createElement(FlowPlayer, { ...props, emphasis: { stroke: "#234567" } })));
+      act(() => ref.current?.load({ ...document, emphasis: { fill: "#ddeeff", stroke: "#778899" } }));
+      expect(paint()).toMatchObject({ fill: "#ddeeff", stroke: "#234567" });
+      act(() => root.render(createElement(FlowPlayer, { ...props, emphasis: undefined, document: { ...document } })));
+      expect(paint()).toMatchObject({ fill: "#fff4db", stroke: "#b45309" });
+      act(() => root.render(createElement(FlowPlayer, { ...props, emphasis: undefined, document: { ...document, emphasis: undefined }, theme: "dark" })));
+      expect(paint()).toMatchObject({ fill: "#233b60", stroke: "#8ab4f8" });
+    } finally { act(() => root.unmount()); }
+    expect(host.childElementCount).toBe(0);
+  });
+
   it.each([
     { theme: "dark" },
     { hoverFill: true },
+    { emphasis: { stroke: "#123456" } },
     { controls: true },
     { reducedMotion: true }
   ] as const)("retains an unchanged speed prop when creation options change: %j", (options) => {

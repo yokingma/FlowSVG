@@ -10,11 +10,12 @@ import {
   type FlowPlayer as BrowserFlowPlayer,
   type PlayerOptions
 } from "../browser/player.js";
-import type { DiagramDocument, ThemeName } from "../core/model.js";
+import type { DiagramDocument, EmphasisColors, ThemeName } from "../core/model.js";
 
 /** Visual options that determine whether a browser player must be rebuilt. */
 export interface HostPlayerLifecycleOptions {
   theme: ThemeName | undefined;
+  emphasis?: EmphasisColors;
   controls: boolean | undefined;
   gifExport: boolean | undefined;
   hoverFill: boolean | undefined;
@@ -162,6 +163,7 @@ export function sameHostPlayerOptions(
 ): boolean {
   if (!previous) return false;
   return previous.theme === next.theme
+    && previous.emphasis === next.emphasis
     && previous.controls === next.controls
     && previous.gifExport === next.gifExport
     && previous.hoverFill === next.hoverFill

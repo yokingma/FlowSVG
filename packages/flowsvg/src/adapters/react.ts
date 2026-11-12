@@ -16,7 +16,7 @@ import {
   type PlayerErrorDetail,
   type PlayerState
 } from "../browser/player.js";
-import type { DiagramDocument, ThemeName } from "../core/model.js";
+import type { DiagramDocument, EmphasisColors, ThemeName } from "../core/model.js";
 import {
   HostPlayerLifecycle,
   type HostPlayerLifecycleOptions
@@ -30,6 +30,8 @@ export interface FlowPlayerProps {
   /** Defaults to false. Changes update live loop mode without rebuilding the player. */
   loop?: boolean;
   theme?: ThemeName;
+  /** Field-by-field runtime emphasis overrides; replace the object to rebuild the player. */
+  emphasis?: EmphasisColors;
   controls?: boolean;
   /** Defaults to false. Enable GIF downloads when controls are visible; export is independent of playback. */
   gifExport?: boolean;
@@ -120,6 +122,7 @@ export const FlowPlayer = forwardRef<FlowPlayerHandle, FlowPlayerProps>(function
     if (!host) return;
     const nextOptions: HostPlayerLifecycleOptions = {
       theme: props.theme,
+      emphasis: props.emphasis,
       controls: props.controls,
       gifExport: props.gifExport,
       hoverFill: props.hoverFill,
@@ -133,7 +136,7 @@ export const FlowPlayer = forwardRef<FlowPlayerHandle, FlowPlayerProps>(function
       speed: props.speed,
       initialTimeMs: initialTimeRef.current
     });
-  }, [props.document, props.theme, props.controls, props.gifExport, props.reducedMotion, props.hoverFill]);
+  }, [props.document, props.theme, props.emphasis, props.controls, props.gifExport, props.reducedMotion, props.hoverFill]);
 
   useEffect(() => {
     const player = lifecycle.player;

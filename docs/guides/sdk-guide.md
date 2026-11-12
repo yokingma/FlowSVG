@@ -203,6 +203,7 @@ The component releases resources on unmount. Callbacks are `onStepChange`, `onTi
 | `speed` | Positive playback multiplier, default `1`; changes update the speed |
 | `loop` | Default `false`; changes update live loop mode without rebuilding or changing time/playback |
 | `theme` | `light` / `dark`; falls back to the document theme, then light |
+| `emphasis` | Optional `EmphasisColors`; each field overrides the document then theme default |
 | `controls` | Default `true`; set to `false` to hide built-in controls |
 | `gifExport` | Default `false`; enable GIF progress, cancel and download controls; requires visible controls |
 | `reducedMotion` | Follows the browser's reduced-motion preference when omitted |
@@ -210,7 +211,7 @@ The component releases resources on unmount. Callbacks are `onStepChange`, `onTi
 | `initialTimeMs` | Applied only on initial mount; use `seek` for later changes |
 | `className` / `style` | Host container styles |
 
-Changing `theme`, `controls`, `gifExport`, `reducedMotion`, or `hoverFill` recreates the player, paused at zero, without reapplying `initialTimeMs`. Reload documents with a new object reference. Handles expose eight methods listed under [Player API](#player-api); calls before mount or after unmount throw.
+Changing `theme`, `controls`, `gifExport`, `reducedMotion`, or `hoverFill`, or replacing/clearing the `emphasis` object, recreates the player, paused at zero, without reapplying `initialTimeMs`. The player snapshots supplied emphasis fields; later mutation of that object does not update paint. Reload documents with a new object reference. Handles expose eight methods listed under [Player API](#player-api); calls before mount or after unmount throw.
 
 Both entries support server-side imports. SSR renders a container; the player is created on client mount. Use `renderSvg` for server-side diagram previews.
 
@@ -257,6 +258,8 @@ if (element) element.document = diagramDocument;
 ```
 
 Registration defaults to `<flowsvg-player>` and is idempotent.
+
+Set runtime colors with `element.emphasis = { stroke: "#0f766e" }` before connection or while mounted. The property copies fields and its getter returns a copy. Replace the object to update or assign `undefined` to restore document/theme fallback. Reconnection retains this snapshot, and mounted changes restore time/playback through the existing option rebuild. Invalid assignments emit the existing bubbling/composed `error` event and retain the valid configuration. No `emphasis` HTML attribute is provided.
 
 | Document source | Assignment |
 | --- | --- |
