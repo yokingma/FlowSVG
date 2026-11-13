@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Replace the FlowSVG runtime walkthrough with **FlowSVG: SDK architecture**. Show nested SDK responsibility layers, persistent consumer-to-provider dependencies anchored at the browser player and Node tools cards, and an external showcase group with separate Native, React and Vue app cards. Detail validation, timeline evaluation, geometry and SVG rendering as parallel core cards; use layer emphasis instead of transfer animation. Preserve the `project-architecture` address and synchronize host/download checks.
+
 - Align both `basic-shapes` rows after label measurement. Keep all six same-row connections horizontal throughout playback, including label replacement. Reduce the group height to 460 and viewport height to 508 units, retaining 24-unit bottom insets inside and outside the group.
 
 - Add `basic-shapes` as the first and default showcase example. It demonstrates every public node shape, measured preset labels, group containment, orthogonal connections, highlights, label replacement and reduced-motion playback.

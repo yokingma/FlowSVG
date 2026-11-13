@@ -4,6 +4,8 @@
 
 ## Ownership
 
+- Author architecture overviews as persistent responsibility boundaries and explicit dependencies. Use sibling cards for individual consumers and core capabilities without inventing execution order. Anchor component dependencies at their module cards and collective relationships at group boundaries. Keep sequential runtime walkthroughs distinct from layer-emphasis playback.
+
 - Snapshot nested runtime emphasis at export preflight and carry it through image plans, Node bridges and offline payloads. Player GIF tasks capture overrides with their document at click time; browser hover remains outside exports.
 
 - Compare framework `emphasis` objects by reference for recreation; browser players snapshot their fields. Snapshot the Web Component object property on assignment, retain it across reconnects and return copies from its getter. Keep its existing time/playback restoration and error events, without an emphasis attribute.

@@ -48,6 +48,8 @@ The shape catalog puts every public node shape into one executable flow and demo
 
 The formal demo catalog uses English for navigation, introductions and diagram text. Stable example IDs keep shared links valid.
 
+**FlowSVG: SDK architecture** (`project-architecture`) shows SDK responsibility layers, individual Native/React/Vue apps, four core capability cards and consumer-to-provider dependencies; playback highlights layers while keeping the complete structure visible.
+
 | Use case | Typical output |
 | --- | --- |
 | Presentation materials | SVG/PNG diagrams or GIF animations for architecture, processes and state changes |

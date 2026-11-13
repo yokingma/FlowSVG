@@ -13,7 +13,7 @@ export const CATEGORY_STORIES = [
 ] as const;
 
 export const FORMAL_WORKFLOW_NAMES = ["Basic shapes: complete catalog", "Request and response", "RAG: From sources to answers", "LLM inference: Prefill, decode and KV cache"];
-export const FORMAL_NAMES = [...FORMAL_WORKFLOW_NAMES, "FlowSVG: How diagrams run",
+export const FORMAL_NAMES = [...FORMAL_WORKFLOW_NAMES, "FlowSVG: SDK architecture",
   "vllm-metal: Layered inference architecture", ...CATEGORY_STORIES.map(({ name }) => name)];
 export const FORMAL_CATEGORIES = ["Workflow", "Architecture", ...CATEGORY_STORIES.map(({ category }) => category)];
 

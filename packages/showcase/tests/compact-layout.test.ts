@@ -9,7 +9,7 @@ const LINE_HEIGHT_RATIO = 1.35;
 const VIEWPORT_LIMITS = [
   ["request-response", 1000, 440],
   ["rag-workflow", 1120, 820],
-  ["project-architecture", 1080, 680],
+  ["project-architecture", 1080, 736],
   ["vllm-metal-stack", 1280, 960],
   ["job-lifecycle", 868, 416],
   ["order-event-pipeline", 964, 580],

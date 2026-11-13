@@ -132,7 +132,7 @@ export function registerShowcaseBrowserScenarios(config: { packageName: string }
     const workflow = navigation.getByRole("group", { name: "Workflow", exact: true });
     const architecture = navigation.getByRole("group", { name: "Architecture", exact: true });
     expect(await workflow.getByRole("button").allTextContents()).toEqual(FORMAL_WORKFLOW_NAMES);
-    expect(await architecture.getByRole("button").allTextContents()).toEqual(["FlowSVG: How diagrams run", "vllm-metal: Layered inference architecture"]);
+    expect(await architecture.getByRole("button").allTextContents()).toEqual(["FlowSVG: SDK architecture", "vllm-metal: Layered inference architecture"]);
     await architecture.getByRole("button", { name: "vllm-metal: Layered inference architecture", exact: true }).click();
     expect(await architecture.getByRole("button", { name: "vllm-metal: Layered inference architecture", exact: true }).getAttribute("aria-current")).toBe("true");
     await workflow.getByRole("button", { name: "RAG: From sources to answers", exact: true }).click();
@@ -255,21 +255,21 @@ export function registerShowcaseBrowserScenarios(config: { packageName: string }
 
   it("opens the project architecture with scene selection, direct entry and a matching JSON download", async () => {
     await page.goto(`${origin}/formal/`);
-    const architecture = page.getByRole("navigation", { name: "Examples" }).getByRole("button", { name: "FlowSVG: How diagrams run", exact: true });
+    const architecture = page.getByRole("navigation", { name: "Examples" }).getByRole("button", { name: "FlowSVG: SDK architecture", exact: true });
     expect(await architecture.count()).toBe(1);
     await architecture.click();
-    expect(await page.getByRole("heading", { name: "FlowSVG: How diagrams run", exact: true }).count()).toBe(1);
+    expect(await page.getByRole("heading", { name: "FlowSVG: SDK architecture", exact: true }).count()).toBe(1);
     const diagram = await loadStoryDiagram(page, `${origin}/formal/`, "project-architecture");
-    const exportTime = sceneTime(diagram, "export");
-    const nodeGifTime = beatTime(diagram, 8);
+    const nodeTime = sceneTime(diagram, "node");
+    const nodeGifTime = beatTime(diagram, 3);
     expect(await page.getByRole("slider", { name: "Progress" }).getAttribute("max")).toBe(String(diagram.totalDuration));
-    await chooseOption(page.getByRole("combobox", { name: "Scene", exact: true }), "export");
-    expect(Number(await page.getByRole("slider", { name: "Progress" }).inputValue())).toBeCloseTo(exportTime, 6);
-    expect(await page.locator('.flowsvg-canvas [data-content-id="node-tools"]').textContent()).toContain("Only GIF requires Chromium");
+    await chooseOption(page.getByRole("combobox", { name: "Scene", exact: true }), "node");
+    expect(Number(await page.getByRole("slider", { name: "Progress" }).inputValue())).toBeCloseTo(nodeTime, 6);
+    expect(await page.locator('.flowsvg-canvas [data-content-id="node-tools"]').textContent()).toContain("HTML");
     const download = page.waitForEvent("download");
     await page.getByRole("link", { name: "Download diagram JSON" }).click();
     const downloaded: unknown = JSON.parse(await readFile((await (await download).path())!, "utf8"));
-    expect(downloaded).toMatchObject({ title: "FlowSVG: How diagrams run", version: 1 });
+    expect(downloaded).toMatchObject({ title: "FlowSVG: SDK architecture", version: 1 });
     expect(downloaded).toEqual(await (await page.request.get(`${origin}/formal/json/project-architecture.json`)).json());
     await page.goto(`${origin}/formal/?example=project-architecture&theme=dark&reduced=1&time=${nodeGifTime}`);
     expect(Number(await page.getByRole("slider", { name: "Progress" }).inputValue())).toBeCloseTo(nodeGifTime, 6);

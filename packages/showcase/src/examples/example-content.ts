@@ -1,7 +1,7 @@
 /** Shared author formatting and build-time sizing; all paint comes from the SDK theme. */
 import { measureNodeContent, type DiagramNode, type NodeContent, type NodeContentMeasurementInput } from "flowsvg";
 
-/** Share four-block content styles across category and project architecture stories. */
+/** Share four-block content styles across category stories. */
 export function createExampleContent(title: string, tag: string, body: string, detail: string): NodeContent {
   return { style: { padding: 12, blockGap: 6 }, blocks: [
     { type: "title", text: title },

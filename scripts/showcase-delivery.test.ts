@@ -322,13 +322,13 @@ async function inspectEmptyArtifact(
 /** Compare the architecture document and representative states through the copied site's own base. */
 async function inspectArchitectureArtifact(page: Page, address: string) {
   const diagram = await loadStoryDiagram(page, address, "project-architecture");
-  await page.getByRole("navigation", { name: "Examples" }).getByRole("button", { name: "FlowSVG: How diagrams run", exact: true }).click();
-  expect(await page.locator("#introduction h2").textContent()).toBe("FlowSVG: How diagrams run");
+  await page.getByRole("navigation", { name: "Examples" }).getByRole("button", { name: "FlowSVG: SDK architecture", exact: true }).click();
+  expect(await page.locator("#introduction h2").textContent()).toBe("FlowSVG: SDK architecture");
   expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe("0");
   const response = await page.request.get(`${address}json/project-architecture.json`);
   expect(response.status()).toBe(200);
   const document: unknown = await response.json();
-  expect(document).toMatchObject({ version: 1, title: "FlowSVG: How diagrams run" });
+  expect(document).toMatchObject({ version: 1, title: "FlowSVG: SDK architecture" });
   expect(document).not.toHaveProperty("defaults");
   const download = page.waitForEvent("download");
   await page.getByRole("link", { name: "Download diagram JSON" }).click();
@@ -336,8 +336,8 @@ async function inspectArchitectureArtifact(page: Page, address: string) {
   const svgs: string[] = [];
   for (const state of [
     { time: beatTime(diagram, 1), theme: "light", reduced: "0", text: "SVG" },
-    { time: beatTime(diagram, 8), theme: "dark", reduced: "0", text: "the same browser exporter" },
-    { time: beatTime(diagram, 10), theme: "light", reduced: "1", text: "the SDK does not depend on them" }
+    { time: beatTime(diagram, 3), theme: "dark", reduced: "0", text: "the same browser exporter" },
+    { time: beatTime(diagram, 4), theme: "light", reduced: "1", text: "the SDK does not depend on them" }
   ]) {
     await page.goto(`${address}?example=project-architecture&time=${state.time}&theme=${state.theme}&reduced=${state.reduced}`);
     const canvas = page.locator(".flowsvg-canvas > svg");
@@ -347,7 +347,7 @@ async function inspectArchitectureArtifact(page: Page, address: string) {
     svgs.push(await canvas.evaluate((element) => element.outerHTML));
   }
   await page.reload();
-  expect(Number(await page.getByRole("slider", { name: "Progress" }).inputValue())).toBeCloseTo(beatTime(diagram, 10), 6);
+  expect(Number(await page.getByRole("slider", { name: "Progress" }).inputValue())).toBeCloseTo(beatTime(diagram, 4), 6);
   return { document, svgs };
 }
 
@@ -390,7 +390,7 @@ async function inspectFormalArtifact(page: Page, address: string) {
   const navigation = page.getByRole("navigation", { name: "Examples" });
   expect(await navigation.getByRole("heading", { level: 3 }).allTextContents()).toEqual(FORMAL_CATEGORIES);
   expect(await navigation.getByRole("group", { name: "Workflow", exact: true }).getByRole("button").allTextContents()).toEqual(FORMAL_WORKFLOW_NAMES);
-  expect(await navigation.getByRole("group", { name: "Architecture", exact: true }).getByRole("button").allTextContents()).toEqual(["FlowSVG: How diagrams run", "vllm-metal: Layered inference architecture"]);
+  expect(await navigation.getByRole("group", { name: "Architecture", exact: true }).getByRole("button").allTextContents()).toEqual(["FlowSVG: SDK architecture", "vllm-metal: Layered inference architecture"]);
   expect(await page.locator("#introduction h2").textContent()).toBe("Basic shapes: complete catalog");
   expect(await page.getByRole("combobox", { name: "Theme", exact: true }).getAttribute("data-value")).toBe("dark");
   expect(await page.getByRole("combobox", { name: "Speed", exact: true }).getAttribute("data-value")).toBe("1");
