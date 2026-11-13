@@ -23,7 +23,7 @@ it("publishes English formal navigation, story text and standalone downloads", (
 
 it("opens the selected formal story with SDK defaults and downloadable standalone data", () => {
   const { catalog, json, example } = getRequestResponse();
-  expect(catalog.entries.map(({ id }) => id)).toEqual(["basic-shapes", "request-response", "rag-workflow", "project-architecture", "vllm-metal-stack", "job-lifecycle", "order-event-pipeline", "web-service-deployment", "cache-aside-sequence", "llm-inference"]);
+  expect(catalog.entries.map(({ id }) => id)).toEqual(["basic-shapes", "request-response", "rag-workflow", "project-architecture", "vllm-metal-stack", "job-lifecycle", "order-event-pipeline", "emphasis-flow", "web-service-deployment", "cache-aside-sequence", "llm-inference"]);
   expect(catalog.defaultId).toBe("basic-shapes");
   expect(example.name).toBe("Request and response");
   expect(example.introduction).toContain("parallel");

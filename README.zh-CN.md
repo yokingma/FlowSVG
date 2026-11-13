@@ -230,7 +230,7 @@ pnpm --filter flowsvg-native-example dev
 
 安装通过仓库内的固定启动脚本创建 CLI 命令入口，不会自动构建 SDK。首次构建前调用 CLI 会退出，并提示运行 `pnpm build`。
 
-共享示例目录包含请求响应、RAG、架构、任务生命周期、数据流、部署和交互时序，使用自包含的教学数据。控件及构建配置见[原生浏览器](apps/native-example/README.md)、[React](apps/react-example/README.md) 和 [Vue](apps/vue-example/README.md) 示例说明。npm 包中也包含完整的[后台任务示例](packages/flowsvg/README.zh-CN.md#示例后台任务生命周期)。
+共享示例目录包含请求响应、RAG、架构、任务生命周期、数据流、部署和交互时序，使用自包含的教学数据。Data flow 分类还包含[强调配色对比](packages/showcase/src/examples/emphasis-flow.ts)，演示文档配色、保留关系颜色和仅移动标记。控件及构建配置见[原生浏览器](apps/native-example/README.md)、[React](apps/react-example/README.md) 和 [Vue](apps/vue-example/README.md) 示例说明。npm 包中也包含完整的[后台任务示例](packages/flowsvg/README.zh-CN.md#示例后台任务生命周期)。
 
 运行 `pnpm build:examples` 构建三个示例站点。静态托管和 GitHub Pages 配置见[展示交付](docs/verification/showcase-verification.md)及 [Pages 部署](docs/development/github-pages.md)。
 

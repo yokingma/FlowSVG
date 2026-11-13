@@ -7,6 +7,7 @@ import { projectArchitectureExample } from "./examples/project-architecture.js";
 import { vllmMetalStackExample } from "./examples/vllm-metal-stack.js";
 import { jobLifecycleExample } from "./examples/job-lifecycle.js";
 import { orderEventPipelineExample } from "./examples/order-event-pipeline.js";
+import { emphasisFlowExample } from "./examples/emphasis-flow.js";
 import { webServiceDeploymentExample } from "./examples/web-service-deployment.js";
 import { cacheAsideSequenceExample } from "./examples/cache-aside-sequence.js";
 import { llmInferenceExample } from "./examples/llm-inference.js";
@@ -20,6 +21,7 @@ export const catalogSource: CatalogSource = {
     vllmMetalStackExample,
     jobLifecycleExample,
     orderEventPipelineExample,
+    emphasisFlowExample,
     webServiceDeploymentExample,
     cacheAsideSequenceExample,
     llmInferenceExample
@@ -32,6 +34,7 @@ export const catalogSource: CatalogSource = {
     vllmMetalStackExample.id,
     jobLifecycleExample.id,
     orderEventPipelineExample.id,
+    emphasisFlowExample.id,
     webServiceDeploymentExample.id,
     cacheAsideSequenceExample.id,
     llmInferenceExample.id

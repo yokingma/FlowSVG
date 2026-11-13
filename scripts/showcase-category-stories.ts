@@ -1,4 +1,4 @@
-/** Explicit acceptance cases for the four additional diagram purposes. */
+/** Shared navigation, download and direct-address acceptance cases for the formal category stories. */
 import { readFile } from "node:fs/promises";
 import type { Page } from "playwright-core";
 import { expect } from "vitest";
@@ -8,6 +8,7 @@ import { loadStoryDiagram, sceneTime } from "./showcase-timing.js";
 export const CATEGORY_STORIES = [
   { id: "job-lifecycle", name: "Background task lifecycle", category: "State transitions", scene: "recover", directScene: "exhaust", directBeat: 1, text: "first retry", directText: "Failed terminal state" },
   { id: "order-event-pipeline", name: "Order events: From ingestion to metrics", category: "Data flow", scene: "split", directScene: "overview", directBeat: 0, text: "Two valid records", directText: "CNY 200" },
+  { id: "emphasis-flow", name: "Emphasis colors and flow highlighting", category: "Data flow", scene: "preserve-edge", directScene: "compare", directBeat: 0, text: "stay purple", directText: "Compare all three" },
   { id: "web-service-deployment", name: "Web service: Two-replica deployment", category: "Deployment", scene: "health", directScene: "reroute", directBeat: 0, text: "replica A unhealthy", directText: "healthy replica B" },
   { id: "cache-aside-sequence", name: "Cache miss: Read and populate", category: "Sequence", scene: "cache-miss", directScene: "response", directBeat: 0, text: "returns MISS", directText: "to the client" }
 ] as const;
@@ -15,7 +16,7 @@ export const CATEGORY_STORIES = [
 export const FORMAL_WORKFLOW_NAMES = ["Basic shapes: complete catalog", "Request and response", "RAG: From sources to answers", "LLM inference: Prefill, decode and KV cache"];
 export const FORMAL_NAMES = [...FORMAL_WORKFLOW_NAMES, "FlowSVG: SDK architecture",
   "vllm-metal: Layered inference architecture", ...CATEGORY_STORIES.map(({ name }) => name)];
-export const FORMAL_CATEGORIES = ["Workflow", "Architecture", ...CATEGORY_STORIES.map(({ category }) => category)];
+export const FORMAL_CATEGORIES = ["Workflow", "Architecture", ...new Set(CATEGORY_STORIES.map(({ category }) => category))];
 
 async function readTaskGeometry(page: Page) {
   return page.locator(".flowsvg-canvas > svg rect[data-id]").evaluateAll((nodes) => nodes.map((node) =>

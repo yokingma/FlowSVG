@@ -13,6 +13,7 @@ const VIEWPORT_LIMITS = [
   ["vllm-metal-stack", 1280, 960],
   ["job-lifecycle", 868, 416],
   ["order-event-pipeline", 964, 580],
+  ["emphasis-flow", 920, 420],
   ["web-service-deployment", 922, 756],
   ["cache-aside-sequence", 948, 572],
   ["llm-inference", 1120, 760]

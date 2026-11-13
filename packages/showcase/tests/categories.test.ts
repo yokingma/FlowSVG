@@ -8,7 +8,7 @@ it("groups the formal examples by their primary purpose", () => {
     { id: "workflow", label: "Workflow", ids: ["basic-shapes", "request-response", "rag-workflow", "llm-inference"] },
     { id: "architecture", label: "Architecture", ids: ["project-architecture", "vllm-metal-stack"] },
     { id: "state", label: "State transitions", ids: ["job-lifecycle"] },
-    { id: "data-flow", label: "Data flow", ids: ["order-event-pipeline"] },
+    { id: "data-flow", label: "Data flow", ids: ["order-event-pipeline", "emphasis-flow"] },
     { id: "deployment", label: "Deployment", ids: ["web-service-deployment"] },
     { id: "sequence", label: "Sequence", ids: ["cache-aside-sequence"] }
   ]);

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add **Emphasis colors and flow highlighting** (`emphasis-flow`) after the order data-flow story. Compare a portable document palette, automatic edge/endpoint highlights, preserved relationship colors and marker-only motion across Native, React and Vue; synchronize navigation, JSON downloads and delivery checks.
+
 - Prepare `flowsvg` 0.4.0 for the configurable emphasis colors and per-flow highlighting release; align SDK release notes and versioned README links.
 
 - Replace the FlowSVG runtime walkthrough with **FlowSVG: SDK architecture**. Show nested SDK responsibility layers, persistent consumer-to-provider dependencies anchored at the browser player and Node tools cards, and an external showcase group with separate Native, React and Vue app cards. Detail validation, timeline evaluation, geometry and SVG rendering as parallel core cards; use layer emphasis instead of transfer animation. Preserve the `project-architecture` address and synchronize host/download checks.
