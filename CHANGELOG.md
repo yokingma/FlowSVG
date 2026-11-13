@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Prepare `flowsvg` 0.4.0 for the configurable emphasis colors and per-flow highlighting release; align SDK release notes and versioned README links.
+
 - Replace the FlowSVG runtime walkthrough with **FlowSVG: SDK architecture**. Show nested SDK responsibility layers, persistent consumer-to-provider dependencies anchored at the browser player and Node tools cards, and an external showcase group with separate Native, React and Vue app cards. Detail validation, timeline evaluation, geometry and SVG rendering as parallel core cards; use layer emphasis instead of transfer animation. Preserve the `project-architecture` address and synchronize host/download checks.
 
 - Verify emphasis colors and per-flow paint through installed package types, Native/React/Vue/Web Component hosts, offline HTML, browser/Node images, player GIF downloads and CLI JSON input.

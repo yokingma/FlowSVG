@@ -969,7 +969,9 @@ await writeFile("diagram.html", await renderHtml(diagramDocument, { theme: "dark
 npx --no-install flowsvg diagram.json --output diagram.html --format html
 ```
 
-`renderHtml(document, options)` returns `Promise<string>`. All options are optional: `theme: "light" | "dark"`, `autoplay: boolean`, `loop: boolean`, `controls: boolean` and `gifExport: boolean`. Defaults use the document/light theme, pause at zero with loop off and show playback controls and captions. Live loop mode is independent of GIF `loopCount`.
+`renderHtml(document, options)` returns `Promise<string>`. All options are optional: `theme: "light" | "dark"`, `emphasis: EmphasisColors`, `autoplay: boolean`, `loop: boolean`, `controls: boolean` and `gifExport: boolean`. For emphasis fields, fallback, validation and snapshots, see [Themes and accessibility](#themes-and-accessibility).
+
+Defaults use the document/light theme, pause at zero with loop off and show playback controls and captions. Live loop mode is independent of GIF `loopCount`.
 
 The CLI reads document JSON and accepts `--theme`, `--autoplay`, `--no-controls`, `--gif-export` and `--overwrite`.
 

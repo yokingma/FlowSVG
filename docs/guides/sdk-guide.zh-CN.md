@@ -1058,7 +1058,7 @@ npx --no-install flowsvg diagram.json --output diagram.html --format html
 
 `renderHtml(document, options)` 返回 `Promise<string>`。
 
-以下选项均可省略：`theme: "light" | "dark"`、`autoplay: boolean`、`loop: boolean`、`controls: boolean` 和 `gifExport: boolean`。
+以下选项均可省略：`theme: "light" | "dark"`、`emphasis: EmphasisColors`、`autoplay: boolean`、`loop: boolean`、`controls: boolean` 和 `gifExport: boolean`。强调配色的字段、回退、校验和快照规则见[主题与无障碍](#主题与无障碍)。
 
 默认采用文档主题或浅色主题，暂停在零时刻并关闭循环，显示播放控件和说明文字。实时循环与 GIF 的 `loopCount` 独立。
 
