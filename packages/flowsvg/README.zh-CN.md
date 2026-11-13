@@ -216,6 +216,8 @@ element.document = diagram;
 | 读取状态 | 挂载前或销毁后，`getState()` 可返回 `undefined`。 |
 | 处理事件 | 在元素上监听事件。事件支持冒泡并可穿过 Shadow DOM 边界；事件数据见[事件](#事件)。 |
 
+Web Component 运行时配色使用 `element.emphasis` 对象属性，例如 `element.emphasis = { stroke: "#0f766e" }`。可在连接前赋值或稍后替换；`undefined` 清除覆盖。赋值时复制字段，重连后保留配置，选项重建恢复时间和播放状态。getter 返回副本。非法值通过现有可冒泡、可穿越 Shadow DOM 的 `error` 事件报告，并保留有效配置。不提供 `emphasis` HTML 属性。
+
 ## 控制播放
 
 `createPlayer(host: HTMLElement, document: DiagramDocument, options?: PlayerOptions): FlowPlayer` 挂载播放器并替换宿主子元素。初始文档非法时抛出 `DiagramValidationError`。
@@ -237,13 +239,14 @@ Vue／React ref 提供上表八个播放与状态方法。组件更新行为如�
 | 变更 | 结果 |
 | --- | --- |
 | 替换 `document` 对象 | 重新加载文档，成功后暂停在零时刻 |
-| 修改 `theme`、`controls`、`gifExport`、`reducedMotion` 或 `hoverFill` | 重建播放器并暂停在零时刻 |
+| 修改 `theme`、`controls`、`gifExport`、`reducedMotion` 或 `hoverFill`，或替换／清除 `emphasis` | 重建播放器并暂停在零时刻 |
 
 ### 选项与组件属性
 
 | `PlayerOptions` | 默认值／含义 |
 | --- | --- |
 | `theme?: "light" \| "dark"` | 使用文档主题，未设置时为 `"light"`。 |
+| `emphasis?: EmphasisColors` | 逐字段覆盖文档配色和主题默认值；框架播放器通过替换对象更新。 |
 | `controls?: boolean` | `true`；显示播放控件。 |
 | `loop?: boolean` | `false`；循环整条时间线。 |
 | `gifExport?: boolean` | `false`；在 `controls` 开启时显示 GIF 下载控件。 |
@@ -258,6 +261,8 @@ Vue／React 组件另提供以下 `FlowPlayerProps`：
 | `speed?: number` | 播放倍率，默认 `1` |
 | `initialTimeMs?: number` | 初始位置，仅首次应用 |
 | `className`、`style` | 宿主容器样式 |
+
+替换 `emphasis` 对象可更新配色，清除后回退到文档和主题。播放器复制已提供字段，之后修改原对象不会改变画面。框架选项重建不再次应用 `initialTimeMs`。
 
 两个框架入口均导出 `FlowPlayerHandle` 与 `FlowPlayerProps` 类型。原生播放器通过 `play()` 启动，通过 `setSpeed()` 修改倍率。
 
@@ -423,11 +428,15 @@ SDK CLI 支持 HTML 和 GIF 输出。PNG 使用 SDK API 导出。
 | 类型 | 必填字段 | 可选字段 |
 | --- | --- | --- |
 | `Viewport` | 有限正数 `width`、`height` | `fitHeight: { padding }`；底部留白 `padding` 为有限非负数 |
-| `DiagramDocument` | `version: 1`、`viewport`、`nodes`、`edges`、`scenes` | `title`、`theme`、`typography` |
+| `DiagramDocument` | `version: 1`、`viewport`、`nodes`、`edges`、`scenes` | `title`、`theme`、`emphasis`、`typography` |
 | `DiagramNode` | `id`、`kind`、`x`、`y`、`width`、`height` | 互斥的 `label`／`content`，以及 `parentId`、`visible`、`style` |
 | `DiagramEdge` | `id`、`from`、`to` | `route`、`fromPort`、`toPort`、`label`、`visible`、`style` |
 | `Scene` | `id`、`label`、`beats` | — |
 | `Beat` | `durationMs`、`actions` | `transitionMs`、`caption` |
+
+文档 `emphasis?: EmphasisColors` 接受可选字段 `fill`（节点高亮填充）、`stroke`（节点与连线高亮描边及标记底色）、`markerText`（标记文字）。核心视觉选项和浏览器 `PlayerOptions` 同样接受 `emphasis`；各字段依次取运行时覆盖、文档配置、当前主题。文档配色供浏览器悬停和全部导出共用；悬停本身不进入导出。浏览器播放器在创建时复制运行时配色，`load` 保留覆盖并从新文档重新读取缺省字段。非法运行时字段在分配浏览器资源前抛出带 `options.emphasis` 路径的 `TypeError`。颜色支持 `#RGB`、`#RGBA`、`#RRGGBB`、`#RRGGBBAA`；`undefined` 视为缺省，`null`、非法颜色和未知字段报告校验路径。
+
+浏览器及 Node PNG/GIF、`renderHtml` 同样接受 `emphasis`，使用相同逐项回退。导出调用在首个异步步骤前复制嵌套配色；播放器 GIF 在点击时固定文档与覆盖，悬停不进入导出。非法图像覆盖以 `options` 错误及字段路径返回，离线 HTML 在读取资源前校验配色。CLI 从 JSON 读取文档配色，不提供配色覆盖参数。
 
 - **静态文档：**使用空 `scenes`。
 - **节点类型：**`rect`、`roundedRect`、`ellipse`、`cylinder`、`group`、`diamond`、`parallelogram`、`document` 和 `predefinedProcess`。分组边框默认为圆角。
@@ -440,7 +449,7 @@ SDK CLI 支持 HTML 和 GIF 输出。PNG 使用 SDK API 导出。
 | 动作类型 | 附加字段／目标 |
 | --- | --- |
 | `updateNode`、`updateEdge` | 必填 `value`，字段见下表 |
-| `flow` | 必填 `direction: "forward" \| "reverse"`；可选 `text` 和 `highlightParticipants`（默认 `true`） |
+| `flow` | 必填 `direction: "forward" \| "reverse"`；可选 `text`、`highlightParticipants` 和 `highlightEdge`（两个布尔值均默认 `true`） |
 | `focus` | 目标为节点／分组 ID，或用 `null` 恢复完整视图 |
 
 | 更新动作 | `value` 支持的字段 |
@@ -454,7 +463,7 @@ SDK CLI 支持 HTML 和 GIF 输出。PNG 使用 SDK API 导出。
 
 ### 时间线规则
 
-`show`、`hide`、`highlight`、`unhighlight`、`updateNode`、`updateEdge`、`focus` 跨节拍继承；`flow` 仅在当前节拍生效。
+`show`、`hide`、`highlight`、`unhighlight`、`updateNode`、`updateEdge`、`focus` 跨节拍继承；`flow` 仅在当前节拍生效。设置 `highlightEdge: false` 关闭该次传递的连线与标签自动着色，显式高亮和普通样式插值更新仍生效；`highlightParticipants` 独立控制端点。减少动画隐藏标记并尊重两个开关，即使关闭后没有自动可见提示也不补充提示。
 
 显隐权重与基础透明度取最小值：已存储的透明度为 `0.4` 时，显示过渡中点仍为 `0.4`。祖先分组与连线端点也按最小值组合透明度。显式 `highlighted` 在拍初改变，着色权重继续过渡；取消高亮后显示最新基础颜色，包括同拍更新。详见[节拍与动作契约](../../docs/guides/sdk-guide.zh-CN.md#节拍与动作)。
 

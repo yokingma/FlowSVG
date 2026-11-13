@@ -37,6 +37,28 @@ async function exportBytes(document: DiagramDocument = input, options = {}) {
   }, { document, options }));
 }
 
+it("captures partial runtime emphasis for every GIF sample before asynchronous work", async () => {
+  const source: DiagramDocument = { version: 1, viewport: { width: 120, height: 80 },
+    emphasis: { fill: "#fff4db", stroke: "#b45309" },
+    nodes: [{ id: "a", kind: "rect", x: 10, y: 10, width: 100, height: 60, style: { strokeWidth: 4 } }], edges: [],
+    scenes: [{ id: "s", label: "Highlight", beats: [{ durationMs: 1000, transitionMs: 0, actions: [{ type: "highlight", target: "a" }] }] }] };
+  const bytes = await page.evaluate(async (source) => {
+    const api: typeof import("../src/export.js") = Reflect.get(globalThis, "FlowSVGExport");
+    const options = { emphasis: { fill: "#123456" }, fps: 2, finalHoldMs: 0, includeCaptions: false };
+    const pending = api.exportGif(source, options);
+    options.emphasis.fill = "#ff0000";
+    source.emphasis!.stroke = "#000000";
+    return Array.from(await pending);
+  }, source);
+  const frames = decompressFrames(parseGIF(Uint8Array.from(bytes).buffer), true);
+  expect(frames).toHaveLength(3);
+  for (const frame of frames) {
+    const pixel = (x: number) => Array.from(frame.patch.slice((40 * 120 + x) * 4, (40 * 120 + x) * 4 + 4));
+    expect(pixel(30)).toEqual([18, 52, 86, 255]);
+    expect(pixel(10)).toEqual([180, 83, 9, 255]);
+  }
+});
+
 it("preflights caption ranges at effective single-flow boundaries", async () => {
   const story: DiagramDocument = {
     version: 1, viewport: { width: 500, height: 120 },

@@ -203,6 +203,7 @@ The component releases resources on unmount. Callbacks are `onStepChange`, `onTi
 | `speed` | Positive playback multiplier, default `1`; changes update the speed |
 | `loop` | Default `false`; changes update live loop mode without rebuilding or changing time/playback |
 | `theme` | `light` / `dark`; falls back to the document theme, then light |
+| `emphasis` | Optional `EmphasisColors`; each field overrides the document then theme default |
 | `controls` | Default `true`; set to `false` to hide built-in controls |
 | `gifExport` | Default `false`; enable GIF progress, cancel and download controls; requires visible controls |
 | `reducedMotion` | Follows the browser's reduced-motion preference when omitted |
@@ -210,7 +211,7 @@ The component releases resources on unmount. Callbacks are `onStepChange`, `onTi
 | `initialTimeMs` | Applied only on initial mount; use `seek` for later changes |
 | `className` / `style` | Host container styles |
 
-Changing `theme`, `controls`, `gifExport`, `reducedMotion`, or `hoverFill` recreates the player, paused at zero, without reapplying `initialTimeMs`. Reload documents with a new object reference. Handles expose eight methods listed under [Player API](#player-api); calls before mount or after unmount throw.
+Changing `theme`, `controls`, `gifExport`, `reducedMotion`, or `hoverFill`, or replacing/clearing the `emphasis` object, recreates the player, paused at zero, without reapplying `initialTimeMs`. The player snapshots supplied emphasis fields; later mutation of that object does not update paint. Reload documents with a new object reference. Handles expose eight methods listed under [Player API](#player-api); calls before mount or after unmount throw.
 
 Both entries support server-side imports. SSR renders a container; the player is created on client mount. Use `renderSvg` for server-side diagram previews.
 
@@ -258,6 +259,8 @@ if (element) element.document = diagramDocument;
 
 Registration defaults to `<flowsvg-player>` and is idempotent.
 
+Set runtime colors with `element.emphasis = { stroke: "#0f766e" }` before connection or while mounted. The property copies fields and its getter returns a copy. Replace the object to update or assign `undefined` to restore document/theme fallback. Reconnection retains this snapshot, and mounted changes restore time/playback through the existing option rebuild. Invalid assignments emit the existing bubbling/composed `error` event and retain the valid configuration. No `emphasis` HTML attribute is provided.
+
 | Document source | Assignment |
 | --- | --- |
 | JavaScript object | `element.document` |
@@ -285,6 +288,7 @@ Register in a DOM environment. DOM-free imports are safe, but that module instan
 | `edges` | Edge array; `id`, `from`, and `to` are required; endpoints reference nodes or group boundaries |
 | `scenes` | `[]` creates a static diagram; each scene has a unique `id`, a `label`, and nonempty `beats` |
 | `title` / `theme` | Optional title and `light` / `dark` document theme |
+| `emphasis` | Optional `EmphasisColors`; highlight and flow-marker colors |
 | `typography` | Optional node, edge and flow-label sizes; see [document typography](#document-typography) |
 
 ### Nodes and styles
@@ -362,7 +366,8 @@ Example: `{ type: "flow", target: "request", direction: "forward", text: "Reques
 | `target` | Edge ID; one transfer per edge per beat |
 | `direction` | `forward` or `reverse`; leaves the static edge arrow unchanged |
 | `text` | Optional horizontal text capsule; omit for a solid dot; an empty string still produces a capsule |
-| `highlightParticipants` | Default `true`; `false` keeps the marker and edge highlight while disabling automatic endpoint highlights |
+| `highlightParticipants` | Default `true`; `false` disables automatic endpoint highlights independently of edge paint and markers |
+| `highlightEdge` | Default `true`; `false` disables automatic edge and label coloring while retaining markers, logical flow state and independent explicit highlights |
 
 Transfer text is escaped and uses estimated capsule widths without font measurement. It does not replace the edge label or create an interaction target.
 
@@ -379,7 +384,9 @@ Single-flow timing uses the routed path at the beat's target visual state, inclu
 
 Use separate no-flow beats for longer reading time. All intervals above are at speed 1; player speed scales movement, destination hold, and reading beats together.
 
-Markers and temporary endpoint highlights expire at beat end. Explicit highlights and ordinary styles persist. `highlightParticipants: false` leaves node highlighting to explicit actions while retaining the marker and temporary edge highlight.
+Markers and temporary edge/endpoint highlights expire at beat end. Explicit highlights and ordinary styles persist. `highlightParticipants: false` leaves node highlighting to explicit actions. `highlightEdge: false` preserves the current ordinary edge and label colors, including interpolated `updateEdge` changes; it does not cancel explicit edge highlights. Both switches apply per flow, including reverse and synchronized transfers, without changing timing.
+
+For example, `{ type: "flow", target: "request", direction: "forward", highlightEdge: false, highlightParticipants: false }` moves the marker while leaving automatic edge and endpoint paint disabled. During the flow, the edge's logical `highlighted` flag remains `true`. Reduced motion hides the marker and respects both switches; no static cue is added when automatic paint is disabled.
 
 #### Arrival highlights
 
@@ -738,7 +745,45 @@ Positive finite source sizes can still overflow derived line heights, whole-text
 
 Theme: explicit option → document theme → light. The core ignores system preferences. Browser motion follows `prefers-reduced-motion` unless overridden; the core defaults to full motion. Reduced motion completes transitions immediately and hides transfer markers, preserving duration.
 
-Both themes use neutral borders and blue highlights. Document styles override ordinary colors; timeline and hover highlights overlay those styles. Explicit content colors and tag fills remain unchanged. Diagram text uses system fonts with Chinese fallbacks.
+Both themes default to neutral borders and blue highlights. Document styles override ordinary colors; timeline and hover highlights overlay those styles. Explicit content colors and tag fills remain unchanged. Diagram text uses system fonts with Chinese fallbacks.
+
+Document `emphasis` saves the emphasis colors used by explicit highlights, automatic flow highlights and browser node hover:
+
+```ts
+const styledDocument = {
+  ...diagramDocument,
+  emphasis: { fill: "#fff4db", stroke: "#b45309", markerText: "#ffffff" }
+};
+const svg = createDiagram(styledDocument).renderSvg(500);
+```
+
+`EmphasisColors.fill` controls node highlight fill. `stroke` controls node/edge highlight strokes and flow-marker backgrounds. `markerText` controls only flow-marker text. Every field is optional. Core visual queries and `createPlayer` accept an `emphasis` runtime override. Each field resolves from the runtime override, document, then selected theme; empty objects and explicit `undefined` leave fallback values intact. Ordinary object paint, node/edge text and content contrast rules retain their existing behavior. Hover changes only borders unless `hoverFill: true`, and never enters exports.
+
+Colors accept case-insensitive `#RGB`, `#RGBA`, `#RRGGBB` and `#RRGGBBAA`, including existing alpha interpolation. `undefined` means absent. In documents, `null`, other value types, invalid colors and unknown fields raise `DiagramValidationError` with paths such as `emphasis.stroke`, even when no object currently uses that color. Compilation snapshots the document. Browser creation copies runtime emphasis before registering listeners or replacing host content. Mutating the original option object does not change an existing player. Loading a new document retains runtime overrides and reads the new document colors; missing values fall back to its theme without retaining the prior document colors. Invalid loads keep the old player state. Invalid runtime emphasis throws `TypeError` with `options.emphasis` field paths; a valid override never hides invalid document colors.
+
+```ts
+const options = { emphasis: { stroke: "#0f766e" } };
+const frame = diagram.evaluateAt(500, options);
+const svg = diagram.renderSvg(500, options);
+const player = createPlayer(host, document, options);
+```
+
+`evaluateAt`, `renderSvg`, `diagnoseAt` and `hitTest` use the same core visual options. Runtime colors do not change geometry, timeline positions or hit targets.
+
+Browser and Node PNG/GIF options and `renderHtml` also accept `emphasis`. They copy nested overrides before asynchronous work and use the same per-field fallback. Invalid image overrides return `PngExportError` or `GifExportError` with code `options` and `options.emphasis` field paths before resource allocation; HTML validates them before reading assets. Valid overrides never hide invalid document colors.
+
+```ts
+// Browser: import from "flowsvg/export". Node: import from "flowsvg/node".
+const bytes = await exportPng(styledDocument, {
+  timeMs: 500, emphasis: { stroke: "#0f766e" }
+});
+// From "flowsvg/node"; includes the same override in offline playback and optional GIF downloads.
+const html = await renderHtml(styledDocument, {
+  emphasis: { stroke: "#0f766e" }, gifExport: true
+});
+```
+
+SVG, browser and framework players, PNG/GIF, offline HTML and CLI output consume the document colors. No CLI color override is required. The same JSON retains its colors when shared offline.
 
 With canvas focus, Space toggles playback and arrow keys step through beats. The progress slider keeps native keys. Scene and speed use custom select-only comboboxes: arrows open and navigate; Home/End move to the first/last option; Enter/Space commit; Escape cancels; Tab closes without trapping focus. Typing a character highlights a matching option. Outside presses dismiss the menu.
 
@@ -756,7 +801,7 @@ All four hosts accept `gifExport: true`; Web Component markup uses `gif-export` 
 
 The browser exporter loads on the first export click, while normal import and playback do not load it.
 
-Click **Export GIF** to download the complete timeline at 1× with the task's resolved theme and default export settings. The controls show progress, **Cancel export**, completion and a readable failure message. Downloads use a sanitized document title or `FlowSVG.gif`. Playback, speed and seeking remain independent; hover and controls never enter the GIF.
+Click **Export GIF** to download the complete timeline at 1× with the task's resolved theme, runtime emphasis overrides and default export settings. The controls show progress, **Cancel export**, completion and a readable failure message. Downloads use a sanitized document title or `FlowSVG.gif`. Playback, speed and seeking remain independent; hover and controls never enter the GIF.
 
 Each player owns at most one task. A successful document load retains the old task's captured document/theme. Later input-object mutations cannot change that snapshot. Destroying the player, unmounting a component, or rebuilding an adapter for option changes cancels its task and prevents late downloads. Cancellation or failure permits retry.
 
@@ -832,6 +877,7 @@ Limits: 120 effective animation seconds, 1800 samples, 1801 encoded frames inclu
 | `loopCount` | `0` (forever) | Integers 1–65,536 specify total plays; 1 plays once; larger values fail |
 | `finalHoldMs` | `1000` ms | Finite nonnegative extra delay; zero adds no delay |
 | `theme` | Document theme, then light | Explicit `light` / `dark` overrides the fallback |
+| `emphasis` | Document colors, then theme | Optional `EmphasisColors`; each supplied field overrides its document value |
 | `reducedMotion` | `false` | Full animation regardless of system preference; `true` completes transitions and hides markers, retaining duration |
 | `signal` | None | `AbortSignal` cancels task-owned work and releases resources |
 | `onProgress` | None | Receives phase, completed, and total counts; cancelled tasks never report complete |

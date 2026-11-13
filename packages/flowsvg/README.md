@@ -216,6 +216,8 @@ element.document = diagram;
 | Read state | `getState()` can return `undefined` before mounting or after destruction. |
 | Handle events | Listen on the element. Events bubble and cross Shadow DOM boundaries; details are listed under [Events](#events). |
 
+Web Component runtime colors use the `element.emphasis` object property, for example `element.emphasis = { stroke: "#0f766e" }`. Assign before connection or replace it later; `undefined` clears the override. Assignments copy fields, reconnection retains them, and option rebuilds restore time/playback. The getter returns a copy. Invalid values emit the existing bubbling/composed `error` event and retain the valid configuration. There is no `emphasis` HTML attribute.
+
 ## Control playback
 
 `createPlayer(host: HTMLElement, document: DiagramDocument, options?: PlayerOptions): FlowPlayer` mounts into the host, replacing its children. Invalid initial documents throw `DiagramValidationError`.
@@ -237,13 +239,14 @@ Vue/React refs expose the eight playback/state methods above. Component updates 
 | Change | Result |
 | --- | --- |
 | Replace the `document` object | Reload the document and pause at zero on success |
-| Change `theme`, `controls`, `gifExport`, `reducedMotion` or `hoverFill` | Recreate the player, paused at zero |
+| Change `theme`, `controls`, `gifExport`, `reducedMotion` or `hoverFill`, or replace/clear `emphasis` | Recreate the player, paused at zero |
 
 ### Options and component props
 
 | `PlayerOptions` | Default / meaning |
 | --- | --- |
 | `theme?: "light" \| "dark"` | Document theme, then `"light"`. |
+| `emphasis?: EmphasisColors` | Per-field overrides over document colors and theme defaults. Replace the object to update framework players. |
 | `controls?: boolean` | `true`; show playback controls. |
 | `loop?: boolean` | `false`; loop the entire timeline. |
 | `gifExport?: boolean` | `false`; show GIF download controls when `controls` is enabled. |
@@ -258,6 +261,8 @@ Vue/React components also accept these `FlowPlayerProps`:
 | `speed?: number` | Playback multiplier; default `1` |
 | `initialTimeMs?: number` | Initial position; applied once |
 | `className`, `style` | Host container styles |
+
+Replace `emphasis` with a new object to update colors; clearing it restores document/theme fallback. The player copies supplied fields, so later mutation does not change its paint. Framework option rebuilds do not reapply `initialTimeMs`.
 
 Both framework entries export `FlowPlayerHandle` and `FlowPlayerProps`. Native players start through `play()` and change speed through `setSpeed()`.
 
@@ -423,11 +428,15 @@ Built-in downloads export the full timeline at `1×`, using the current theme. P
 | Type | Required fields | Optional fields |
 | --- | --- | --- |
 | `Viewport` | Finite positive `width`, `height` | `fitHeight: { padding }`; finite nonnegative bottom padding |
-| `DiagramDocument` | `version: 1`, `viewport`, `nodes`, `edges`, `scenes` | `title`, `theme`, `typography` |
+| `DiagramDocument` | `version: 1`, `viewport`, `nodes`, `edges`, `scenes` | `title`, `theme`, `emphasis`, `typography` |
 | `DiagramNode` | `id`, `kind`, `x`, `y`, `width`, `height` | `label` or `content` (mutually exclusive), `parentId`, `visible`, `style` |
 | `DiagramEdge` | `id`, `from`, `to` | `route`, `fromPort`, `toPort`, `label`, `visible`, `style` |
 | `Scene` | `id`, `label`, `beats` | — |
 | `Beat` | `durationMs`, `actions` | `transitionMs`, `caption` |
+
+Document `emphasis?: EmphasisColors` accepts optional `fill` (node highlight fill), `stroke` (node/edge highlight and marker background), and `markerText` (marker text). Core visual options and browser `PlayerOptions` also accept `emphasis`; each field resolves from the runtime override, document, then selected theme. The document colors apply to browser hover and every export; hover itself stays out of exports. Browser players copy runtime colors at creation and retain them through `load`, reading missing fields from the new document. Invalid runtime fields throw `TypeError` with `options.emphasis` paths before browser resources are allocated. Use hexadecimal `#RGB`, `#RGBA`, `#RRGGBB`, or `#RRGGBBAA`. `undefined` is omitted; `null`, invalid colors and unknown fields report validation paths.
+
+Browser and Node PNG/GIF and `renderHtml` also accept `emphasis` with the same per-field fallback. Export calls copy nested colors before asynchronous work; player GIF downloads capture their document and overrides on click, without hover. Invalid image overrides report an `options` error with field paths; offline HTML validates colors before asset reads. CLI reads document colors from JSON and adds no override flags.
 
 - **Static documents:** use empty `scenes`.
 - **Node kinds:** `rect`, `roundedRect`, `ellipse`, `cylinder`, `group`, `diamond`, `parallelogram`, `document` and `predefinedProcess`. Groups have rounded borders by default.
@@ -440,7 +449,7 @@ Each action has `{ type, target }`, with additional fields by action type:
 | Action type | Additional fields / target |
 | --- | --- |
 | `updateNode`, `updateEdge` | Require `value`; fields are listed below |
-| `flow` | Require `direction: "forward" \| "reverse"`; optional `text` and `highlightParticipants` (default `true`) |
+| `flow` | Require `direction: "forward" \| "reverse"`; optional `text`, `highlightParticipants` and `highlightEdge` (both booleans default to `true`) |
 | `focus` | Target a node/group ID, or `null` for full view |
 
 | Update | Supported `value` fields |
@@ -454,7 +463,7 @@ Each action has `{ type, target }`, with additional fields by action type:
 
 ### Timeline rules
 
-`show`, `hide`, `highlight`, `unhighlight`, `updateNode`, `updateEdge`, and `focus` persist across beats. `flow` lasts for its beat only.
+`show`, `hide`, `highlight`, `unhighlight`, `updateNode`, `updateEdge`, and `focus` persist across beats. `flow` lasts for its beat only. Set `highlightEdge: false` on a flow to disable its automatic edge and label coloring. Explicit highlights and interpolated ordinary style updates still apply; `highlightParticipants` independently controls endpoints. Reduced motion hides markers and respects both policies, even when no automatic visible cue remains.
 
 Visibility caps ordinary opacity: a stored opacity of `0.4` remains `0.4` halfway through a reveal. Ancestor groups and edge endpoints also combine opacity by minimum. Explicit `highlighted` changes at beat start while its paint transitions; removing a highlight reveals the latest ordinary colors, including same-beat updates. See the [timeline contract](../../docs/guides/sdk-guide.md#beats-and-actions).
 

@@ -205,6 +205,7 @@ export default function DiagramExample() {
 | `speed` | 正数倍率，默认 `1`；变化时更新速度 |
 | `loop` | 默认 `false`；变化时更新循环模式，不重建或改变时间与播放状态 |
 | `theme` | `light` / `dark`；未指定时使用文档主题，最终默认为浅色 |
+| `emphasis` | 可选 `EmphasisColors`；每个字段覆盖文档配色，最终回退到主题 |
 | `controls` | 默认 `true`，设为 `false` 隐藏内置控件 |
 | `gifExport` | 默认 `false`；开启 GIF 进度、取消与下载控件；要求显示播放控件 |
 | `reducedMotion` | 未指定时跟随浏览器减少动画偏好 |
@@ -212,9 +213,9 @@ export default function DiagramExample() {
 | `initialTimeMs` | 仅初次挂载时应用；后续跳转用 `seek` |
 | `className` / `style` | 宿主容器样式 |
 
-修改 `theme`、`controls`、`gifExport`、`reducedMotion` 或 `hoverFill` 会重建播放器，暂停在零时刻，不再应用 `initialTimeMs`。
+修改 `theme`、`controls`、`gifExport`、`reducedMotion` 或 `hoverFill`，或替换／清除 `emphasis` 对象会重建播放器，暂停在零时刻，不再应用 `initialTimeMs`。
 
-更新文档需提供新对象引用。实例暴露[播放器 API](#播放器-api)中的八个方法；挂载前或卸载后调用会抛出错误。
+播放器固定已提供的配色字段，之后修改原对象不会更新画面。更新文档需提供新对象引用。实例暴露[播放器 API](#播放器-api)中的八个方法；挂载前或卸载后调用会抛出错误。
 
 两种入口均支持服务端导入。SSR 输出容器，客户端挂载后创建播放器。服务端图解预览使用 `renderSvg`。
 
@@ -267,6 +268,8 @@ if (element) element.document = diagramDocument;
 | JavaScript 对象 | `element.document` |
 | JSON 字符串 | HTML `document` 属性 |
 | JSON URL | `src`；相对页面解析，遵循浏览器 CORS 规则 |
+
+通过 `element.emphasis = { stroke: "#0f766e" }` 设置运行时配色，可在连接前或挂载后赋值。属性复制字段，getter 返回副本；替换对象更新配色，赋值 `undefined` 回退到文档与主题。重连保留该快照，挂载后的变化沿用选项重建并恢复时间与播放状态。非法赋值通过现有可冒泡、可穿越 Shadow DOM 的 `error` 事件报告，并保留有效配置。不提供 `emphasis` HTML 属性。
 
 **HTML 属性与默认值**
 
@@ -374,7 +377,8 @@ if (element) element.document = diagramDocument;
 | `target` | 连线 ID；每拍每条连线最多传递一次 |
 | `direction` | `forward` 或 `reverse`；不改变静态箭头方向 |
 | `text` | 可选水平文字胶囊；省略时显示实心圆点，空字符串仍显示胶囊 |
-| `highlightParticipants` | 默认 `true`；`false` 保留标记和连线高亮，关闭自动端点高亮 |
+| `highlightParticipants` | 默认 `true`；`false` 关闭自动端点高亮，与连线着色和标记独立 |
+| `highlightEdge` | 默认 `true`；`false` 关闭连线和标签自动着色，保留标记、逻辑传递状态及独立显式高亮 |
 
 传递文字按纯文本转义，胶囊宽度按固定规则估算，不读取字体实测值。文字不替换连线标签，也不产生独立交互目标。
 
@@ -391,7 +395,9 @@ if (element) element.document = diagramDocument;
 
 较长的阅读时间使用独立的无传递节拍。上述区间以 1 倍速计；全局播放倍率同时影响移动、到达停留和独立阅读节拍。
 
-标记和端点临时高亮在拍末消失。显式高亮和普通样式继续继承。`highlightParticipants: false` 让显式动作决定节点高亮，同时保留标记和连线临时高亮。
+标记及连线、端点临时高亮在拍末消失。显式高亮和普通样式继续继承。`highlightParticipants: false` 让显式动作决定节点高亮。`highlightEdge: false` 保留连线与标签当前的普通颜色，包括 `updateEdge` 的插值更新；它不取消显式连线高亮。两个开关逐次生效，覆盖反向和同步传递，不改变时序。
+
+例如，`{ type: "flow", target: "request", direction: "forward", highlightEdge: false, highlightParticipants: false }` 让标记运动，同时关闭连线与端点自动着色。flow 活跃期间，连线逻辑 `highlighted` 仍为 `true`。减少动画隐藏标记并尊重两个开关；自动着色关闭后不补充静态提示。
 
 #### 到达高亮
 
@@ -800,7 +806,45 @@ PPT 素材的创作起点可用 1280×720、32/24/20；Web 正文插图可用 96
 
 主题：显式选项 → 文档主题 → 浅色，核心不读取系统偏好。浏览器动画默认跟随 `prefers-reduced-motion`，核心默认正常动画。减少动画会立即完成过渡并隐藏传递标记，保留总时长。
 
-两种主题都使用中性边框和蓝色高亮。文档样式覆盖普通颜色，时间线与悬停高亮叠加在其上。显式内容颜色和标签底色保持不变。图解文字使用系统字体，并提供中文字体回退。
+两种主题默认使用中性边框和蓝色高亮。文档样式覆盖普通颜色，时间线与悬停高亮叠加在其上。显式内容颜色和标签底色保持不变。图解文字使用系统字体，并提供中文字体回退。
+
+文档 `emphasis` 保存显式高亮、flow 自动高亮和浏览器节点悬停共用的强调配色：
+
+```ts
+const styledDocument = {
+  ...diagramDocument,
+  emphasis: { fill: "#fff4db", stroke: "#b45309", markerText: "#ffffff" }
+};
+const svg = createDiagram(styledDocument).renderSvg(500);
+```
+
+`EmphasisColors.fill` 控制节点高亮填充；`stroke` 控制节点与连线高亮描边及传递标记底色；`markerText` 仅控制标记文字。各字段可省略。核心视觉查询和 `createPlayer` 接受 `emphasis` 运行时覆盖，各字段依次取运行时覆盖、文档配置、当前主题；空对象和显式 `undefined` 保留后续层的值。普通对象颜色、节点和连线文字以及内容对比度规则沿用现有行为。悬停默认只改描边，`hoverFill: true` 才改填充；悬停不进入导出。
+
+颜色接受大小写十六进制 `#RGB`、`#RGBA`、`#RRGGBB`、`#RRGGBBAA`，保留现有 alpha 插值。`undefined` 视为缺省。文档中的 `null`、其他类型、非法颜色和未知字段通过 `DiagramValidationError` 报告 `emphasis.stroke` 等路径，即使当前没有对象使用该颜色。编译固定文档快照。浏览器播放器在注册监听器或替换宿主内容前复制运行时配色，之后修改原选项对象不会改变既有实例。加载新文档时保留运行时覆盖，重新读取新文档配色；缺省值回退到新主题，不残留旧文档配色。非法加载保留旧播放器状态。非法运行时配色抛出带 `options.emphasis` 字段路径的 `TypeError`；合法覆盖不能掩盖非法文档配色。
+
+```ts
+const options = { emphasis: { stroke: "#0f766e" } };
+const frame = diagram.evaluateAt(500, options);
+const svg = diagram.renderSvg(500, options);
+const player = createPlayer(host, document, options);
+```
+
+`evaluateAt`、`renderSvg`、`diagnoseAt` 和 `hitTest` 使用相同的核心视觉选项。运行时配色不改变几何、时间位置或命中目标。
+
+浏览器及 Node PNG/GIF 选项和 `renderHtml` 同样接受 `emphasis`，使用相同的逐项回退，并在异步操作前复制嵌套覆盖。非法图像覆盖在分配资源前以 `PngExportError` 或 `GifExportError` 的 `options` 分类报告 `options.emphasis` 字段路径；HTML 在读取资源前校验配色。合法覆盖不能掩盖非法文档配色。
+
+```ts
+// 浏览器：从 "flowsvg/export" 导入。Node：从 "flowsvg/node" 导入。
+const bytes = await exportPng(styledDocument, {
+  timeMs: 500, emphasis: { stroke: "#0f766e" }
+});
+// 从 "flowsvg/node" 导入；离线播放及可选 GIF 下载使用同一覆盖。
+const html = await renderHtml(styledDocument, {
+  emphasis: { stroke: "#0f766e" }, gifExport: true
+});
+```
+
+SVG、浏览器和框架播放器、PNG/GIF、离线 HTML 及 CLI 输出都消费文档配色，无需 CLI 配色覆盖参数。同一 JSON 在离线交付后保留配色。
 
 画布聚焦后，Space 播放/暂停，方向键逐拍移动；进度条保留原生按键。
 
@@ -822,11 +866,11 @@ PPT 素材的创作起点可用 1280×720、32/24/20；Web 正文插图可用 96
 
 前面的宿主集成示例开启 GIF 下载，默认接入示例保持关闭。该选项默认 `false`；`controls: false` 同时隐藏 GIF 控件。首次点击导出才加载浏览器导出模块，普通导入与播放不加载该模块。
 
-点击 **Export GIF**，按完整时间线、1×、任务开始时已解析的主题及默认设置导出。
+点击 **Export GIF**，按完整时间线、1×、任务开始时已解析的主题、运行时配色覆盖及默认设置导出。
 
 控件显示进度、**Cancel export**、完成和可读错误；成功时下载安全处理后的文档标题文件名，无标题时用 `FlowSVG.gif`。播放、调速与跳转独立运行；GIF 不包含控件或悬停效果。
 
-每个播放器最多一个任务。成功加载新文档时，旧任务继续使用固定的文档和主题；后续修改输入对象不改变快照。销毁播放器、卸载组件或因选项变化重建宿主时取消其任务，并阻止后续下载。取消或失败后可重试。
+每个播放器最多一个任务。成功加载新文档时，旧任务继续使用点击时固定的文档、主题和配色覆盖；后续修改输入对象不改变快照。销毁播放器、卸载组件或因选项变化重建宿主时取消其任务，并阻止后续下载。取消或失败后可重试。
 
 需要自定义设置或程序化错误处理时，使用下面独立的 `exportGif` 函数。
 
@@ -910,6 +954,7 @@ const bytes = await exportGif(diagramDocument, {
 | `loopCount` | `0`（无限循环） | 1–65,536 的整数表示总播放次数；1 只播放一次，超过上限时报错 |
 | `finalHoldMs` | `1000` ms | 有限非负额外延迟；零不增加延迟 |
 | `theme` | 文档主题，最终为浅色 | 显式 `light` / `dark` 覆盖默认选择 |
+| `emphasis` | 文档配色，最终为主题配色 | 可选 `EmphasisColors`；每个已提供字段覆盖对应文档值 |
 | `reducedMotion` | `false` | 默认完整动画，不继承系统偏好；`true` 立即完成过渡并隐藏标记，保留时长 |
 | `signal` | 无 | `AbortSignal` 取消任务并释放任务资源 |
 | `onProgress` | 无 | 接收阶段、完成数及总数；取消的任务不报告完成 |

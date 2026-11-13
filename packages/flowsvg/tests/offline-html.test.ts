@@ -48,10 +48,10 @@ it("uses effective flow timing in a disconnected portable player without changin
       { id: "a", kind: "rect", x: 20, y: 20, width: 40, height: 40 },
       { id: "b", kind: "rect", x: 420, y: 20, width: 40, height: 40 }
     ],
-    edges: [{ id: "transfer", from: "a", to: "b", route: "straight" }],
+    edges: [{ id: "transfer", from: "a", to: "b", route: "straight", label: "Relationship", style: { stroke: "#c2410a", dashed: true } }],
     scenes: [
       { id: "send", label: "Send", beats: [
-        { durationMs: 100, caption: "Moving", actions: [{ type: "flow", target: "transfer", direction: "forward" }] },
+        { durationMs: 100, caption: "Moving", actions: [{ type: "flow", target: "transfer", direction: "forward", highlightEdge: false }] },
         { durationMs: 300, caption: "Received", actions: [] }
       ] },
       { id: "done", label: "Done", beats: [{ durationMs: 200, caption: "Done", actions: [] }] }
@@ -68,6 +68,10 @@ it("uses effective flow timing in a disconnected portable player without changin
     await page.goto(pathToFileURL(file).href);
     const progress = page.getByRole("slider", { name: "Progress" });
     expect(await progress.getAttribute("max")).toBe("3000");
+    expect(await page.locator('[data-id="transfer"]').getAttribute("stroke")).toBe("#c2410a");
+    expect(await page.locator('[data-id="transfer"]').getAttribute("stroke-dasharray")).toBe("6 4");
+    expect(await page.locator("svg text", { hasText: "Relationship" }).getAttribute("fill")).toBe("#c2410a");
+    expect(await page.locator('[data-flow-id="transfer"]').count()).toBe(1);
     await page.getByRole("button", { name: "Next step" }).click();
     expect(await progress.inputValue()).toBe("2500");
     expect(await page.locator(".flowsvg-caption").textContent()).toBe("Received");
@@ -188,6 +192,42 @@ it("validates and snapshots the HTML GIF option before reading assets", async ()
   expect((await output).includes("GIF89a")).toBe(true);
   expect((await renderHtml(document, { gifExport: false })).includes("GIF89a")).toBe(false);
 });
+
+it("rejects malformed HTML emphasis before reading assets", async () => {
+  const { renderHtml } = await import(NODE_ENTRY);
+  for (const emphasis of [null, [], "#fff", { fill: null }, { fill: "red" }, { stroke: "var(--color)" }, { unknown: "#fff" }, { markerText: () => "#fff" }]) {
+    await expect(renderHtml(document, { emphasis })).rejects.toThrow(/options.emphasis/);
+  }
+});
+
+it("keeps nested runtime emphasis in disconnected playback and its GIF download", async () => {
+  const { renderHtml } = await import(NODE_ENTRY);
+  const source = { version: 1, viewport: { width: 120, height: 80 }, emphasis: { fill: "#fff4db", stroke: "#b45309" },
+    nodes: [{ id: "a", kind: "rect", x: 10, y: 10, width: 100, height: 60 }], edges: [],
+    scenes: [{ id: "s", label: "Highlight", beats: [{ durationMs: 1000, transitionMs: 0, actions: [{ type: "highlight", target: "a" }] }] }] };
+  const options = { emphasis: { fill: "#123456" }, gifExport: true };
+  const pending = renderHtml(source, options);
+  options.emphasis.fill = "#ff0000";
+  source.emphasis.stroke = "#000000";
+  const path = join(temporaryDirectory, "runtime-emphasis.html");
+  await writeFile(path, await pending);
+  const browser = await chromium.launch({ executablePath: process.env.FLOWSVG_CHROMIUM_PATH });
+  try {
+    const context = await browser.newContext({ offline: true, acceptDownloads: true });
+    const requests: string[] = [];
+    context.on("request", (request) => { if (/^https?:/.test(request.url())) requests.push(request.url()); });
+    const page = await context.newPage();
+    await page.goto(pathToFileURL(path).href);
+    expect(await page.locator('[data-id="a"]').getAttribute("fill")).toBe("#123456");
+    expect(await page.locator('[data-id="a"]').getAttribute("stroke")).toBe("#b45309");
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Export GIF", exact: true }).click();
+    const download = await downloadPromise;
+    const frames = decompressFrames(parseGIF(Uint8Array.from(await readFile((await download.path())!)).buffer), true);
+    expect(Array.from(frames[0]!.patch.slice((30 * 120 + 30) * 4, (30 * 120 + 30) * 4 + 4))).toEqual([18, 52, 86, 255]);
+    expect(requests).toEqual([]);
+  } finally { await browser.close(); }
+}, 30_000);
 
 it("CLI generates optional GIF HTML without Chromium or installed runtime dependencies", async () => {
   const copiedRoot = join(temporaryDirectory, "gif-tool");
@@ -324,5 +364,34 @@ it("offline HTML uses live loop playback and preserves the elapsed remainder", a
     await page.evaluate(() => (globalThis as unknown as { advanceFlowClock(timestamp: number): void }).advanceFlowClock(3250));
     expect(await page.getByRole("slider", { name: "Progress" }).inputValue()).toBe("1000");
     expect(await page.getByRole("button", { name: "Play", exact: true }).isDisabled()).toBe(true);
+  } finally { await browser.close(); }
+}, 30_000);
+
+
+it("CLI carries document emphasis into offline highlights and browser hover", async () => {
+  const input = { ...document, emphasis: { fill: "#fff4db", stroke: "#b45309", markerText: "#112233" },
+    scenes: [{ id: "emphasis", label: "Emphasis", beats: [
+      { durationMs: 1000, transitionMs: 0, actions: [{ type: "highlight", target: "client" }] },
+      { durationMs: 1000, transitionMs: 0, actions: [{ type: "unhighlight", target: "client" }] }
+    ] }] };
+  const source = join(temporaryDirectory, "emphasis.json");
+  const output = join(temporaryDirectory, "emphasis.html");
+  await writeFile(source, JSON.stringify(input));
+  execFileSync(process.execPath, [join(PACKAGE_DIR, "dist/node/cli.js"), source, "--output", output, "--format", "html"]);
+  const browser = await chromium.launch({ executablePath: process.env.FLOWSVG_CHROMIUM_PATH });
+  try {
+    const context = await browser.newContext({ offline: true });
+    const page = await context.newPage();
+    await page.goto(pathToFileURL(output).href);
+    const shape = page.locator('[data-id="client"]');
+    expect(await shape.getAttribute("fill")).toBe("#fff4db");
+    expect(await shape.getAttribute("stroke")).toBe("#b45309");
+    await page.getByRole("button", { name: "Next step" }).click();
+    expect(await shape.getAttribute("fill")).toBe("#ffffff");
+    await shape.hover({ position: { x: 10, y: 10 } });
+    expect(await shape.getAttribute("stroke")).toBe("#b45309");
+    expect(await shape.getAttribute("fill")).toBe("#ffffff");
+    await page.mouse.move(0, 0);
+    expect(await shape.getAttribute("stroke")).toBe("#cfd8e3");
   } finally { await browser.close(); }
 }, 30_000);

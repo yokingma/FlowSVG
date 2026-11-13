@@ -1,4 +1,6 @@
 /** Shared deterministic paint values for core rendering and browser-only interaction feedback. */
+import type { EmphasisColors } from "./model.js";
+
 export interface ThemePalette {
   background: string;
   fill: string;
@@ -32,7 +34,21 @@ export const NODE_CORNER_RADIUS = 8;
 export const CYLINDER_CAP_RADIUS = 14;
 export const DIAGRAM_FONT_FAMILY = 'system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif';
 
-/** Select a palette without consulting browser preferences. */
-export function resolveThemePalette(theme: "light" | "dark" | undefined): ThemePalette {
-  return theme === "dark" ? DARK_PALETTE : LIGHT_PALETTE;
+/** Resolve runtime emphasis over document colors and the selected theme without browser preferences. */
+export function resolveThemePalette(
+  theme: "light" | "dark" | undefined,
+  documentEmphasis?: EmphasisColors,
+  runtimeEmphasis?: EmphasisColors
+): ThemePalette {
+  const palette = theme === "dark" ? DARK_PALETTE : LIGHT_PALETTE;
+  const fill = runtimeEmphasis?.fill ?? documentEmphasis?.fill;
+  const stroke = runtimeEmphasis?.stroke ?? documentEmphasis?.stroke;
+  const markerText = runtimeEmphasis?.markerText ?? documentEmphasis?.markerText;
+  if (fill === undefined && stroke === undefined && markerText === undefined) return palette;
+  return {
+    ...palette,
+    highlightFill: fill ?? palette.highlightFill,
+    highlight: stroke ?? palette.highlight,
+    highlightText: markerText ?? palette.highlightText
+  };
 }

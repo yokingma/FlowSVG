@@ -9,7 +9,6 @@ import { updateSvgDom } from "./svg-dom.js";
 import { attachPlayerLifecycle } from "./lifecycle.js";
 import { observeKeyboard, observeReducedMotion } from "./accessibility.js";
 import { PlayerControls, type SceneChoice } from "./controls.js";
-import { resolveThemePalette } from "../core/theme.js";
 import {
   createDiagram,
   evaluateDiagramFrame,
@@ -18,6 +17,7 @@ import {
   type Diagram,
   type DiagramFrameEvaluation
 } from "../core/diagram.js";
+import { snapshotRuntimeEmphasis } from "../core/validation.js";
 import type {
   DiagramDocument,
   DiagramFrameState,
@@ -106,10 +106,16 @@ export type PlayerEventMap = {
  * Mount a player using the host document and observe browser motion preferences unless explicitly overridden.
  * Replaces host children; destroy an existing player before replacing it on the same host.
  * @throws {DiagramValidationError} For an invalid initial document, before an instance exists to emit error.
+ * @throws {TypeError} For invalid runtime emphasis options, before browser resources or host content are changed.
  */
 export function createPlayer(host: HTMLElement, document: DiagramDocument, options: PlayerOptions = {}): FlowPlayer {
   const initial = createDiagram(document);
-  return new BrowserPlayer(host, initial, document, options);
+  const runtimeEmphasis = snapshotRuntimeEmphasis(options.emphasis);
+  const snapshotOptions: PlayerOptions = {
+    ...options,
+    ...(runtimeEmphasis === undefined ? {} : { emphasis: runtimeEmphasis })
+  };
+  return new BrowserPlayer(host, initial, document, snapshotOptions);
 }
 
 /**
@@ -181,7 +187,8 @@ class BrowserPlayer implements FlowPlayer {
     }
     if (options.gifExport && this.controls) {
       this.gifControls = new GifExportControls(owner, () => ({
-        document: structuredClone(this.sourceDocument), theme: this.options.theme ?? "light"
+        document: structuredClone(this.sourceDocument), theme: this.options.theme ?? "light",
+        emphasis: snapshotRuntimeEmphasis(this.options.emphasis)
       }));
       this.controls.element.append(this.gifControls.element);
     }
@@ -375,7 +382,7 @@ class BrowserPlayer implements FlowPlayer {
     const hit = point ? hitTestDiagramFrame(this.evaluation, point) : null;
     if (hit?.type === "node") {
       const shape = Array.from(this.canvas.querySelectorAll("[data-id]")).find((element) => element.getAttribute("data-id") === hit.id);
-      const palette = resolveThemePalette(this.options.theme);
+      const palette = this.evaluation.palette;
       const node = this.frame.nodes.find((candidate) => candidate.id === hit.id);
       // Border-only hover preserves all current timeline and content paint unless fill feedback is explicitly enabled.
       if (this.options.hoverFill) shape?.setAttribute("fill", palette.highlightFill);

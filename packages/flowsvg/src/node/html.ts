@@ -1,12 +1,15 @@
 /** Node-only HTML assembly. Read versioned built assets; never start a browser or import automation/encoding dependencies. */
 import { readFile } from "node:fs/promises";
 import { createDiagram } from "../core/diagram.js";
+import { snapshotRuntimeEmphasis } from "../core/validation.js";
 import { DIAGRAM_FONT_FAMILY, resolveThemePalette } from "../core/theme.js";
-import type { DiagramDocument, ThemeName } from "../core/model.js";
+import type { DiagramDocument, EmphasisColors, ThemeName } from "../core/model.js";
 
 /** Offline playback options. Default to document/light theme, paused at zero, with controls and caption. */
 export interface HtmlRenderOptions {
   theme?: ThemeName;
+  /** Per-field document/theme emphasis overrides, captured before reading offline assets. */
+  emphasis?: EmphasisColors;
   autoplay?: boolean;
   /** Defaults to false. Loop live playback; GIF loopCount remains an independent export option. */
   loop?: boolean;
@@ -22,10 +25,10 @@ export interface HtmlRenderOptions {
  */
 export async function renderHtml(document: DiagramDocument, options: HtmlRenderOptions = {}): Promise<string> {
   assertNodeRuntime();
+  validateOptions(options);
   const snapshot = structuredClone(document);
   const playbackOptions = structuredClone(options);
   createDiagram(snapshot);
-  validateOptions(playbackOptions);
   const [script, styles, exporter] = await Promise.all([
     readFile(new URL("../portable/player.js", import.meta.url), "utf8"),
     readFile(new URL("../portable/styles.css", import.meta.url), "utf8"),
@@ -55,6 +58,7 @@ export function assertNodeRuntime(): void {
 }
 
 function validateOptions(options: HtmlRenderOptions): void {
+  snapshotRuntimeEmphasis(options.emphasis);
   if (options.theme !== undefined && options.theme !== "light" && options.theme !== "dark") {
     throw new Error("HTML theme must be light or dark.");
   }

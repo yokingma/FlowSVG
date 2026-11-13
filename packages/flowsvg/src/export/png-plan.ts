@@ -1,6 +1,7 @@
 /** DOM-free PNG planning shared with Node; reject computable failures before allocating browser resources. */
 import { createDiagram, evaluateDiagramFrame, type Diagram, type DiagramFrameEvaluation } from "../core/diagram.js";
-import type { DiagramDocument } from "../core/model.js";
+import type { DiagramDocument, EmphasisColors } from "../core/model.js";
+import { snapshotRuntimeEmphasis } from "../core/validation.js";
 import { PngExportError, type PngExportOptions } from "./png-types.js";
 const MAX_SIDE = 8192;
 const MAX_PIXELS = 32_000_000;
@@ -13,12 +14,16 @@ export interface PngPlan {
   height: number;
   timeMs: number;
   theme: "light" | "dark";
+  /** Copied runtime layer; document colors remain in the compiled document. */
+  emphasis?: EmphasisColors;
   reducedMotion: boolean;
   background: "theme" | "transparent";
 }
 /** Validate supplied fields before defaults can hide malformed input. */
 export function validatePngOptions(options: PngExportOptions): void {
   if (options === null || typeof options !== "object" || Array.isArray(options)) throw new PngExportError("options", "Provide PNG options as an object.");
+  try { snapshotRuntimeEmphasis(options.emphasis); }
+  catch (cause) { throw new PngExportError("options", cause instanceof Error ? cause.message : "Invalid options.emphasis.", { cause }); }
   if (options.width !== undefined && (!Number.isFinite(options.width) || options.width <= 0)) throw new PngExportError("options", "width must be a positive finite number.");
   if (options.timeMs !== undefined && (!Number.isFinite(options.timeMs) || options.timeMs < 0)) throw new PngExportError("options", "timeMs must be finite and nonnegative.");
   if (options.theme !== undefined && options.theme !== "light" && options.theme !== "dark") throw new PngExportError("options", "theme must be light or dark.");
@@ -39,11 +44,12 @@ export function planPng(input: DiagramDocument, options: PngExportOptions = {}):
   if (timeMs > diagram.totalDuration) throw new PngExportError("options", "timeMs must be within the compiled timeline; static documents accept only zero.");
   const theme = options.theme ?? document.theme ?? "light";
   const reducedMotion = options.reducedMotion ?? false;
+  const emphasis = snapshotRuntimeEmphasis(options.emphasis);
   let evaluation: DiagramFrameEvaluation;
-  try { evaluation = evaluateDiagramFrame(diagram, timeMs, { theme, reducedMotion }); }
+  try { evaluation = evaluateDiagramFrame(diagram, timeMs, { theme, reducedMotion, emphasis }); }
   catch (cause) { throw new PngExportError("document", "Cannot evaluate the selected diagram frame; correct its geometry before exporting.", { cause }); }
   const width = Math.max(1, Math.round(options.width ?? document.viewport.width));
   const height = Math.max(1, Math.round(width * (evaluation.frame.camera.height / evaluation.frame.camera.width)));
   if (!Number.isFinite(width) || !Number.isFinite(height) || Math.max(width, height) > MAX_SIDE || width * height > MAX_PIXELS) throw new PngExportError("limit", "Reduce PNG dimensions: each side must be at most 8192 pixels and total pixels at most 32,000,000.");
-  return { document, diagram, evaluation, width, height, timeMs, theme, reducedMotion, background: options.background ?? "theme" };
+  return { document, diagram, evaluation, width, height, timeMs, theme, emphasis, reducedMotion, background: options.background ?? "theme" };
 }

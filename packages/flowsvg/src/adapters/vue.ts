@@ -17,7 +17,7 @@ import {
   type PlayerErrorDetail,
   type PlayerState
 } from "../browser/player.js";
-import type { DiagramDocument, ThemeName } from "../core/model.js";
+import type { DiagramDocument, EmphasisColors, ThemeName } from "../core/model.js";
 import {
   HostPlayerLifecycle,
   type HostPlayerLifecycleOptions,
@@ -32,6 +32,8 @@ export interface FlowPlayerProps {
   /** Defaults to false. Changes update live loop mode without rebuilding the player. */
   loop?: boolean;
   theme?: ThemeName;
+  /** Field-by-field runtime emphasis overrides; replace the object to rebuild the player. */
+  emphasis?: EmphasisColors;
   controls?: boolean;
   /** Defaults to false. Enable GIF downloads when controls are visible; export is independent of playback. */
   gifExport?: boolean;
@@ -74,6 +76,7 @@ const propsOptions = {
   speed: { type: Number, required: false },
   loop: { type: Boolean as PropType<boolean | undefined>, default: undefined },
   theme: { type: String as PropType<ThemeName>, required: false },
+  emphasis: { type: Object as PropType<EmphasisColors>, required: false },
   gifExport: { type: Boolean as PropType<boolean | undefined>, default: undefined },
   controls: { type: Boolean as PropType<boolean | undefined>, default: undefined },
   hoverFill: { type: Boolean as PropType<boolean | undefined>, default: undefined },
@@ -167,6 +170,7 @@ export const FlowPlayer = defineComponent({
 
     const currentOptions = (): HostPlayerLifecycleOptions => ({
       theme: props.theme,
+      emphasis: props.emphasis,
       controls: props.controls,
       gifExport: props.gifExport,
       hoverFill: props.hoverFill,
@@ -214,7 +218,7 @@ export const FlowPlayer = defineComponent({
       lifecycle.load(next);
     });
 
-    watch(() => [props.theme, props.controls, props.gifExport, props.reducedMotion, props.hoverFill], () => {
+    watch(() => [props.theme, props.emphasis, props.controls, props.gifExport, props.reducedMotion, props.hoverFill], () => {
       const next = currentOptions();
       if (!mounted || sameHostPlayerOptions(lifecycle.options, next)) return;
       rebuild();

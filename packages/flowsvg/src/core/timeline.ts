@@ -39,6 +39,7 @@ export interface CompiledFlow {
   direction: FlowDirection;
   text?: string;
   highlightParticipants: boolean;
+  highlightEdge: boolean;
 }
 
 /**
@@ -121,7 +122,7 @@ export class CompiledTimeline {
         const flows: CompiledFlow[] = [];
         for (const action of beat.actions) {
           if (action.type === "flow") {
-            flows.push({ target: action.target, direction: action.direction, highlightParticipants: action.highlightParticipants ?? true,
+            flows.push({ target: action.target, direction: action.direction, highlightEdge: action.highlightEdge ?? true, highlightParticipants: action.highlightParticipants ?? true,
               ...(action.text !== undefined ? { text: action.text } : {}) });
             continue;
           }

@@ -86,6 +86,16 @@ export interface DiagramTypography {
   flowLabel?: number;
 }
 
+/** Serializable emphasis colors; omitted fields fall back to the next configuration layer or selected theme. */
+export interface EmphasisColors {
+  /** Node highlight fill; ordinary fills are unchanged. */
+  fill?: string;
+  /** Node/edge highlight stroke and flow-marker background. */
+  stroke?: string;
+  /** Flow-marker text only; other text keeps its existing color rules. */
+  markerText?: string;
+}
+
 /**
  * Serializable version-1 document. Node and edge IDs are globally unique; an empty scenes array defines a static diagram.
  * Nodes and edges define the initial state; each scene inherits the preceding scene's final persistent state.
@@ -96,6 +106,8 @@ export interface DiagramDocument {
   title?: string;
   viewport: Viewport;
   theme?: ThemeName;
+  /** Authored emphasis colors, shared by highlights, flow markers and browser node hover. */
+  emphasis?: EmphasisColors;
   /** Shared text metrics; structured-content role defaults follow nodeLabel / 16, while explicit sizes remain unchanged. */
   typography?: DiagramTypography;
   nodes: DiagramNode[];
@@ -167,7 +179,7 @@ export interface EdgeVisualState {
 /**
  * Declarative beat action. Visibility, explicit highlighting, base updates and focus persist into later beats.
  * Flow markers and their temporary highlights expire at the beat end without changing persistent layers.
- * Flows highlight their edge and, by default, both endpoints; highlightParticipants: false excludes the endpoints.
+ * Flows highlight their edge and both endpoints by default; highlightEdge and highlightParticipants independently disable their automatic paint.
  * Single-flow receiver paint fades in for 200 ms after arrival, holds for 100 ms, then automatic node/edge paint fades out for 200 ms.
  * Logical participant flags and markers last for the whole beat; explicit highlights retain authored timing.
  * Reduced motion skips paint interpolation. Multiple flows retain synchronized endpoint paint.
@@ -201,6 +213,8 @@ export type Action =
     text?: string;
     /** Defaults to true. False disables temporary endpoint highlights; explicit highlights and the flow edge are unchanged. */
     highlightParticipants?: boolean;
+    /** Defaults to true. False disables automatic edge/label paint, without changing explicit highlights or logical flow state. */
+    highlightEdge?: boolean;
   };
 /** Validation path and reason, for example scenes[0].beats[1].actions[0].target. */
 export interface ValidationIssue {
@@ -211,11 +225,14 @@ export interface ValidationIssue {
 /**
  * Reproducible visual options: theme overrides the document theme, with light as the final default.
  * reducedMotion completes transitions immediately and hides flow markers while retaining the flow's configured highlights.
+ * emphasis overrides document colors field by field; omitted fields fall back to document emphasis and then the selected theme.
  * Beat durations and timeline positions do not change.
  */
 export interface EvaluateOptions {
   /** Override the document theme; the final fallback is light. */
   theme?: ThemeName;
+  /** Override document emphasis colors field by field; invalid and unknown values throw with options.emphasis paths. */
+  emphasis?: EmphasisColors;
   /** Apply target values immediately and hide flow markers; retain configured flow highlights, beat durations and selection. */
   reducedMotion?: boolean;
 }

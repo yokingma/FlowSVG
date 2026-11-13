@@ -40,6 +40,13 @@ async function sample(document: DiagramDocument, options: Omit<PngExportOptions,
     return { width: canvas.width, height: canvas.height, pixels, header: Array.from(bytes.slice(0, 8)), byteLength: bytes.length };
   }, { document, options, points });
 }
+it.each(["light", "dark"] as const)("renders authored emphasis into %s PNG pixels", async (theme) => {
+  const document: DiagramDocument = { ...input, emphasis: { fill: "#fff4db", stroke: "#b45309", markerText: "#112233" },
+    scenes: [{ id: "highlight", label: "Highlight", beats: [{ durationMs: 1000, transitionMs: 0,
+      actions: [{ type: "highlight", target: "a" }] }] }] };
+  const result = await sample(document, { theme }, [[20, 40]]);
+  expect(result.pixels).toEqual([[255, 244, 219, 255]]);
+});
 it("decodes complete offline PNGs at 0, middle, beat boundary and completed end without downloads", async () => {
   const downloads: string[] = []; page.on("download", (download) => downloads.push(download.suggestedFilename()));
   for (const [timeMs, x] of [[0, 20], [500, 90], [1000, 160], [2000, 160]]) {
@@ -62,6 +69,15 @@ it("preserves transparent alpha, node paint and edge-label halos in both themes"
     expect(transparent.pixels[2]![3]).toBeGreaterThan(0);
     const opaque = await sample(document, { theme });
     expect(opaque.pixels[0]).toEqual(theme === "light" ? [255, 255, 255, 255] : [16, 24, 40, 255]);
+  }
+});
+it("renders empty and alpha runtime emphasis overrides in transparent PNGs", async () => {
+  const source: DiagramDocument = { ...input, emphasis: { fill: "#fff4db", stroke: "#b45309" },
+    nodes: [{ id: "a", kind: "rect", x: 10, y: 20, width: 80, height: 60 }], edges: [],
+    scenes: [{ id: "s", label: "Highlight", beats: [{ durationMs: 1000, transitionMs: 0, actions: [{ type: "highlight", target: "a" }] }] }] };
+  for (const theme of ["light", "dark"] as const) {
+    expect((await sample(source, { theme, background: "transparent", emphasis: {} }, [[30, 40]])).pixels).toEqual([[255, 244, 219, 255]]);
+    expect((await sample(source, { theme, background: "transparent", emphasis: { fill: "#ff000080", stroke: undefined } }, [[30, 40]])).pixels).toEqual([[255, 0, 0, 128]]);
   }
 });
 it("uses fitted selected cameras and rounded explicit width without changing the authored document", async () => {

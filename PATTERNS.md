@@ -4,6 +4,14 @@
 
 ## Ownership
 
+- Snapshot nested runtime emphasis at export preflight and carry it through image plans, Node bridges and offline payloads. Player GIF tasks capture overrides with their document at click time; browser hover remains outside exports.
+
+- Compare framework `emphasis` objects by reference for recreation; browser players snapshot their fields. Snapshot the Web Component object property on assignment, retain it across reconnects and return copies from its getter. Keep its existing time/playback restoration and error events, without an emphasis attribute.
+
+- Resolve emphasis colors in the SDK core per field: runtime override, document, then theme. Validate each supplied layer independently, snapshot player overrides before resources, and reuse the evaluated palette for browser hover and exported frames; keep ordinary theme colors independent.
+
+- Keep per-flow edge paint independent of logical flow membership, endpoint paint and markers. Compile `highlightEdge` with default true; false suppresses only automatic edge/label coloring, including reduced motion, while explicit highlights and ordinary updates retain their layers.
+
 - Keep own visibility and explicit-highlight contracts covered by SDK-owned immutable inputs at public frame/SVG seams. Preserve fixed-baseline expectations and prove new characterization assertions with isolated, reversible mutations.
 - Keep inherited group/descendant, internal/external edge and cross-scene composition coverage in an SDK-owned immutable fixture at the public diagram seams; record reversible mutation evidence when proving the opacity-layer contract.
 
@@ -33,6 +41,8 @@
 - **npm publication:** follow the [release guide](docs/development/releasing.md). Verify the exact tarball that will be uploaded; distinguish a prepared source version from a version published on npm.
 
 ## Build and verification boundaries
+
+- Keep joint emphasis acceptance beside the real tarball install. Combine authored literal colors with public frame/SVG parity, independently decoded image pixels and offline host/CLI behavior; retain screenshots outside version control and distinguish generation from visual inspection.
 
 - Serve README showcase animations from the Pages `previews/` directory. Copy the checked-in GIFs into the Pages artifact and watch those inputs in the workflow; keep npm image allowlists limited to small documentation assets.
 

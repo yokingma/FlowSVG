@@ -1,7 +1,7 @@
 /** Validate document fields, references and action conflicts without mutating input; content rules stay shared. */
 import { validateTypography } from "./typography.js";
 import { supportsNodeContent, validateNodeContent } from "./node-content.js";
-import type { NodeKind, PortDirection, ValidationIssue } from "./model.js";
+import type { EmphasisColors, NodeKind, PortDirection, ValidationIssue } from "./model.js";
 
 /** Validation error for invalid documents or author-time measurement inputs; issues retains all affected field paths. */
 export class DiagramValidationError extends Error {
@@ -22,10 +22,11 @@ export function validateDocument(input: unknown): ValidationIssue[] {
   if (!isRecord(input)) {
     return [{ path: "$", message: "document must be an object" }];
   }
-  validateUnknownFields(input, ["version", "title", "viewport", "theme", "typography", "nodes", "edges", "scenes"], "$", issues);
+  validateUnknownFields(input, ["version", "title", "viewport", "theme", "emphasis", "typography", "nodes", "edges", "scenes"], "$", issues);
   if (input.version !== 1) issues.push({ path: "version", message: "must be 1" });
   if (input.title !== undefined && typeof input.title !== "string") issues.push({ path: "title", message: "must be a string" });
   if (input.theme !== undefined && input.theme !== "light" && input.theme !== "dark") issues.push({ path: "theme", message: "must be light or dark" });
+  validateEmphasisColors(input.emphasis, "emphasis", issues);
   validateTypography(input.typography, issues);
   const viewport = input.viewport;
   if (!isRecord(viewport)) {
@@ -173,6 +174,29 @@ function validateDenseArray(values: unknown[], path: string, issues: ValidationI
 function validateColor(value: unknown, path: string, issues: ValidationIssue[]): void {
   if (typeof value !== "string" || !/^#(?:[\da-f]{3}|[\da-f]{4}|[\da-f]{6}|[\da-f]{8})$/i.test(value)) issues.push({ path, message: "must be a hexadecimal color" });
 }
+/** Validate every supplied emphasis field before palette fallback can hide an invalid value. */
+export function validateEmphasisColors(value: unknown, path: string, issues: ValidationIssue[]): void {
+  if (value === undefined) return;
+  if (!isRecord(value)) {
+    issues.push({ path, message: "must be an object" });
+    return;
+  }
+  validateUnknownFields(value, ["fill", "stroke", "markerText"], path, issues);
+  for (const key of ["fill", "stroke", "markerText"] as const) {
+    if (value[key] !== undefined) validateColor(value[key], `${path}.${key}`, issues);
+  }
+}
+
+/** Validate a runtime emphasis override and report option paths outside document validation. */
+export function snapshotRuntimeEmphasis(value: unknown): EmphasisColors | undefined {
+  const issues: ValidationIssue[] = [];
+  validateEmphasisColors(value, "options.emphasis", issues);
+  if (issues.length > 0) {
+    const details = issues.map(({ path, message }) => `${path} ${message}`).join("; ");
+    throw new TypeError(`Invalid visual options: ${details}`);
+  }
+  return value === undefined ? undefined : { ...value as EmphasisColors };
+}
 function validateNodeStyle(style: unknown, path: string, issues: ValidationIssue[]): void {
   if (style === undefined) return;
   if (!isRecord(style)) {
@@ -263,7 +287,7 @@ function validateAction(action: unknown, path: string, allIds: Set<string>, node
   const allowedByType: Record<string, readonly string[]> = {
     show: ["type", "target"], hide: ["type", "target"], highlight: ["type", "target"], unhighlight: ["type", "target"],
     updateNode: ["type", "target", "value"], updateEdge: ["type", "target", "value"], focus: ["type", "target"],
-    flow: ["type", "target", "direction", "text", "highlightParticipants"]
+    flow: ["type", "target", "direction", "text", "highlightParticipants", "highlightEdge"]
   };
   const allowed = Object.hasOwn(allowedByType, type) ? allowedByType[type] : undefined;
   if (!allowed) {
@@ -291,6 +315,7 @@ function validateAction(action: unknown, path: string, allIds: Set<string>, node
     if (action.direction !== "forward" && action.direction !== "reverse") issues.push({ path: `${path}.direction`, message: "must be forward or reverse" });
     if (action.text !== undefined && typeof action.text !== "string") issues.push({ path: `${path}.text`, message: "must be a string" });
     if (action.highlightParticipants !== undefined && typeof action.highlightParticipants !== "boolean") issues.push({ path: `${path}.highlightParticipants`, message: "must be a boolean" });
+    if (action.highlightEdge !== undefined && typeof action.highlightEdge !== "boolean") issues.push({ path: `${path}.highlightEdge`, message: "must be a boolean" });
     // Reserve the edge independently of other field errors so invalid directions cannot hide duplicate transfers.
     if (isNonEmptyString(action.target) && edgeById.has(action.target)) addAssignment(`flow:${action.target}`, `${path}.target`, assignments, issues);
     return;

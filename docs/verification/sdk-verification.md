@@ -16,7 +16,7 @@ pnpm release:verify
 
 `pnpm test` includes SDK behavior and browser regressions, release-script contracts, cold workspace installation and the SDK dependency audit. The installation regression runs pnpm offline without lifecycle scripts or SDK build output and checks that the CLI links without warnings. Browser checks serve SDK-owned fixtures. The dependency audit rejects imports outside the SDK boundary.
 
-`pnpm release:verify` builds and installs an actual tarball. It checks the file allowlist, public exports, strict consumer types, Native/Web Component/React/Vue lifecycles and offline HTML/GIF tools. The verifier also checks label and content measurement, browser and Node PNG export, and the mixed-shape example through installed public entries. `pnpm release` adds type and behavior checks and an npm publication preview; uploading requires `pnpm release:publish`.
+`pnpm release:verify` builds and installs an actual tarball. The installed emphasis consumer checks public types and all host/export entries with authored color expectations, independent PNG/GIF pixels and offline CLI JSON. With `KEEP_RELEASE_TEMP=1`, the retained consumer contains `emphasis-evidence/` screenshots and image files for separate visual inspection. It checks the file allowlist, public exports, strict consumer types, Native/Web Component/React/Vue lifecycles and offline HTML/GIF tools. The verifier also checks label and content measurement, browser and Node PNG export, and the mixed-shape example through installed public entries. `pnpm release` adds type and behavior checks and an npm publication preview; uploading requires `pnpm release:publish`.
 
 The tarball contains the small PNG previews, logo and lifecycle teaching GIF. Release tests reject the four gallery GIFs, which the Pages workflow serves separately. README rewriting preserves their absolute public URLs. Verify deployed gallery bytes through the [Pages checks](../development/github-pages.md#verify-a-deployment) before npm publication; SDK verification does not deploy or fetch the site.
 
@@ -25,10 +25,13 @@ The tarball contains the small PNG previews, logo and lifecycle teaching GIF. Re
 | Contract | SDK-owned coverage |
 | --- | --- |
 | Own visibility, explicit highlights, simultaneous base updates and exact frame/SVG output | `src/core/own-transitions.test.ts` and immutable `tests/fixtures/own-transitions.ts` |
+| Per-flow edge paint, explicit/base style layers and reduced motion | `src/core/flow-edge-highlight.test.ts`, browser parallel-flow playback and disconnected offline HTML timing checks |
 | Parallel transfers, reverse directions and beat cleanup | Core parallel-flow tests and `tests/fixtures/parallel-transfers.ts` |
 | Content replacement, clearing and inherited state | Core node-content timeline tests and `tests/fixtures/content-timeline.ts` |
 | Structured text, lists, tags, clipping and SVG parity | Core/browser tests and SDK-owned node-content/list fixtures |
 | Mixed preset flow, simultaneous clip isolation, decoded PNG/GIF and disconnected HTML | `examples/mixed-flow.json`, `tests/browser-mixed-flow.html`, `tests/mixed-shape-exports.test.ts` and installed mixed-flow smoke |
+| Document emphasis validation, theme fallback, snapshots, hover and offline output | `src/core/emphasis-colors.test.ts`, `src/browser/browser-hover.test.ts`, PNG and offline HTML regressions |
+| Runtime emphasis in PNG/GIF, offline HTML and player downloads, nested input snapshots and options errors | Public export suites, independent image decoding and disconnected HTML/player GIF tests |
 | Host lifecycle, reload, options and disposal | Browser tests and `tests/integration/` |
 | Real pointer, keyboard and browser behavior | SDK browser regression pages and `tests/sdk-browser.test.ts` |
 | Package completeness and installed usage | Release-script tests and installed-tarball verification |

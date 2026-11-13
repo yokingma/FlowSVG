@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { createApp, h, nextTick, ref } from "vue";
+import { createApp, h, nextTick, ref, shallowRef } from "vue";
 import { renderToString } from "vue/server-renderer";
 import { describe, expect, it } from "vitest";
 import { FlowPlayer, type FlowPlayerHandle } from "../vue.js";
+import type { DiagramDocument, EmphasisColors } from "../index.js";
 import type { PlayerErrorDetail } from "../browser.js";
 
 const staticDocument = {
@@ -19,6 +20,66 @@ const narrativeDocument = {
 } as const;
 
 describe("Vue entry", () => {
+  it("propagates invalid emphasis through Vue hook errors without mounting browser resources", () => {
+    const host = window.document.createElement("div");
+    const errors: unknown[] = [];
+    const app = createApp({ render: () => h(FlowPlayer, {
+      document: narrativeDocument, emphasis: { fill: null } as unknown as EmphasisColors
+    }) });
+    app.config.errorHandler = (error) => errors.push(error);
+    try {
+      app.mount(host);
+      expect(errors).toHaveLength(1);
+      expect(errors[0]).toBeInstanceOf(TypeError);
+      expect((errors[0] as Error).message).toContain("options.emphasis.fill");
+      expect(host.querySelector("svg")).toBeNull();
+    } finally { app.unmount(); }
+    expect(host.childElementCount).toBe(0);
+  });
+
+  it("snapshots emphasis and rebuilds on replacement or clearing without reapplying initial time", async () => {
+    const document: DiagramDocument = { version: 1, viewport: { width: 320, height: 180 },
+      emphasis: { fill: "#fff4db", stroke: "#b45309" },
+      nodes: [{ id: "node", kind: "rect", x: 20, y: 20, width: 100, height: 60 }], edges: [],
+      scenes: [{ id: "s", label: "Scene", beats: [{ durationMs: 1000, transitionMs: 0, actions: [{ type: "highlight", target: "node" }] }] }] };
+    const host = window.document.createElement("div");
+    const handle = shallowRef<FlowPlayerHandle>();
+    const first: EmphasisColors = { stroke: "#123456" };
+    const emphasis = shallowRef<EmphasisColors | undefined>(first);
+    const currentDocument = shallowRef(document);
+    const app = createApp({ render: () => h(FlowPlayer, { ref: handle, document: currentDocument.value, emphasis: emphasis.value,
+      initialTimeMs: 250, reducedMotion: false, controls: false, loop: true, speed: 2 }) });
+    const paint = () => handle.value!.getState().frame.nodes[0]!.style;
+    try {
+      app.mount(host);
+      expect(paint()).toMatchObject({ fill: "#fff4db", stroke: "#123456" });
+      expect(handle.value?.getState().timeMs).toBe(250);
+      first.stroke = "#abcdef";
+      handle.value?.seek(500);
+      await nextTick();
+      expect(paint().stroke).toBe("#123456");
+      const oldSvg = host.querySelector("svg");
+      emphasis.value = { fill: "#aabbcc" };
+      await nextTick();
+      expect(host.querySelector("svg")).not.toBe(oldSvg);
+      expect(handle.value?.getState()).toMatchObject({ timeMs: 0, playing: false, speed: 2, loop: true });
+      expect(paint()).toMatchObject({ fill: "#aabbcc", stroke: "#b45309" });
+      emphasis.value = { stroke: "#234567" };
+      await nextTick();
+      currentDocument.value = { ...document, emphasis: { fill: "#ddeeff", stroke: "#778899" } };
+      await nextTick();
+      expect(paint()).toMatchObject({ fill: "#ddeeff", stroke: "#234567" });
+      emphasis.value = undefined;
+      currentDocument.value = { ...document };
+      await nextTick();
+      expect(paint()).toMatchObject({ fill: "#fff4db", stroke: "#b45309" });
+      currentDocument.value = { ...document, emphasis: undefined, theme: "dark" };
+      await nextTick();
+      expect(paint()).toMatchObject({ fill: "#233b60", stroke: "#8ab4f8" });
+    } finally { app.unmount(); }
+    expect(host.childElementCount).toBe(0);
+  });
+
   it("notifies onError exactly once for a failed document load and retains the frame", () => {
     const host = window.document.createElement("div");
     window.document.body.append(host);

@@ -2,9 +2,11 @@
  * Web Component boundary: convert attributes/objects/URLs and manage lifecycle while reusing browser playback/rendering.
  * Imports do not register the element; DOM-free imports use a placeholder base, so real registration needs a browser load.
  */
+import { snapshotRuntimeEmphasis } from "../core/validation.js";
 import { createDiagram } from "../core/diagram.js";
 import type {
   DiagramDocument,
+  EmphasisColors,
   EvaluateOptions,
   ThemeName
 } from "../core/model.js";
@@ -73,6 +75,7 @@ export class FlowPlayerElement extends HTMLElementBase {
   private manuallyDestroyed = false;
   private currentDocument: DiagramDocument | undefined;
   private controlsOverride: boolean | undefined;
+  private emphasisOverride: EmphasisColors | undefined;
   private readonly forwardedEvents: Array<{
     name: PlayerEventName;
     listener: EventListener
@@ -90,6 +93,19 @@ export class FlowPlayerElement extends HTMLElementBase {
       return;
     }
     this.setDocument(value);
+  }
+
+  /** Runtime emphasis snapshot. Replace or clear this object property to rebuild; no HTML attribute is used. */
+  get emphasis(): EmphasisColors | undefined {
+    return this.emphasisOverride === undefined ? undefined : { ...this.emphasisOverride };
+  }
+  set emphasis(value: EmphasisColors | undefined) {
+    try {
+      this.emphasisOverride = snapshotRuntimeEmphasis(value);
+      this.rebuildForOptions();
+    } catch (error) {
+      this.dispatchError(toError(error));
+    }
   }
 
   /** Document URL resolved against ownerDocument.baseURI; changes cancel obsolete loads. */
@@ -392,6 +408,7 @@ export class FlowPlayerElement extends HTMLElementBase {
   private playerOptions(): PlayerOptions {
     return {
       controls: this.controls,
+      emphasis: this.emphasisOverride,
       loop: this.loop,
       gifExport: this.gifExport,
       hoverFill: this.hoverFill,

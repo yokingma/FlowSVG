@@ -172,6 +172,26 @@ try {
     const playerOptions: PlayerOptions = { gifExport: true };
     const code: GifExportErrorCode = "limit";
     void [renderHtml, exportNodeGif, exportGif, GifExportError, nodeOptions, htmlOptions, playerOptions, code];
+    import type { EmphasisColors } from "flowsvg";
+    import type { FlowPlayerElementOptions, FlowPlayerElement } from "flowsvg/element";
+    import type { FlowPlayerProps as ReactPlayerProps } from "flowsvg/react";
+    import type { FlowPlayerProps as VuePlayerProps } from "flowsvg/vue";
+    const emphasis: EmphasisColors = { fill: "#fff4db", stroke: "#0f766e", markerText: "#ffffff" };
+    const visual: EvaluateOptions = { emphasis };
+    const runtimeSvg: SvgRenderOptions = { emphasis };
+    const runtimePlayer: PlayerOptions = { emphasis };
+    const runtimePng: PngExportOptions = { emphasis };
+    const runtimeGif: GifExportOptions = { emphasis };
+    const runtimeNodePng: NodePngExportOptions = { emphasis };
+    const runtimeNodeGif: NodeGifExportOptions = { emphasis };
+    const runtimeHtml: HtmlRenderOptions = { emphasis };
+    const runtimeElement: FlowPlayerElementOptions = { emphasis };
+    const coloredDocument: DiagramDocument = { version: 1, emphasis, viewport: { width: 100, height: 100 }, nodes: [], edges: [], scenes: [] };
+    const reactProps: ReactPlayerProps = { document: coloredDocument, emphasis };
+    const vueProps: VuePlayerProps = { document: coloredDocument, emphasis };
+    const flowPolicy: Action = { type: "flow", target: "edge", direction: "forward", highlightEdge: false, highlightParticipants: false };
+    function setEmphasis(element: FlowPlayerElement): void { element.emphasis = emphasis; element.emphasis = undefined; }
+    void [visual, runtimeSvg, runtimePlayer, runtimePng, runtimeGif, runtimeNodePng, runtimeNodeGif, runtimeHtml, runtimeElement, reactProps, vueProps, flowPolicy, setEmphasis];
     import { defineFlowPlayer } from "flowsvg/element";
     import { FlowPlayer as ReactPlayer } from "flowsvg/react";
     import { FlowPlayer as VuePlayer } from "flowsvg/vue";
@@ -346,6 +366,11 @@ try {
   const fixturePath = join(tempRoot, "smoke.mjs");
   writeFileSync(fixturePath, fixture);
   run(process.execPath, [fixturePath], tempRoot);
+
+  // Exercise color contracts through the installed package before downgrading framework peers.
+  const emphasisConsumer = join(tempRoot, "emphasis-consumer.mjs");
+  copyFileSync(join(repoRoot, "scripts", "verify-emphasis-consumer.mjs"), emphasisConsumer);
+  console.log(run(process.env.FLOWSVG_NODE20_PATH ?? process.execPath, [emphasisConsumer], tempRoot));
 
   // Check the documented lower bounds too; current framework types can hide incompatible declaration output.
   run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", "react@18.0.0", "react-dom@18.0.0", "@types/react@18", "@types/react-dom@18", "vue@3.5.0"], tempRoot);

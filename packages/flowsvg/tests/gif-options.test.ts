@@ -44,6 +44,8 @@ it("rejects malformed runtime options before preparing or allocating canvas reso
     const api = (globalThis as unknown as { FlowSVGExport: { exportGif(document: unknown, options: unknown): Promise<Uint8Array> } }).FlowSVGExport;
     const options = [
       { theme: "system" }, { theme: null }, { includeCaptions: "false" }, { includeCaptions: null },
+      { emphasis: null }, { emphasis: [] }, { emphasis: "#fff" }, { emphasis: { fill: null } },
+      { emphasis: { fill: "red" } }, { emphasis: { stroke: "var(--color)" } }, { emphasis: { markerText: "#12" } }, { emphasis: { unknown: "#fff" } },
       { reducedMotion: 0 }, { reducedMotion: null }, { signal: {} }, { signal: { aborted: true } }, { onProgress: 1 },
       { fps: null }, { width: null }, { speed: null }, { startMs: null }, { endMs: null },
       { captionHeight: null }, { captionHeight: -1, includeCaptions: false }, { finalHoldMs: null }, { loopCount: null },
