@@ -20,7 +20,10 @@ Before writing technical documentation or source comments, read [technical writi
 
 For executable code, implementation logic, or code structure changes, review the root and affected package/app READMEs in both languages, plus documentation covering the affected behavior, API, integration, or development workflow.
 
-- Update affected `CHANGELOG.md`, `PATTERNS.md`, and documentation in the same task. Keep bilingual task coverage aligned and verify changed examples, commands, and links.
+- Update affected `CHANGELOG.md` with change history and `PATTERNS.md` with reusable implementation rules in the same task.
+- Update READMEs only when supported capabilities, public usage, limits, prerequisites, or navigation change. Update the owning guides when detailed behavior or API contracts change.
+- Store reproduction metrics, before/after screenshots, and test logs in local task evidence under `.scratch/`.
+- Keep changed behavior and API coverage aligned across languages; verify changed examples, commands, and links.
 - Documentation-only, planning, and data changes do not require changelog or pattern updates.
 - In the completion report, identify the documentation updated, or explain why the reviewed documentation needs no changes.
 
