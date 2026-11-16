@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fix default-font tag vertical positioning and mixed-size metadata alignment. Reserve marker space outside tag geometry, move text and backgrounds together, and retain synchronous, platform-independent layout across playback and exports.
+
 ## 0.4.0 - 2026-11-13
 
 - Verify emphasis colors and per-flow paint through installed package types, Native/React/Vue/Web Component hosts, offline HTML, browser/Node images, player GIF downloads and CLI JSON input.

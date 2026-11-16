@@ -69,6 +69,8 @@ Read the sections for the affected subsystem. For public-contract changes, also 
 
 ## Structured content and typography
 
+- Center each tag's estimated multiline text block using its own font sizes and ascent/descent split. Keep marker headroom in the first row, move complete tags for shared-baseline alignment, and track row membership independently of background top edges. Pair core relative-position regressions with actual default-font glyph checks; no DOM or font preparation enters core layout.
+
 - Semantic presets use fixed rectangular label safe areas with 12-unit padding. Keep contour clearance, clipping and label placement in the shared core; ordinary labels retain their current wrapping behavior.
 - Wrap semantic preset labels at grapheme boundaries when a Latin token cannot fit, and clip paint while retaining overflow diagnostics. Preserve ordinary word-safe `wrapText` behavior separately.
 - Measure semantic node labels using the same wrapping and full line boxes as evaluated frames, then invert the shape safe-area height rule; measurement returns suggestions without mutating documents or scanning timelines.

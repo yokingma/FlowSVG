@@ -1,13 +1,65 @@
 import { describe, expect, it } from "vitest";
-import { createDiagram, validateDocument, type ContentListItem, type DiagramDocument } from "../index.js";
+import { createDiagram, measureNodeContent, validateDocument, type ContentListItem, type DiagramDocument } from "../index.js";
 
-const factsDocument = (items: ContentListItem[], width = 240, marker?: "bullet"): DiagramDocument => ({
+const factsDocument = (items: ContentListItem[], width = 240, marker?: "bullet" | "number"): DiagramDocument => ({
   version: 1, viewport: { width: 320, height: 500 },
   nodes: [{ id: "facts", kind: "rect", x: 10, y: 20, width, height: 440,
     content: { blocks: [{ type: "list", marker, items }] } }], edges: [], scenes: []
 });
 
 describe("Facts tags and status", () => {
+  it("keeps tag internals stable through width transitions, replacement and backward queries", () => {
+    const items: ContentListItem[] = [{ tags: [{ text: "Ready" }, { text: "Big", style: { fontSize: 24 } }],
+      status: "OK", statusStyle: { fontSize: 28 }, body: "Body" }];
+    const initial = factsDocument(items, 280, "number");
+    const replacement = { blocks: [{ type: "list" as const, marker: "number" as const,
+      items: [{ ...items[0], tags: [{ text: "Ready\n就绪" }] }] }] };
+    const document: DiagramDocument = { ...initial, scenes: [{ id: "resize", label: "Resize", beats: [
+      { durationMs: 1000, transitionMs: 1000, actions: [{ type: "updateNode", target: "facts", value: { width: 108 } }] },
+      { durationMs: 1000, actions: [{ type: "updateNode", target: "facts", value: { content: replacement } }] }
+    ] }] };
+    const diagram = createDiagram(document);
+    const midpoint = diagram.evaluateAt(500);
+    for (const time of [0, 500, 1000, 2000, 500, 0]) {
+      const node = diagram.evaluateAt(time).nodes[0]!;
+      const content = node.content!;
+      const measurement = measureNodeContent({ kind: "rect", width: node.width, content });
+      const measured = createDiagram({ ...document, scenes: [], nodes: [{ ...document.nodes[0]!, width: node.width,
+        height: measurement.height, content }] }).evaluateAt(0);
+      expect(measured.warnings).toEqual([]);
+      const tag = node.contentLayout!.tags[0]!;
+      const lines = node.contentLayout!.lines.filter(({ role, tagIndex }) => role === "tag" && tagIndex === 0);
+      const standalone = createDiagram(factsDocument([{ tags: [{ text: lines.map(({ text }) => text).join("\n") }] }]))
+        .evaluateAt(0).nodes[0]!.contentLayout!;
+      expect(tag.height).toBeCloseTo(standalone.tags[0]!.height);
+      expect(lines[0]!.y - tag.y).toBeCloseTo(standalone.lines[0]!.y - standalone.tags[0]!.y);
+      const body = node.contentLayout!.lines.find(({ role }) => role === "body")!;
+      expect(body.y - body.fontSize).toBeGreaterThanOrEqual(tag.y + tag.height);
+    }
+    expect(diagram.evaluateAt(500)).toEqual(midpoint);
+  });
+
+  it("preserves a tag's own box and baseline offset when numbering or status grows", () => {
+    const layouts = [
+      factsDocument([{ tags: [{ text: "Ready" }] }]),
+      factsDocument([{ tags: [{ text: "Ready" }], body: "Body", style: { fontSize: 28 } }], 240, "number"),
+      factsDocument([{ tags: [{ text: "Ready" }], status: "OK", statusStyle: { fontSize: 28 } }])
+    ].map((document) => createDiagram(document).evaluateAt(0).nodes[0]!.contentLayout!);
+    const reference = layouts[0]!;
+    const referenceTag = reference.tags[0]!;
+    const referenceLine = reference.lines.find(({ role }) => role === "tag")!;
+    for (const layout of layouts.slice(1)) {
+      const tag = layout.tags[0]!;
+      const line = layout.lines.find(({ role }) => role === "tag")!;
+      expect(tag.height).toBe(referenceTag.height);
+      expect(line.fontSize).toBe(referenceLine.fontSize);
+      expect(line.y - tag.y).toBeCloseTo(referenceLine.y - referenceTag.y);
+      const companion = layout.lines.find(({ role }) => role === "marker" || role === "status")!;
+      expect(companion.y).toBe(line.y);
+      expect(companion.y - companion.fontSize).toBeGreaterThanOrEqual(layout.safeArea.y);
+    }
+  });
+
   it.each(["light", "dark"] as const)("renders opt-in pill tags from their final aligned height in %s", (theme) => {
     const diagram = createDiagram(factsDocument([{ tags: [
       { text: "large", style: { fontSize: 24 } },
@@ -17,7 +69,9 @@ describe("Facts tags and status", () => {
     const frame = diagram.evaluateAt(0, { theme, reducedMotion: true });
     const tags = frame.nodes[0]!.contentLayout!.tags;
     expect(frame.warnings).toEqual([]);
-    expect(tags[2]!.height).toBeGreaterThan(24);
+    const standalone = createDiagram(factsDocument([{ tags: [{ text: "pill label", style: { shape: "pill" } }] }])).evaluateAt(0).nodes[0]!.contentLayout!.tags[0]!;
+    expect(tags[2]!.height).toBe(standalone.height);
+    expect(tags[2]!.y).toBeGreaterThan(tags[0]!.y);
     const content = diagram.renderSvg(0, { theme }).split('data-content-id="facts"')[1]!;
     const radii = [...content.matchAll(/<rect[^>]* rx="([^"]+)"/g)].map((match) => Number(match[1]));
     expect(radii).toEqual([3, 3, tags[2]!.height / 2]);
@@ -31,7 +85,8 @@ describe("Facts tags and status", () => {
     expect(line.align).toBe("center");
     expect(line.x).toBeCloseTo(tag.x + tag.width / 2);
     expect(line.spans[0]!.x).toBeCloseTo(tag.x + (tag.width - line.width) / 2);
-    expect(line.y).toBeCloseTo(tag.y + 17.5);
+    expect(line.y).toBeGreaterThan(tag.y);
+    expect(line.y).toBeLessThan(tag.y + tag.height);
     expect(diagram.renderSvg()).toContain(`<tspan x="${line.x}" y="${line.y}"`);
     expect(diagram.renderSvg()).toMatch(/<tspan[^>]*text-anchor="middle">Current<\/tspan>/);
   });
@@ -85,12 +140,14 @@ describe("Facts tags and status", () => {
     const layout = diagram.evaluateAt(0).nodes[0]!.contentLayout!;
     const first = layout.lines.filter(({ itemIndex, role }) => itemIndex === 0 && role !== "body");
     expect(new Set(first.map(({ y }) => y)).size).toBe(1);
-    expect(layout.tags[0]!.height).toBeGreaterThan(24);
+    expect(layout.tags[0]!.height).toBe(24);
+    expect(layout.tags[0]!.y).toBeGreaterThan(layout.tags[1]!.y);
     expect(layout.tags[1]).toMatchObject({ fill: "#123abc", explicitFill: true });
     expect(layout.lines.find(({ text }) => text === "Big")!.spans[0]).toMatchObject({ color: "#ab1234", explicitColor: true });
     const secondMarker = layout.lines.find(({ itemIndex, role }) => itemIndex === 1 && role === "marker")!;
     const secondTag = layout.tags[2]!;
-    expect(secondMarker.y - secondMarker.fontSize).toBeGreaterThanOrEqual(secondTag.y);
+    expect(secondMarker.y - secondMarker.fontSize).toBeGreaterThanOrEqual(layout.safeArea.y);
+    expect(secondTag.y).toBeGreaterThanOrEqual(layout.tags[1]!.y + layout.tags[1]!.height);
     expect(diagram.renderSvg()).toContain('fill="#123abc"');
   });
 

@@ -1035,6 +1035,8 @@ The `steps` block rendered in a 300 × 110 rectangle with `content: { blocks: [s
 
 Tags accept `{ text, style?: { fontSize, fontWeight, color, fill, shape } }`, with font size 11 by default. Tag rows start at the item's left edge; each text line is centered inside its own tag background using the rendered font's advance width.
 
+Vertical positioning centers the tag's estimated text block using its own font sizes and a fixed ascent/descent split for the default font stack. Numbering and status text reserve row space without stretching tag backgrounds. Mixed-size tags share a text baseline, so their background top edges can differ. This deterministic estimate does not guarantee identical glyph bounds for every string or system font.
+
 `shape` is `rounded` by default; set `shape: "pill"` for capsule corners based on the final tag height. Shape does not change text layout or theme colors. List `tagGap` defaults to 6 and must be finite and nonnegative. Status is right-aligned 12-unit accent text; `statusStyle` accepts `fontSize`, `fontWeight`, and `color`.
 
 When space is insufficient, tags wrap and status moves below. Body and auxiliary text follow.

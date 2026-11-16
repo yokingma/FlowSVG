@@ -57,6 +57,41 @@ async function withPage(run: (page: Page, errors: string[]) => Promise<void>): P
   try { await run(page, errors); } finally { await page.close(); }
 }
 
+it("centers default-font Ready tags in real SVG with and without numbering", async () => {
+  await withPage(async (page, errors) => {
+    await page.goto(`${origin}/tests/browser-node-content.html`);
+    await page.addScriptTag({ type: "module", content: "import * as sdk from '/dist/index.js'; window.tagCenteringSdk = sdk;" });
+    await page.waitForFunction("Boolean(window.tagCenteringSdk)");
+    const offsets = await page.evaluate(async () => {
+      const sdk: typeof import("../src/index.js") = Reflect.get(window, "tagCenteringSdk");
+      const results: number[] = [];
+      for (const numbered of [false, true]) {
+        const diagram = sdk.createDiagram({ version: 1, typography: { nodeLabel: 18 }, viewport: { width: 480, height: 240 },
+          nodes: [{ id: "tag", kind: "roundedRect", x: 32, y: 32, width: 416, height: 176,
+            content: { blocks: [{ type: "list", marker: numbered ? "number" : "none",
+              items: [{ tags: [{ text: "Ready", style: { shape: "pill" } }], body: "Body" }] }] } }], edges: [], scenes: [] });
+        const host = document.createElement("div");
+        host.innerHTML = diagram.renderSvg();
+        document.body.append(host);
+        try {
+          await document.fonts.ready;
+          const box = host.querySelector<SVGRectElement>("[data-content-id] > rect")!;
+          const span = [...host.querySelectorAll<SVGTSpanElement>("tspan")].find((entry) => entry.textContent === "Ready")!;
+          const style = getComputedStyle(span);
+          const context = document.createElement("canvas").getContext("2d")!;
+          context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+          const glyph = context.measureText("Ready");
+          const inkCenter = span.getStartPositionOfChar(0).y - (glyph.actualBoundingBoxAscent - glyph.actualBoundingBoxDescent) / 2;
+          results.push(inkCenter - (box.y.baseVal.value + box.height.baseVal.value / 2));
+        } finally { host.remove(); }
+      }
+      return results;
+    });
+    for (const offset of offsets) expect(Math.abs(offset), JSON.stringify(offsets)).toBeLessThanOrEqual(1);
+    expect(errors).toEqual([]);
+  });
+});
+
 it.each(["light", "dark"])("plays measured diamond labels and clips real SVG text in %s", async (theme) => {
   await withPage(async (page, errors) => {
     await page.goto(`${origin}/tests/browser-diamond.html?theme=${theme}`);

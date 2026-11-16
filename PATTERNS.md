@@ -23,6 +23,7 @@
 
 - Keep each published unit self-contained. SDK build, tests and release verification use SDK-owned inputs; shared showcase and host delivery have their own checks. SDK integration and versioning responsibilities are defined in [authoring-tool integration](docs/development/authoring-tools.md).
 - Keep structured-content tag text centered inside its decorative background; the shared SDK owns this geometry for every host and export.
+- Reserve list marker space outside tag internals. Align complete tag boxes with their text, and verify default-font vertical positioning through actual browser glyphs alongside deterministic layout regressions.
 - Keep reusable behavior regressions with the SDK and narrative assertions with the shared author package. Retire an obsolete demonstration and its dedicated checks together while retaining generic behavior coverage.
 - Preserve licenses, attribution and source identity when moving ownership. Record generated output, programmatic checks, visual inspection and live deployment as distinct evidence.
 

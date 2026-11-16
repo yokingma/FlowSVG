@@ -2,7 +2,7 @@
  * Deterministic node-content model and layout. The core supplies current absolute node geometry and theme colors.
  * This module does not measure browser fonts or mutate authored dimensions; SVG consumes its evaluated lines and tag backgrounds.
  */
-import { CONTENT_LINE_HEIGHT_RATIO } from "./typography.js";
+import { CONTENT_LINE_HEIGHT_RATIO, TEXT_DESCENT_RATIO } from "./typography.js";
 import type { NodeKind, ValidationIssue } from "./model.js";
 import { CYLINDER_CAP_RADIUS, type ThemePalette } from "./theme.js";
 
@@ -194,6 +194,8 @@ const DEFAULT_TAG_GAP = 6;
 const TAG_SIZE = 11;
 const TAG_PADDING_X = 6;
 const TAG_PADDING_Y = 2;
+// Estimate a complete em around the alphabetic baseline; centering a full fontSize above it biases default fonts downward.
+const TAG_ASCENT_RATIO = 1 - TEXT_DESCENT_RATIO;
 const LIST_MARKER_GAP = 8;
 const OVERFLOW_TOLERANCE = 0.000001;
 const MIN_LINE_HEIGHT = 20;
@@ -317,6 +319,8 @@ interface ContentPartLayout {
   bottom: number;
   widthOverflow: boolean;
   heightOverflow?: boolean;
+  /** Row membership is independent of each aligned tag background's top edge. */
+  tagRowCount?: number;
 }
 
 /**
@@ -398,7 +402,7 @@ function layoutItemHeader(item: ContentListItem, area: ContentSafeArea, top: num
   const statusWidth = naturalContentWidth(item.status, item.statusStyle, AUXILIARY_SIZE * defaultFontScale);
   const lastTag = header.tags.at(-1);
   const occupied = lastTag ? lastTag.x + lastTag.width - area.x : 0;
-  const singleTagRow = header.tags.every((tag) => tag.y === top) && header.lines.length === header.tags.length;
+  const singleTagRow = (header.tagRowCount ?? 0) <= 1 && header.lines.length === header.tags.length;
   const singleStatusLine = !contentTextString(item.status).match(/[\r\n]/);
   const sameRow = singleTagRow && singleStatusLine && occupied + (lastTag ? gap : 0) + statusWidth <= area.width;
   const statusTop = sameRow ? top : header.bottom;
@@ -406,7 +410,7 @@ function layoutItemHeader(item: ContentListItem, area: ContentSafeArea, top: num
   let tags = header;
   if (sameRow && header.lines.length > 0) {
     const baseline = Math.max(...header.lines.map((line) => line.y), status.lines[0]!.y);
-    tags = shiftTagText(header, baseline - header.lines[0]!.y);
+    tags = shiftTagPart(header, baseline - header.lines[0]!.y);
     status = shiftContentPart(status, baseline - status.lines[0]!.y);
   }
   return { lines: [...tags.lines, ...status.lines], tags: tags.tags,
@@ -418,18 +422,21 @@ function layoutContentTags(source: ContentTag[], area: ContentSafeArea, top: num
   blockIndex: number, itemIndex: number, gap: number, markerSize: number, defaultFontScale: number): ContentPartLayout {
   let row: { tag: ContentTag; tagIndex: number; width: number; x: number }[] = [];
   let right = area.x;
+  let rowCount = 0;
   let result: ContentPartLayout = { lines: [], tags: [], bottom: top, widthOverflow: false };
   const flush = () => {
     if (row.length === 0) return;
     const rowTop = result.tags.length > 0 ? result.bottom + gap : top;
     const parts = row.map(({ tag, tagIndex, width, x }) => layoutContentTag(tag,
-      { ...area, x, width }, rowTop, palette, blockIndex, itemIndex, tagIndex, markerSize, defaultFontScale));
-    const baseline = Math.max(...parts.map((part) => part.lines[0]!.y));
-    const aligned = parts.map((part) => shiftTagText(part, baseline - part.lines[0]!.y));
+      { ...area, x, width }, rowTop, palette, blockIndex, itemIndex, tagIndex, defaultFontScale));
+    // Only the first row shares a marker. Reserve its ascent outside each tag's own text/background geometry.
+    const baseline = parts.reduce((largest, part) => Math.max(largest, part.lines[0]!.y), rowTop + (rowCount === 0 ? markerSize : 0));
+    const aligned = parts.map((part) => shiftTagPart(part, baseline - part.lines[0]!.y));
     result = { lines: [...result.lines, ...aligned.flatMap((part) => part.lines)],
       tags: [...result.tags, ...aligned.flatMap((part) => part.tags)], bottom: Math.max(...aligned.map((part) => part.bottom)),
       widthOverflow: result.widthOverflow || aligned.some((part) => part.widthOverflow) };
     row = [];
+    rowCount += 1;
     right = area.x;
   };
   source.forEach((tag, tagIndex) => {
@@ -439,30 +446,33 @@ function layoutContentTags(source: ContentTag[], area: ContentSafeArea, top: num
     right += width + gap;
   });
   flush();
-  return result;
+  return { ...result, tagRowCount: rowCount };
 }
 
 function layoutContentTag(tag: ContentTag, area: ContentSafeArea, top: number, palette: ThemePalette,
-  blockIndex: number, itemIndex: number, tagIndex: number, markerSize: number, defaultFontScale: number): ContentPartLayout {
+  blockIndex: number, itemIndex: number, tagIndex: number, defaultFontScale: number): ContentPartLayout {
   const textArea = { ...area, x: area.x + TAG_PADDING_X, width: Math.max(0, area.width - TAG_PADDING_X * 2) };
   const result = layoutTextPart(tag.text, "tag", { ...tag.style, align: "center" }, textArea,
-    top + TAG_PADDING_Y, palette, blockIndex, itemIndex, markerSize, defaultFontScale);
+    top + TAG_PADDING_Y, palette, blockIndex, itemIndex, 0, defaultFontScale);
+  const height = result.bottom - top + TAG_PADDING_Y;
+  // Center the estimated union of all lines as one block, preserving authored line spacing and mixed font sizes.
+  const inkTop = result.lines.reduce((smallest, line) => Math.min(smallest, line.y - line.fontSize * TAG_ASCENT_RATIO), Infinity);
+  const inkBottom = result.lines.reduce((largest, line) => Math.max(largest, line.y + line.fontSize * TEXT_DESCENT_RATIO), -Infinity);
+  const offset = top + height / 2 - (inkTop + (inkBottom - inkTop) / 2);
   const centeredLines = result.lines.map((line) => {
-    const lineHeight = Math.max(MIN_LINE_HEIGHT, line.fontSize * CONTENT_LINE_HEIGHT_RATIO);
-    const offset = (lineHeight - line.fontSize) / 2;
     return { ...line, y: line.y + offset, tagIndex,
       spans: line.spans.map((span) => ({ ...span, y: span.y + offset })) };
   });
   return { ...result, widthOverflow: result.widthOverflow || area.width < TAG_PADDING_X * 2,
     lines: centeredLines, bottom: result.bottom + TAG_PADDING_Y,
-    tags: [{ x: area.x, y: top, width: area.width, height: result.bottom - top + TAG_PADDING_Y,
+    tags: [{ x: area.x, y: top, width: area.width, height,
       fill: tag.style?.fill ?? palette.tagFill, explicitFill: tag.style?.fill !== undefined,
       ...(tag.style?.shape === undefined ? {} : { shape: tag.style.shape }), blockIndex, itemIndex, tagIndex }] };
 }
 
-/** Baseline shifts preserve line spacing and expand tag backgrounds instead of moving the row boundary. */
-function shiftTagText(part: ContentPartLayout, offset: number): ContentPartLayout {
-  return { ...shiftContentPart(part, offset), tags: part.tags.map((tag) => ({ ...tag, height: tag.height + offset })) };
+/** Move complete tags to the shared baseline without changing their internal padding or box heights. */
+function shiftTagPart(part: ContentPartLayout, offset: number): ContentPartLayout {
+  return { ...shiftContentPart(part, offset), tags: part.tags.map((tag) => ({ ...tag, y: tag.y + offset })) };
 }
 
 function shiftContentPart(part: ContentPartLayout, offset: number): ContentPartLayout {
