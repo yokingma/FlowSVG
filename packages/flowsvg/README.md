@@ -4,7 +4,7 @@
 
 <p align="center">Declarative SVG diagrams with timeline playback and SVG/PNG/GIF export.</p>
 
-<p align="center">English | <a href="https://cdn.jsdelivr.net/npm/flowsvg@0.4.0/README.zh-CN.md">简体中文</a></p>
+<p align="center">English | <a href="https://cdn.jsdelivr.net/npm/flowsvg@0.4.1/README.zh-CN.md">简体中文</a></p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/flowsvg"><img src="https://img.shields.io/npm/v/flowsvg?logo=npm&label=npm" alt="npm version"></a>
@@ -349,4 +349,4 @@ The guides track the repository's `main` branch. Use the declarations and change
 
 The package includes JSON examples under `node_modules/flowsvg/examples/`: `job-lifecycle.json`, `decision-branch.json`, `input-output.json`, `report-generation.json`, `subprocess-call.json` and `mixed-flow.json`. Render any of them with the offline HTML command above.
 
-[Changelog](https://cdn.jsdelivr.net/npm/flowsvg@0.4.0/CHANGELOG.md) · [MIT](https://cdn.jsdelivr.net/npm/flowsvg@0.4.0/LICENSE)
+[Changelog](https://cdn.jsdelivr.net/npm/flowsvg@0.4.1/CHANGELOG.md) · [MIT](https://cdn.jsdelivr.net/npm/flowsvg@0.4.1/LICENSE)

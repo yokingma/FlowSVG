@@ -1,8 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.4.1 - 2026-11-17
 
 - Fix default-font tag vertical positioning and mixed-size metadata alignment. Reserve marker space outside tag geometry, move text and backgrounds together, and retain synchronous, platform-independent layout across playback and exports.
+
+- Shorten the English and Chinese SDK READMEs while retaining quick-start and integration examples. Link detailed contracts to the SDK guides and update the background task example links to the offline HTML instructions.
+
+- Optimize the four README showcase GIFs losslessly. Preserve decoded pixels, timing, dimensions and looping, and version the image URLs by content hash.
 
 ## 0.4.0 - 2026-11-13
 

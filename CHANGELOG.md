@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Prepare `flowsvg` 0.4.1 with the tag-positioning fix, shorter bilingual SDK READMEs and lossless showcase GIFs; align SDK release notes and versioned README links.
+
 - Fix default-font structured tag centering. Keep tag boxes independent of list numbering and status sizes, preserve shared baselines by moving complete tags, and verify real browser glyph positions.
 
 - Add **Emphasis colors and flow highlighting** (`emphasis-flow`) after the order data-flow story. Compare a portable document palette, automatic edge/endpoint highlights, preserved relationship colors and marker-only motion across Native, React and Vue; synchronize navigation, JSON downloads and delivery checks.

@@ -4,7 +4,7 @@
 
 <p align="center">声明式 SVG 图解，支持时间线播放与 SVG/PNG/GIF 导出。</p>
 
-<p align="center"><a href="https://cdn.jsdelivr.net/npm/flowsvg@0.4.0/README.md">English</a> | 简体中文</p>
+<p align="center"><a href="https://cdn.jsdelivr.net/npm/flowsvg@0.4.1/README.md">English</a> | 简体中文</p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/flowsvg"><img src="https://img.shields.io/npm/v/flowsvg?logo=npm&label=npm" alt="npm 版本"></a>
@@ -349,4 +349,4 @@ CLI 保留已有文件，传入 `--overwrite` 才会覆盖。`renderHtml` 接受
 
 包在 `node_modules/flowsvg/examples/` 下提供 JSON 示例：`job-lifecycle.json`、`decision-branch.json`、`input-output.json`、`report-generation.json`、`subprocess-call.json` 和 `mixed-flow.json`。用前面的离线 HTML 命令即可渲染任意一个。
 
-[变更记录](https://cdn.jsdelivr.net/npm/flowsvg@0.4.0/CHANGELOG.md) · [MIT](https://cdn.jsdelivr.net/npm/flowsvg@0.4.0/LICENSE)
+[变更记录](https://cdn.jsdelivr.net/npm/flowsvg@0.4.1/CHANGELOG.md) · [MIT](https://cdn.jsdelivr.net/npm/flowsvg@0.4.1/LICENSE)
