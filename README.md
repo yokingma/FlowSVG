@@ -36,13 +36,13 @@ FlowSVG includes a complete public shape catalog, a simple request and response 
 
 The shape catalog puts every public node shape into one executable flow and demonstrates measured labels, orthogonal connections, highlights, and playback.
 
-<p align="center"><img src="https://yokingma.github.io/FlowSVG/previews/basic-shapes.gif" alt="Animated catalog of FlowSVG node shapes" width="700"></p>
+<p align="center"><img src="https://yokingma.github.io/FlowSVG/previews/basic-shapes.gif?v=0e657b3040b9" alt="Animated catalog of FlowSVG node shapes" width="700"></p>
 
-<p align="center"><img src="https://yokingma.github.io/FlowSVG/previews/request-response.gif" alt="Request and response flow" width="700"></p>
+<p align="center"><img src="https://yokingma.github.io/FlowSVG/previews/request-response.gif?v=4245bc5d0ad2" alt="Request and response flow" width="700"></p>
 
-<p align="center"><img src="https://yokingma.github.io/FlowSVG/previews/web-service-deployment.gif" alt="Two-replica web service deployment" width="700"></p>
+<p align="center"><img src="https://yokingma.github.io/FlowSVG/previews/web-service-deployment.gif?v=17dd2b740e52" alt="Two-replica web service deployment" width="700"></p>
 
-<p align="center"><img src="https://yokingma.github.io/FlowSVG/previews/llm-inference.gif" alt="LLM inference with Transformer layers and KV cache" width="700"></p>
+<p align="center"><img src="https://yokingma.github.io/FlowSVG/previews/llm-inference.gif?v=9e00e8420514" alt="LLM inference with Transformer layers and KV cache" width="700"></p>
 
 ## Use cases
 
@@ -230,7 +230,7 @@ Open the URL printed in the terminal. For React or Vue, replace `flowsvg-native-
 
 Installation links the CLI through a checked-in launcher and does not build the SDK. Before the first build, invoking the CLI exits with a `pnpm build` instruction.
 
-The shared catalog includes request/response, RAG, architecture, task lifecycle, data flow, deployment and sequence diagrams. The Data flow category also includes an [emphasis comparison](packages/showcase/src/examples/emphasis-flow.ts) for document colors, preserved relationship colors and marker-only motion. Examples use self-contained teaching data. See the [native](apps/native-example/README.md), [React](apps/react-example/README.md) and [Vue](apps/vue-example/README.md) guides for controls and build options. A [background task example](packages/flowsvg/README.md#example-background-task-lifecycle) is also included in the npm package.
+The shared catalog includes request/response, RAG, architecture, task lifecycle, data flow, deployment and sequence diagrams. The Data flow category also includes an [emphasis comparison](packages/showcase/src/examples/emphasis-flow.ts) for document colors, preserved relationship colors and marker-only motion. Examples use self-contained teaching data. See the [native](apps/native-example/README.md), [React](apps/react-example/README.md) and [Vue](apps/vue-example/README.md) guides for controls and build options. A [background task example](packages/flowsvg/README.md#offline-html-in-node) is also included in the npm package.
 
 Build all three example sites with `pnpm build:examples`. For static hosting and GitHub Pages, see [showcase delivery](docs/verification/showcase-verification.md) and [Pages deployment](docs/development/github-pages.md).
 

@@ -48,7 +48,7 @@ Deploy only the resulting `apps/native-example/dist/` directory through HTTP or 
 3. Open a shared example/time link in a new tab, then refresh it. Confirm paused restoration.
 4. Download diagram JSON and confirm that its URL remains under `/FlowSVG/json/`.
 5. Export a GIF. Check that lazy modules load from the site and the export completes.
-6. Before publishing an npm release, request all four `/FlowSVG/previews/*.gif` URLs referenced by the README. Confirm HTTP 200, GIF content and matching bytes against the checked-in images. Deployment must finish before an npm README points readers to new gallery URLs.
+6. Before publishing an npm release, request all four `/FlowSVG/previews/*.gif` URLs referenced by the README. Confirm HTTP 200, GIF content, matching bytes against the checked-in images and the byte budget in [preview maintenance](../assets/image-previews.md#lossless-optimization-and-image-delivery). Request the exact cache-versioned URLs in the READMEs. Deployment must finish before an npm README points readers to new gallery URLs; after npm publication, verify image display there as well.
 7. Check browser errors and failed resource requests. Check a narrow viewport for horizontal overflow.
 
 If deployment fails, inspect the failed Actions job and repository Pages settings. Verify the deployed URL separately from the local build.

@@ -101,7 +101,7 @@ tarball 验证先删除 SDK 的 `dist`，再通过 `npm pack` 触发 `prepack` �
 
 确认工作区干净，待发布源码已提交，且版本尚未使用。同步更新包内中英文 README、SDK CHANGELOG 和受影响的使用文档。检查 `package.json` 中的仓库、主页和问题反馈地址是否正确。面向 npm 使用者的文档须能在无私有仓库访问权限时使用。四个 README 展示 GIF 由公共 GitHub Pages 的 `/FlowSVG/previews/` 提供，不进入 npm 包。上传 npm 前先按 [Pages 验收步骤](github-pages.md#verify-a-deployment)确认四个 URL 返回 HTTP 200 且字节与源码文件一致；部署失败时先修复站点。
 
-包内中英文 README 面向前端开发者，保持自足：按安装、首次播放、框架接入、播放控制、导出和编写规则组织，保留常用模型、选项、事件与错误契约。更细的字段说明可查包内 TypeScript 声明与 JSDoc，或公开源码仓库中的 [SDK 手册](../guides/sdk-guide.zh-CN.md)。该手册提供完整接入与 API 参考，不加入 npm 文件白名单。示例 JSON 和图片仍分别位于 `packages/flowsvg/examples/` 与 `packages/flowsvg/docs/images/` 并随包分发。README 在最前面居中展示动态 Logo，首次播放步骤之后再展示生命周期示例。发布脚本将 Markdown 图片和 HTML `<img>` 中的 `./docs/images/` 地址转换为按包版本固定的 npm CDN 地址，且只修改临时 README 副本。四个展示 GIF 使用公共 Pages 绝对地址，发布脚本保留这些地址。PNG、Logo 和后台任务教学动画仍随包分发；语言切换、更新日志与许可证链接继续指向 npm CDN。上传时使用重新生成并验证的最终 tarball。图片生成来源与刷新方式见[图片说明](../assets/image-previews.md)。
+包内中英文 README 面向前端开发者，保持自足：按安装、首次播放、框架接入、播放控制、导出和编写规则组织，保留常用模型、选项、事件与错误契约。更细的字段说明可查包内 TypeScript 声明与 JSDoc，或公开源码仓库中的 [SDK 手册](../guides/sdk-guide.zh-CN.md)。该手册提供完整接入与 API 参考，不加入 npm 文件白名单。示例 JSON 和图片仍分别位于 `packages/flowsvg/examples/` 与 `packages/flowsvg/docs/images/` 并随包分发。README 在最前面居中展示动态 Logo，并在安装步骤前展示四个带链接说明的动画。后台任务生命周期示例的运行步骤位于离线 HTML 章节。发布脚本将 Markdown 图片和 HTML `<img>` 中的 `./docs/images/` 地址转换为按包版本固定的 npm CDN 地址，且只修改临时 README 副本。四个展示 GIF 使用公共 Pages 绝对地址，发布脚本保留这些地址。PNG、Logo 和后台任务教学动画仍随包分发；语言切换、更新日志与许可证链接继续指向 npm CDN。上传时使用重新生成并验证的最终 tarball。图片生成来源与刷新方式见[图片说明](../assets/image-previews.md)。
 
 登录 npm 官方 registry：
 

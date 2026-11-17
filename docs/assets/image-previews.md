@@ -2,7 +2,7 @@
 
 > **Document status:** Supporting maintenance material. The image files, example JSON, SDK exporter, and the guide source are the maintained inputs. The PNG/GIF outputs are release artifacts and must be regenerated when the documented source or rendering defaults change; they do not define the SDK contract.
 
-The PNG files in `packages/flowsvg/docs/images/` show output from the code examples in the [English](../guides/sdk-guide.md) and [Chinese](../guides/sdk-guide.zh-CN.md) SDK guides. The README gallery also uses full-timeline GIFs from the formal showcase.
+The PNG files in `packages/flowsvg/docs/images/` show output from the code examples in the [English](../guides/sdk-guide.md) and [Chinese](../guides/sdk-guide.zh-CN.md) SDK guides. The READMEs also use full-timeline GIFs from the formal showcase. The package READMEs place all four animations in a featured-examples section before installation, each followed by a short linked caption. Header links provide direct access to quick start and API usage.
 
 - Capture PNGs in Chrome at one CSS pixel per diagram unit using the settings below.
 - Generate showcase GIFs with `scripts/generate-readme-previews.mjs`.
@@ -14,7 +14,7 @@ After centered-text changes, refresh the record-tag, Facts timeline and entity-g
 
 ## Typical SDK example
 
-Both SDK READMEs embed `docs/images/job-lifecycle.gif`. Its complete input is shipped as `packages/flowsvg/examples/job-lifecycle.json`, a checked-in snapshot of the formal background task lifecycle document. The JSON has no showcase metadata or runtime dependency on the showcase workspace package. The snapshot and GIF use English labels and captions. It presents three independent tasks: A retries and completes, B exhausts its retries, and C is cancelled while queued. Explicit state highlights and `flow.highlightParticipants: false` keep exactly one state current during event movement.
+The SDK README offline HTML example uses `packages/flowsvg/examples/job-lifecycle.json`, a checked-in snapshot of the formal background task lifecycle document. Its companion preview remains packaged at `docs/images/job-lifecycle.gif`. The JSON has no showcase metadata or runtime dependency on the showcase workspace package. The snapshot and GIF use English labels and captions. It presents three independent tasks: A retries and completes, B exhausts its retries, and C is cancelled while queued. Explicit state highlights and `flow.highlightParticipants: false` keep exactly one state current during event movement.
 
 To refresh the snapshot after an intentional story change, build the SDK and shared showcase, then copy `packages/showcase/dist/site/json/job-lifecycle.json` to the SDK example path. SDK build and release consume the checked-in JSON without running that author build. Measure all content versions and check warnings, unique current states and terminal-state boundaries before regenerating the preview.
 
@@ -29,7 +29,19 @@ Generate the GIF with the current SDK's Node exporter: light theme, width 868, 2
 | `web-service-deployment.gif` | `packages/showcase/src/examples/web-service-deployment.ts`, full compiled timeline, dark theme, 1.5x speed, 700 px wide, 24 fps, no captions |
 | `llm-inference.gif` | `packages/showcase/src/examples/llm-inference.ts`, full compiled timeline, dark theme, 1.5x speed, 640 px wide, 24 fps, no captions |
 
-The GIFs cover the complete authored timelines and play at 1.5x so README readers can see every stage without the slower default pacing. They retain the authored document and SDK renderer, use 24 fps, and are regenerated only after rebuilding the SDK and showcase. The root and SDK READMEs use `https://yokingma.github.io/FlowSVG/previews/<filename>` for these four gallery GIFs. The Pages workflow copies the checked-in files from `packages/flowsvg/docs/images/` into the Native site artifact after building. These URLs show the currently deployed previews and are not pinned to an SDK version. Deploy and verify all four public GIF URLs before npm publication. See [Pages deployment](../development/github-pages.md).
+The GIFs cover the complete authored timelines and play at 1.5x so README readers can see every stage without the slower default pacing. They retain the authored document and SDK renderer, use 24 fps, and are regenerated only after rebuilding the SDK and showcase. Optimize the generated files losslessly before replacing the checked-in previews; the same files serve GitHub and npm readers. The root and SDK READMEs use `https://yokingma.github.io/FlowSVG/previews/<filename>` for these four gallery GIFs. The Pages workflow copies the checked-in files from `packages/flowsvg/docs/images/` into the Native site artifact after building. These URLs show the currently deployed previews and are not pinned to an SDK version. Deploy and verify all four public GIF URLs before npm publication. See [Pages deployment](../development/github-pages.md).
+
+### Lossless optimization and image delivery
+
+Keep each showcase GIF below 4,000,000 bytes as a repository delivery budget. This is an internal margin for README image proxies, not a claim about npm's current maximum. An external image URL still passes through the reader platform's image delivery policy; a successful direct request alone does not verify npm display.
+
+1. Rebuild the SDK and showcase, then run the generator. Keep an unoptimized copy of each generated GIF as the comparison input.
+2. Optimize each generated GIF with Gifsicle, for example `gifsicle -O3 input.gif -o optimized.gif`. Retain local color maps; palette reduction, resizing and dropping distinct animation frames change the displayed result.
+3. Decode and composite the generated and optimized versions. Before adopting an optimized file, verify identical pixel output and timing after merging consecutive identical frames, plus unchanged dimensions and loop settings. Confirm the complete timeline still plays and the byte budget passes.
+4. Replace the checked-in GIFs with the verified outputs. After bytes change, append or refresh a `?v=<first-12-SHA256-characters>` query on their image URLs in both root and package READMEs. Use the same query in both languages so image proxies request the new bytes.
+5. Deploy Pages, then verify the public bytes against the checked-in files. Check all four images through the npm README after publication, including service deployment and LLM inference.
+
+Lossless frame-delta encoding preserves GitHub animation quality while reducing transfer size. If a preview cannot meet the budget losslessly, retain the full-quality GitHub asset and prepare a separate npm preview rather than reducing the shared asset's dimensions, colors or frame rate.
 
 ## SDK guide PNGs
 
