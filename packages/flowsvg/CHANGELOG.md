@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Create a GitHub Release from the matching SDK changelog entry after the maintainer command confirms the published npm artifact.
+
 ## 0.4.1 - 2026-11-17
 
 - Fix default-font tag vertical positioning and mixed-size metadata alignment. Reserve marker space outside tag geometry, move text and backgrounds together, and retain synchronous, platform-independent layout across playback and exports.

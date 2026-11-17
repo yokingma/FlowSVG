@@ -249,7 +249,7 @@ Additional checks:
 | Built examples and static delivery | `pnpm test:examples` | [Showcase verification](docs/verification/showcase-verification.md) |
 | Package and installed consumers | `pnpm release` | [Release guide](docs/development/releasing.md) |
 
-Browser checks require a prepared Chromium browser and fonts. Follow the [browser setup instructions](docs/development/releasing.md#浏览器与最低运行时准备). `pnpm release` verifies and previews publication; uploading requires the separate `pnpm release:publish` command.
+Browser checks require a prepared Chromium browser and fonts. Follow the [browser setup instructions](docs/development/releasing.md#浏览器与最低运行时准备). `pnpm release` verifies and previews publication.
 
 For project conventions, see the [glossary](GLOSSARY.md), [architecture decisions](docs/adr/) and [implementation patterns](PATTERNS.md). SDK release notes are in the [package changelog](packages/flowsvg/CHANGELOG.md).
 

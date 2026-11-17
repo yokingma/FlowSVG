@@ -6,6 +6,9 @@ import { afterEach, describe, expect, it } from "vitest";
 
 const FIXTURE_PREFIX = "flowsvg release test ";
 const FIXTURE_VERSION = "0.1.0";
+const FIXTURE_COMMIT = "a".repeat(40);
+const FIXTURE_REPOSITORY = "example/flowsvg";
+const FIXTURE_RELEASE_NOTES = "- Publish the verified SDK artifact.\n";
 const PREVIEW_IMAGES = [
   "docs/images/quick-start.png", "docs/images/node-content.png",
   "docs/images/numbered-list.png", "docs/images/numbered-list.zh-CN.png",
@@ -23,6 +26,65 @@ interface Invocation {
   args: string[];
 }
 
+function writeGitFixture(binaries: string, record: string): void {
+  writeFileSync(join(binaries, "git"), `#!${process.execPath}\n${record}
+    const failure = process.env.TEST_RELEASE_FAILURE;
+    const commit = ${JSON.stringify(FIXTURE_COMMIT)};
+    if (args[0] === "remote") {
+      const origin = failure === "wrong-origin" ? "https://gitlab.com/example/flowsvg.git" : "https://github.com/${FIXTURE_REPOSITORY}.git";
+      console.log("origin\\t" + origin + " (fetch)\\norigin\\t" + origin + " (push)");
+    }
+    if (args[0] === "status" && failure === "dirty") console.log(" M changed.ts");
+    if (args[0] === "rev-parse") console.log(failure === "head-moved" ? "b".repeat(40) : commit);
+    if (args[0] === "ls-remote" && args.includes("refs/heads/main")) {
+      console.log((["unpushed", "head-moved"].includes(failure) ? "b".repeat(40) : commit) + "\\trefs/heads/main");
+    }
+    if (args[0] === "ls-remote" && args.includes("refs/tags/v${FIXTURE_VERSION}") && process.env.TEST_GITHUB_STATE) {
+      console.log((process.env.TEST_GITHUB_STATE === "wrong-tag" ? "b".repeat(40) : commit) + "\\trefs/tags/v${FIXTURE_VERSION}");
+    }
+  `, { mode: 0o755 });
+}
+
+function writeGitHubFixture(binaries: string, record: string): void {
+  writeFileSync(join(binaries, "gh"), `#!${process.execPath}\n${record}
+    const failure = process.env.TEST_RELEASE_FAILURE;
+    if (args[0] === "auth" && failure === "github-auth") process.exit(9);
+    if (args[0] === "api" && args[1].includes("/releases/tags/")) {
+      if (failure === "github-query") { console.error("Forbidden (HTTP 403)"); process.exit(1); }
+      if (!process.env.TEST_GITHUB_STATE || process.env.TEST_GITHUB_STATE === "wrong-tag") {
+        console.error("Not Found (HTTP 404)"); process.exit(1);
+      }
+      console.log(JSON.stringify({ tag_name: "v${FIXTURE_VERSION}", draft: process.env.TEST_GITHUB_STATE === "draft", prerelease: false }));
+    } else if (args[0] === "api") console.log(failure === "github-permission" ? "false" : "true");
+    if (args[0] === "release" && args[1] === "create") {
+      if (failure === "github-create") process.exit(9);
+      fs.copyFileSync(args[args.indexOf("--notes-file") + 1], path.join(path.dirname(__dirname), "github-notes.md"));
+      console.log("https://github.com/${FIXTURE_REPOSITORY}/releases/tag/v${FIXTURE_VERSION}");
+    }
+  `, { mode: 0o755 });
+}
+
+function writePackageManagerFixture(binaries: string, record: string): void {
+  for (const command of ["pnpm", "npm"]) {
+    writeFileSync(join(binaries, command), `#!${process.execPath}\n${record}
+      const failure = process.env.TEST_RELEASE_FAILURE;
+      if (args.includes(failure) || (failure === "example" && args.includes("build")) ||
+          (failure === "preview" && args.includes("--dry-run"))) process.exit(9);
+      if (args[0] === "whoami") console.log("release-user");
+      if (args[0] === "publish" && !fs.existsSync(args[1])) process.exit(10);
+      if (failure === "upload" && args[0] === "publish" && !args.includes("--dry-run")) process.exit(9);
+      if (args[0] === "view") {
+        if (failure === "registry-pending") {
+          const pending = path.join(path.dirname(__dirname), "registry-pending");
+          if (!fs.existsSync(pending)) { fs.writeFileSync(pending, "pending"); console.error("npm error code E404"); process.exit(1); }
+        }
+        const integrity = require("node:crypto").createHash("sha512").update("verified artifact").digest("base64");
+        console.log(JSON.stringify(failure === "registry-mismatch" ? "sha512-mismatch" : "sha512-" + integrity));
+      }
+    `, { mode: 0o755 });
+  }
+}
+
 function createFixture() {
   const root = realpathSync(mkdtempSync(join(tmpdir(), FIXTURE_PREFIX)));
   fixtures.push(root);
@@ -32,7 +94,12 @@ function createFixture() {
   const log = join(root, "commands.jsonl");
   for (const path of [scripts, binaries, packageDir]) mkdirSync(path, { recursive: true });
   copyFileSync(new URL("./release.mjs", import.meta.url), join(scripts, "release.mjs"));
-  writeFileSync(join(packageDir, "package.json"), JSON.stringify({ name: "flowsvg", version: FIXTURE_VERSION }));
+  copyFileSync(new URL("./github-release.mjs", import.meta.url), join(scripts, "github-release.mjs"));
+  writeFileSync(join(packageDir, "package.json"), JSON.stringify({
+    name: "flowsvg", version: FIXTURE_VERSION,
+    repository: { type: "git", url: `git+https://github.com/${FIXTURE_REPOSITORY}.git` }
+  }));
+  writeFileSync(join(packageDir, "CHANGELOG.md"), `# Changelog\n\n## ${FIXTURE_VERSION} - 2026-11-17\n\n${FIXTURE_RELEASE_NOTES}\n## 0.0.9 - 2026-11-01\n\n- Earlier changes.\n`);
   const record = `
     const fs = require("node:fs");
     const path = require("node:path");
@@ -40,15 +107,9 @@ function createFixture() {
     const command = path.basename(process.argv[1]);
     fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ command, args }) + "\\n");
   `;
-  for (const command of ["pnpm", "npm"]) {
-    writeFileSync(join(binaries, command), `#!${process.execPath}\n${record}
-      const failure = process.env.TEST_RELEASE_FAILURE;
-      if (args.includes(failure) || (failure === "example" && args.includes("build")) ||
-          (failure === "preview" && args.includes("--dry-run"))) process.exit(9);
-      if (args[0] === "whoami") console.log("release-user");
-      if (args[0] === "publish" && !fs.existsSync(args[1])) process.exit(10);
-    `, { mode: 0o755 });
-  }
+  writePackageManagerFixture(binaries, record);
+  writeGitFixture(binaries, record);
+  writeGitHubFixture(binaries, record);
   writeFileSync(join(scripts, "verify-release.mjs"), `
     import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
     import { join } from "node:path";
@@ -62,12 +123,11 @@ function createFixture() {
   return { root, binaries, log };
 }
 
-function runFixture(args: string[] = [], failure?: string) {
-  const fixture = createFixture();
+function executeFixture(fixture: ReturnType<typeof createFixture>, args: string[] = [], failure?: string, githubState?: string) {
   const result = spawnSync(process.execPath, [join(fixture.root, "scripts", "release.mjs"), ...args], {
     cwd: tmpdir(),
     encoding: "utf8",
-    env: { ...process.env, PATH: `${fixture.binaries}:${process.env.PATH}`, TEST_RELEASE_FAILURE: failure }
+    env: { ...process.env, PATH: `${fixture.binaries}:${process.env.PATH}`, TEST_RELEASE_FAILURE: failure, TEST_GITHUB_STATE: githubState }
   });
   let calls: Invocation[] = [];
   try {
@@ -76,6 +136,10 @@ function runFixture(args: string[] = [], failure?: string) {
     if (!(error instanceof Error) || !("code" in error) || error.code !== "ENOENT") throw error;
   }
   return { ...fixture, ...result, calls };
+}
+
+function runFixture(args: string[] = [], failure?: string, githubState?: string) {
+  return executeFixture(createFixture(), args, failure, githubState);
 }
 
 afterEach(() => {
@@ -90,6 +154,7 @@ describe("release CLI", () => {
     expect(publishes).toHaveLength(1);
     expect(publishes[0]?.args).toContain("--dry-run");
     expect(result.calls.some(({ args }) => args[0] === "whoami")).toBe(false);
+    expect(result.calls.filter(({ command }) => command === "gh" || command === "git")).toEqual([]);
     const artifact = join(result.root, "dist", "releases", "flowsvg-0.1.0.tgz");
     expect(publishes[0]?.args[1]).toBe(artifact);
     expect(readFileSync(artifact, "utf8")).toBe("verified artifact");
@@ -111,6 +176,159 @@ describe("release CLI", () => {
     expect(publishes[1]?.args).not.toContain("--dry-run");
     expect(publishes[1]?.args[1]).toBe(publishes[0]?.args[1]);
     expect(publishes[1]?.args).toContain("--registry=https://registry.npmjs.org/");
+  });
+
+  it("creates a GitHub Release for the exact commit only after confirming the published npm artifact", () => {
+    const result = runFixture(["--publish"]);
+    expect(result.status, result.stderr).toBe(0);
+    const created = result.calls.find(({ command, args }) => command === "gh" && args[0] === "release" && args[1] === "create");
+    expect(created?.args).toEqual(expect.arrayContaining([
+      `v${FIXTURE_VERSION}`, FIXTURE_COMMIT, `github.com/${FIXTURE_REPOSITORY}`
+    ]));
+    expect(created?.args).not.toContain(join(result.root, "dist", "releases", "flowsvg-0.1.0.tgz"));
+    const uploadedIndex = result.calls.findIndex(({ command, args }) => command === "npm" && args[0] === "publish" && !args.includes("--dry-run"));
+    const confirmedIndex = result.calls.findIndex(({ command, args }) => command === "npm" && args[0] === "view");
+    const createdIndex = result.calls.findIndex((call) => call === created);
+    expect(confirmedIndex).toBeGreaterThan(uploadedIndex);
+    expect(createdIndex).toBeGreaterThan(confirmedIndex);
+    expect(readFileSync(join(result.root, "github-notes.md"), "utf8")).toBe(FIXTURE_RELEASE_NOTES);
+  });
+
+  it("retries GitHub publication from saved source and notes without uploading npm again", () => {
+    const failed = runFixture(["--publish"], "github-create");
+    expect(failed.status).not.toBe(0);
+    expect(failed.stderr).toContain("pnpm release:github");
+    writeFileSync(join(failed.root, "packages", "flowsvg", "CHANGELOG.md"), "# Later source changes\n");
+    const retried = executeFixture(failed, ["--github-only"], "head-moved");
+    expect(retried.status, retried.stderr).toBe(0);
+    const calls = retried.calls.slice(failed.calls.length);
+    expect(calls.filter(({ command, args }) => command === "npm" && args[0] === "publish")).toEqual([]);
+    expect(calls.filter(({ command }) => command === "pnpm" || command === "verify")).toEqual([]);
+    const created = calls.find(({ command, args }) => command === "gh" && args[0] === "release" && args[1] === "create");
+    expect(created?.args).toContain(FIXTURE_COMMIT);
+    expect(readFileSync(join(retried.root, "github-notes.md"), "utf8")).toBe(FIXTURE_RELEASE_NOTES);
+  });
+
+  it("rejects a version tag on a different commit before uploading npm", () => {
+    const result = runFixture(["--publish"], undefined, "wrong-tag");
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("different commit");
+    expect(result.calls.filter(({ command, args }) => command === "npm" && args[0] === "publish")).toEqual([]);
+    expect(result.calls.filter(({ command, args }) => command === "gh" && args[0] === "release")).toEqual([]);
+  });
+
+  it("keeps an already published GitHub Release unchanged when retrying", () => {
+    const published = runFixture(["--publish"]);
+    expect(published.status, published.stderr).toBe(0);
+    const retried = executeFixture(published, ["--github-only"], undefined, "existing");
+    expect(retried.status, retried.stderr).toBe(0);
+    const calls = retried.calls.slice(published.calls.length);
+    expect(calls.filter(({ command, args }) => command === "gh" && args[0] === "release")).toEqual([]);
+    expect(calls.filter(({ command, args }) => command === "npm" && args[0] === "publish")).toEqual([]);
+    expect(retried.stdout).toContain("already exists");
+  });
+
+  it("waits for the npm registry to expose a newly accepted package before creating the GitHub Release", () => {
+    const result = runFixture(["--publish"], "registry-pending");
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.calls.filter(({ command, args }) => command === "npm" && args[0] === "view")).toHaveLength(2);
+    expect(result.calls.filter(({ command, args }) => command === "gh" && args[0] === "release" && args[1] === "create")).toHaveLength(1);
+  });
+
+  it("preserves the first release record if publication is attempted again", () => {
+    const first = runFixture(["--publish"], "github-create");
+    expect(first.status).not.toBe(0);
+    const recordPath = join(first.root, "dist", "releases", "flowsvg-0.1.0.tgz.release.json");
+    const original = readFileSync(recordPath, "utf8");
+    writeFileSync(join(first.root, "packages", "flowsvg", "CHANGELOG.md"), `## ${FIXTURE_VERSION} - 2026-11-17\n\n- Later changes.\n`);
+    const repeated = executeFixture(first, ["--publish"], "head-moved");
+    expect(repeated.status).not.toBe(0);
+    expect(repeated.stderr).toContain("pnpm release:github");
+    expect(readFileSync(recordPath, "utf8")).toBe(original);
+    const calls = repeated.calls.slice(first.calls.length);
+    expect(calls.filter(({ command, args }) => command === "npm" && args[0] === "publish" && !args.includes("--dry-run"))).toEqual([]);
+    expect(calls.filter(({ command }) => command === "verify" || command === "pnpm")).toEqual([]);
+  });
+
+  it("recovers from the saved npm integrity even if a later preview replaced the local tarball", () => {
+    const failed = runFixture(["--publish"], "github-create");
+    expect(failed.status).not.toBe(0);
+    writeFileSync(join(failed.root, "dist", "releases", "flowsvg-0.1.0.tgz"), "a later preview artifact");
+    const retried = executeFixture(failed, ["--github-only"]);
+    expect(retried.status, retried.stderr).toBe(0);
+    const calls = retried.calls.slice(failed.calls.length);
+    expect(calls.filter(({ command, args }) => command === "npm" && args[0] === "publish")).toEqual([]);
+    expect(calls.filter(({ command, args }) => command === "gh" && args[0] === "release" && args[1] === "create")).toHaveLength(1);
+  });
+
+  it.each(["github-auth", "github-permission", "dirty", "unpushed"])(
+    "rejects a failed %s precondition before verifying or publishing the package", (failure) => {
+      const result = runFixture(["--publish"], failure);
+      expect(result.status).not.toBe(0);
+      expect(result.calls.filter(({ command }) => command === "pnpm" || command === "verify")).toEqual([]);
+      expect(result.calls.filter(({ command, args }) => command === "npm" && args[0] === "publish")).toEqual([]);
+      expect(result.calls.filter(({ command, args }) => command === "gh" && args[0] === "release")).toEqual([]);
+    }
+  );
+
+  it.each([
+    ["registry-mismatch", undefined], ["github-query", undefined], [undefined, "draft"]
+  ])("does not create a Release after a registry or GitHub conflict: %s %s", (failure, githubState) => {
+    const result = runFixture(["--publish"], failure, githubState);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("pnpm release:github");
+    expect(result.calls.filter(({ command, args }) => command === "npm" && args[0] === "publish" && !args.includes("--dry-run"))).toHaveLength(1);
+    expect(result.calls.filter(({ command, args }) => command === "gh" && args[0] === "release")).toEqual([]);
+  });
+
+  it.each([
+    ["0.2.0-rc.1", `## 0.2.0-rc.1 - 2026-11-17\n\n- Preview.\n`],
+    [FIXTURE_VERSION, "## Unreleased\n\n- Undated changes.\n"],
+    [FIXTURE_VERSION, `## ${FIXTURE_VERSION} - 2026-11-17\n\n## 0.0.9 - 2026-11-01\n\n- Earlier changes.\n`]
+  ])("requires a stable version and matching nonempty dated notes: %s %s", (version, notes) => {
+    const fixture = createFixture();
+    const metadataPath = join(fixture.root, "packages", "flowsvg", "package.json");
+    const metadata = JSON.parse(readFileSync(metadataPath, "utf8")) as Record<string, unknown>;
+    writeFileSync(metadataPath, JSON.stringify({ ...metadata, version }));
+    writeFileSync(join(fixture.root, "packages", "flowsvg", "CHANGELOG.md"), notes);
+    const result = executeFixture(fixture, ["--publish"]);
+    expect(result.status).not.toBe(0);
+    expect(result.calls.filter(({ command }) => command === "verify" || command === "pnpm")).toEqual([]);
+    expect(result.calls.filter(({ command, args }) => command === "npm" && args[0] === "publish")).toEqual([]);
+    expect(result.calls.filter(({ command, args }) => command === "gh" && args[0] === "release")).toEqual([]);
+  });
+
+  it("rejects a saved release record for another repository without remote operations", () => {
+    const failed = runFixture(["--publish"], "github-create");
+    expect(failed.status).not.toBe(0);
+    const recordPath = join(failed.root, "dist", "releases", "flowsvg-0.1.0.tgz.release.json");
+    const record = JSON.parse(readFileSync(recordPath, "utf8")) as Record<string, unknown>;
+    writeFileSync(recordPath, JSON.stringify({ ...record, repository: "another/repository" }));
+    const retried = executeFixture(failed, ["--github-only"]);
+    expect(retried.status).not.toBe(0);
+    expect(retried.stderr).toContain("does not match this package");
+    expect(retried.calls.slice(failed.calls.length)).toEqual([]);
+  });
+
+  it("checks origin before GitHub queries during publication and recovery", () => {
+    const result = runFixture(["--publish"], "wrong-origin");
+    expect(result.status).not.toBe(0);
+    expect(result.calls.filter(({ command }) => command === "gh")).toEqual([]);
+    const failed = runFixture(["--publish"], "github-create");
+    expect(failed.status).not.toBe(0);
+    const retried = executeFixture(failed, ["--github-only"], "wrong-origin");
+    expect(retried.status).not.toBe(0);
+    expect(retried.calls.slice(failed.calls.length).filter(({ command }) => command === "gh")).toEqual([]);
+  });
+
+  it("does not query npm or create a Release if the npm upload fails", () => {
+    const result = runFixture(["--publish"], "upload");
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).not.toContain("npm upload completed");
+    expect(result.calls.filter(({ command, args }) => command === "npm" && args[0] === "view")).toEqual([]);
+    expect(result.calls.filter(({ command, args }) => command === "gh" && args[0] === "release")).toEqual([]);
+    const recordPath = join(result.root, "dist", "releases", "flowsvg-0.1.0.tgz.release.json");
+    expect(JSON.parse(readFileSync(recordPath, "utf8"))).toMatchObject({ commit: FIXTURE_COMMIT });
   });
 
   it.each(["whoami", "typecheck", "test", "verify", "preview"])(

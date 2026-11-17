@@ -33,7 +33,7 @@
 - **Showcase author data or geometry:** follow [author patterns](packages/showcase/PATTERNS.md). Hosts consume generated documents; routing and rendering behavior stays in the SDK.
 - **Host lifecycle, presentation or browser acceptance:** follow [shared host maintenance](docs/development/showcase-hosts.md) and the affected app's patterns. Common rules have one owner; app files retain framework-specific constraints.
 - **Brand assets or README previews:** follow [brand inputs](docs/brand/README.md) and [preview maintenance](docs/assets/image-previews.md) before regenerating assets.
-- **npm publication:** follow the [release guide](docs/development/releasing.md). Verify the exact tarball that will be uploaded; distinguish a prepared source version from a version published on npm.
+- **Release preview, npm publication or GitHub recovery/backfill:** read the [maintainer release guide](docs/development/releasing.md) before running or changing the release tools. Choose the branch by npm publication state and the presence of a saved release record.
 
 ## Build and verification boundaries
 

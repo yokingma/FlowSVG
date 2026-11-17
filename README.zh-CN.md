@@ -249,7 +249,7 @@ pnpm test
 | 构建后的示例与静态交付 | `pnpm test:examples` | [展示验证](docs/verification/showcase-verification.md) |
 | 打包及安装后的使用方式 | `pnpm release` | [发布指南](docs/development/releasing.md) |
 
-浏览器检查需要已准备的 Chromium 和字体，配置见[浏览器准备说明](docs/development/releasing.md#浏览器与最低运行时准备)。`pnpm release` 执行验证和发布预演；上传 npm 需要单独执行 `pnpm release:publish`。
+浏览器检查需要已准备的 Chromium 和字体，配置见[浏览器准备说明](docs/development/releasing.md#浏览器与最低运行时准备)。`pnpm release` 执行验证和发布预演。
 
 项目约定见[术语表](GLOSSARY.md)、[架构决策](docs/adr/)和[实现约定](PATTERNS.md)。SDK 版本说明见[包变更记录](packages/flowsvg/CHANGELOG.md)。
 

@@ -10,6 +10,7 @@
     "test:release": "vitest run scripts/release.test.ts scripts/sdk-independence.test.ts scripts/workspace-install.test.ts",
     "release": "node scripts/release.mjs",
     "release:publish": "node scripts/release.mjs --publish",
+    "release:github": "node scripts/release.mjs --github-only",
     "release:verify": "pnpm --filter flowsvg release:verify",
     "build:examples": "pnpm build && pnpm --filter @flowsvg/showcase build && pnpm --filter flowsvg-native-example exec vite build && pnpm --filter flowsvg-react-example exec vite build && pnpm --filter flowsvg-vue-example exec vite build",
     "test:delivery": "vitest run scripts/showcase-delivery.test.ts --maxWorkers=1",

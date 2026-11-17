@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Create GitHub Releases after confirming the published npm artifact, using the verified commit and SDK changelog entry. Retain a release record so GitHub publication can be retried without uploading npm again.
+
 - Prepare `flowsvg` 0.4.1 with the tag-positioning fix, shorter bilingual SDK READMEs and lossless showcase GIFs; align SDK release notes and versioned README links.
 
 - Fix default-font structured tag centering. Keep tag boxes independent of list numbering and status sizes, preserve shared baselines by moving complete tags, and verify real browser glyph positions.
