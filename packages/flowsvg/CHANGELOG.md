@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.2 - 2026-11-20
 
 - Keep horizontal edge labels and node clip identities stable across unchanged animation frames despite floating-point geometry noise.
 - Create a GitHub Release from the matching SDK changelog entry after the maintainer command confirms the published npm artifact.

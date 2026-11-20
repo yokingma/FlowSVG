@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Prepare `flowsvg` 0.4.2 with stable animated edge labels and clip identities; align SDK release notes and versioned README links.
+
 - Create GitHub Releases after confirming the published npm artifact, using the verified commit and SDK changelog entry. Retain a release record so GitHub publication can be retried without uploading npm again.
 
 - Prepare `flowsvg` 0.4.1 with the tag-positioning fix, shorter bilingual SDK READMEs and lossless showcase GIFs; align SDK release notes and versioned README links.
