@@ -369,7 +369,7 @@ function serializeNodeLabel(node: EvaluatedNode, index: number, palette: ThemePa
   const label = serializeLabel(node.labelLines, node.labelBoxes, node.style?.textColor ?? palette.text, typography, node.opacity);
   const safe = nodeLabelSafeArea(node);
   if (!safe || !label) return label;
-  const key = [safe.x, safe.y, safe.width, safe.height].map((value) => String(value).replaceAll("-", "n").replaceAll(".", "p").replaceAll("+", "a")).join("-");
+  const key = [safe.x, safe.y, safe.width, safe.height].map((value) => formatNumber(value).replaceAll("-", "n").replaceAll(".", "p")).join("-");
   const clipId = `diagram-label-clip-${index}-${key}`;
   return `<defs><clipPath id="${clipId}" clipPathUnits="userSpaceOnUse"><rect x="${formatNumber(safe.x)}" y="${formatNumber(safe.y)}" width="${formatNumber(safe.width)}" height="${formatNumber(safe.height)}"/></clipPath></defs><g clip-path="url(#${clipId})">${label}</g>`;
 }
@@ -378,8 +378,8 @@ function serializeNodeLabel(node: EvaluatedNode, index: number, palette: ThemePa
 function serializeNodeContent(node: EvaluatedNode, index: number): string {
   const layout = node.contentLayout!;
   const safe = layout.safeArea;
-  // Include exact clip geometry so independent SVGs with different node dimensions do not share a clip definition.
-  const geometryKey = [safe.x, safe.y, safe.width, safe.height].map((value) => String(value).replaceAll("-", "n").replaceAll(".", "p").replaceAll("+", "a")).join("-");
+  // Match the serialized clip geometry so independent SVGs stay distinct without float-noise ID changes.
+  const geometryKey = [safe.x, safe.y, safe.width, safe.height].map((value) => formatNumber(value).replaceAll("-", "n").replaceAll(".", "p")).join("-");
   const clipId = `diagram-content-clip-${index}-${geometryKey}`;
   const clip = `<defs><clipPath id="${clipId}" clipPathUnits="userSpaceOnUse"><rect x="${formatNumber(safe.x)}" y="${formatNumber(safe.y)}" width="${formatNumber(safe.width)}" height="${formatNumber(safe.height)}"/></clipPath></defs>`;
   const tags = layout.tags.map((tag) => `<rect x="${formatNumber(tag.x)}" y="${formatNumber(tag.y)}" width="${formatNumber(tag.width)}" height="${formatNumber(tag.height)}" rx="${formatNumber(tag.shape === "pill" ? tag.height / 2 : CONTENT_TAG_CORNER_RADIUS)}" fill="${escapeAttribute(tag.fill)}"/>`).join("");

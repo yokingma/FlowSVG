@@ -648,7 +648,8 @@ export function pathLabelAnchor(geometry: PathGeometry): {
     const length = Math.hypot(end.x - start.x, end.y - start.y);
     if (length > longest.length) longest = { start, end, length };
   }
-  const horizontal = longest.start.y === longest.end.y;
+  // Port projection can leave subpixel floating-point noise on an authored horizontal segment.
+  const horizontal = Math.abs(longest.start.y - longest.end.y) <= 0.5;
   return {
     x: (longest.start.x + longest.end.x) / 2 + (horizontal ? 0 : 20),
     y: (longest.start.y + longest.end.y) / 2 + (horizontal ? -12 : 0)

@@ -34,6 +34,30 @@ function pathPoints(path: string): { x: number; y: number }[] {
 }
 
 describe("shared route geometry regressions", () => {
+  it("keeps horizontal edge labels and clip identities stable across unchanged frames", () => {
+    const diagram = createDiagram({
+      version: 1,
+      viewport: { width: 720, height: 260 },
+      nodes: [
+        { id: "decision", kind: "diamond", x: 60, y: 80, width: 140, height: 100, label: "Approved?" },
+        { id: "next", kind: "roundedRect", x: 380, y: 80, width: 240, height: 100, label: "Next step" }
+      ],
+      edges: [{ id: "horizontal", from: "decision", to: "next", fromPort: "right", toPort: "left", route: "straight", label: "Yes" }],
+      scenes: [{ id: "hold", label: "Hold", beats: [{ durationMs: 900, actions: [] }] }]
+    });
+    const initial = diagram.evaluateAt(0);
+    const initialClips = [...diagram.renderSvg(0).matchAll(/<clipPath id="([^"]+)"/g)].map((match) => match[1]);
+    expect(initialClips.length).toBeGreaterThan(0);
+
+    for (let time = 2; time <= diagram.totalDuration; time += 8) {
+      const frame = diagram.evaluateAt(time);
+      expect(frame.edges[0]!.path).toBe(initial.edges[0]!.path);
+      expect(frame.edges[0]!.labelBoxes).toEqual(initial.edges[0]!.labelBoxes);
+      const clips = [...diagram.renderSvg(time).matchAll(/<clipPath id="([^"]+)"/g)].map((match) => match[1]);
+      expect(clips).toEqual(initialClips);
+    }
+  });
+
   it.each(["right", "left", "bottom", "top"] as const)("keeps a rounded bridge inside the %s port gap", (side) => {
     const vertical = side === "top" || side === "bottom";
     const reverse = side === "top" || side === "left";
